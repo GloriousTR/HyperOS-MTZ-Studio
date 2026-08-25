@@ -2,13 +2,11 @@
 
 ## Product boundary
 
-The product is a local MTZ library, analyzer, component picker, composer, verifier, preview foundation, and exporter. A Theme Manager test handoff is optional and uses only a verified public intent. Failure or absence of that integration cannot disable library, composition, or export features.
-
-HyperOS-TDK remains a separate research/diagnostics repository. No code or Git history from it is assumed or copied by this project.
+The product is a local MTZ library, analyzer, component picker, composer, verifier, preview foundation, and exporter. Theme Manager compatibility diagnostics and the explicit root downgrade action are isolated from MTZ parsing and composition. Failure or absence of that integration cannot disable library, composition, or export features.
 
 ## Dependency direction
 
-`app` depends on `mtz-library`, `mtz-composer`, and `tester-adapter`. Both storage and composition depend on `mtz-core`. `mtz-core` has no Android dependency. `tester-adapter` has no dependency on the other feature modules.
+`app` depends on `mtz-library`, `mtz-composer`, and `tester-adapter`. Both storage and composition depend on `mtz-core`. `mtz-core` has no Android dependency. `tester-adapter` has no dependency on the other feature modules and never receives MTZ library contents.
 
 ## Core models
 
@@ -31,4 +29,3 @@ Source files are immutable working copies. Composition writes a temporary siblin
 ## Conflict policy
 
 The spike permits one selected source per component category. Duplicate normalized archive paths are rejected while parsing. If different selected components still produce the same output path, composition fails rather than silently overwriting data.
-

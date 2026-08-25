@@ -8,6 +8,7 @@
 4. Implement multi-source selection, deterministic composition, rights exclusion, reopen verification, and provenance records.
 5. Add the smallest useful Compose flow: import, inspect, select, compose, verify, and share.
 6. Keep Theme Manager testing behind an isolated unavailable-by-default adapter until a public intent is proven on real devices.
+7. Detect the installed Global Theme Manager version at startup and isolate the user-confirmed root compatibility downgrade from all MTZ operations.
 
 ## Acceptance mapping
 
@@ -22,5 +23,6 @@ SAF and private copying are owned by `app`/`mtz-library`; safety, metadata, comp
 - Rights-like paths are matched conservatively and excluded from composition. False positives are preferable to copying protected material.
 - Preview rendering and detailed HyperOS-version compatibility matrices are follow-up work; this spike lists structure and validation findings.
 - A composed package is structurally verifiable, not guaranteed installable or accepted by Xiaomi Theme Manager.
-- Theme Manager integration remains disabled until package/action/MIME behavior is observed and documented on supported stock devices.
+- The version behavior matrix is product input and applies only to the listed Global versions; unknown versions remain explicitly unverified.
+- Root is permitted only for installing a user-supplied, verified `2.15.5.46` Theme Manager APK with Package Manager's replace/downgrade operation.
 
