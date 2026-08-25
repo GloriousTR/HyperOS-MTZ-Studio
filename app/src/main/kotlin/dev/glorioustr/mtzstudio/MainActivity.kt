@@ -52,6 +52,8 @@ import dev.glorioustr.mtzstudio.core.ComponentCategory
 import dev.glorioustr.mtzstudio.core.ThemeId
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
+import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
+import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,11 +65,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val library = ThemeLibrary(applicationContext)
         val composer = MtzComposer()
+        val themeManagerInspector = ThemeManagerInspector(applicationContext)
+        val themeManagerUpdater = RootThemeManagerUpdater(applicationContext, themeManagerInspector)
         setContent {
             MaterialTheme {
                 StudioScreen(
                     library = library,
                     composer = composer,
+                    themeManagerInspector = themeManagerInspector,
+                    themeManagerUpdater = themeManagerUpdater,
                     displayName = ::displayName,
                     openInput = contentResolver::openInputStream,
                     share = ::share,
@@ -105,6 +111,8 @@ private data class UiSelection(
 private fun StudioScreen(
     library: ThemeLibrary,
     composer: MtzComposer,
+    themeManagerInspector: ThemeManagerInspector,
+    themeManagerUpdater: RootThemeManagerUpdater,
     displayName: (Uri) -> String?,
     openInput: (Uri) -> InputStream?,
     share: (Path) -> Unit,
@@ -157,8 +165,15 @@ private fun StudioScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
+                ThemeManagerCompatibilityCard(
+                    inspector = themeManagerInspector,
+                    updater = themeManagerUpdater,
+                    openInput = openInput,
+                )
+            }
+            item {
                 Text(
-                    "Local MTZ inspection and composition. No permanent install, rights changes, DRM bypass, hooks, or root.",
+                    "Local MTZ inspection and composition. No permanent theme install, rights changes, DRM bypass, or hooks. Root is optional and limited to the explicit Theme Manager compatibility downgrade above.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(12.dp))
