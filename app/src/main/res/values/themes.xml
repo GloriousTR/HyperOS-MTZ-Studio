@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.HyperOSMtzStudio" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F8F9FF</item>
+    </style>
+</resources>
+
