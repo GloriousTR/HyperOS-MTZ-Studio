@@ -21,3 +21,6 @@ kotlin {
     jvmToolchain(17)
 }
 
+dependencies {
+    testImplementation(kotlin("test"))
+}
