@@ -4,18 +4,22 @@ object ThemeManagerContract {
     const val RECOMMENDED_VERSION = "2.15.5.46"
     const val PACKAGE_NAME = "com.android.thememanager"
 
-    val SUPPORTED_VERSIONS = setOf("2.15.5.46", "3.0.5.6")
+    val SUPPORTED_VERSIONS = setOf("2.15.5.46", "3.0.5.6", "10.8.7.6")
 
     fun canonicalVersion(versionName: String?): String? = versionName
         ?.trim()
         ?.substringBefore('-')
         ?.takeIf(String::isNotBlank)
 
-    fun behavior(versionName: String?): ThemeManagerBehavior = when (canonicalVersion(versionName)) {
-        "2.15.5.46", "3.0.5.6" -> ThemeManagerBehavior.LOCAL_THEME_IMPORT
-        "3.0.5.14" -> ThemeManagerBehavior.TEMPORARY_DEFAULT_COMPOSITE
-        "3.0.6.8" -> ThemeManagerBehavior.TESTER_ACTIVITY_REMOVED
-        else -> ThemeManagerBehavior.UNKNOWN
+    fun behavior(versionName: String?): ThemeManagerBehavior {
+        val canonical = canonicalVersion(versionName) ?: return ThemeManagerBehavior.UNKNOWN
+        return when {
+            canonical in SUPPORTED_VERSIONS -> ThemeManagerBehavior.LOCAL_THEME_IMPORT
+            canonical.startsWith("10.") -> ThemeManagerBehavior.LOCAL_THEME_IMPORT
+            canonical == "3.0.5.14" -> ThemeManagerBehavior.TEMPORARY_DEFAULT_COMPOSITE
+            canonical == "3.0.6.8" -> ThemeManagerBehavior.TESTER_ACTIVITY_REMOVED
+            else -> ThemeManagerBehavior.UNKNOWN
+        }
     }
 }
 
@@ -37,6 +41,7 @@ data class InstalledThemeManager(
     val isRecommended: Boolean
         get() = installed && (
             ThemeManagerContract.canonicalVersion(versionName) in ThemeManagerContract.SUPPORTED_VERSIONS ||
+            ThemeManagerContract.canonicalVersion(versionName)?.startsWith("10.") == true ||
             behavior == ThemeManagerBehavior.LOCAL_THEME_IMPORT
         )
 }

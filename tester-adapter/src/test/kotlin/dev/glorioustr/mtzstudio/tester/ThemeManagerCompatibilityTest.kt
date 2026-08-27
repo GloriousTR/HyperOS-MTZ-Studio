@@ -15,6 +15,10 @@ class ThemeManagerCompatibilityTest {
     @Test
     fun `known global versions map to observed tester behavior`() {
         assertEquals(
+            ThemeManagerBehavior.LOCAL_THEME_IMPORT,
+            ThemeManagerContract.behavior("10.8.7.6"),
+        )
+        assertEquals(
             ThemeManagerBehavior.TEMPORARY_DEFAULT_COMPOSITE,
             ThemeManagerContract.behavior("3.0.5.14"),
         )

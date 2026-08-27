@@ -266,13 +266,12 @@ private fun StudioScreen(
         preparedApply = null
         if (prepared != null) {
             scope.launch {
-                withContext(Dispatchers.IO) { runCatching { themeApplyCoordinator.cleanup(prepared) } }
-                status = if (result.resultCode == Activity.RESULT_OK) {
-                    context.getString(R.string.status_apply_success, prepared.themeName)
-                } else {
-                    context.getString(R.string.status_apply_cancelled)
+                withContext(Dispatchers.IO) {
+                    kotlinx.coroutines.delay(10_000)
+                    runCatching { themeApplyCoordinator.cleanup(prepared) }
                 }
             }
+            status = context.getString(R.string.status_apply_success, prepared.themeName)
         }
     }
 

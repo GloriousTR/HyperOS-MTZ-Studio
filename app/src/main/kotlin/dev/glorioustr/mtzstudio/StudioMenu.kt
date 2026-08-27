@@ -676,8 +676,7 @@ internal fun PersonalizeScreen(
     val availableCategories = ComponentCategory.entries.filter { category ->
         category.isPersonalizationOption() &&
             themes.any { theme ->
-                hasThemePreview(theme, category) &&
-                    theme.archive.components.any { it.category == category }
+                theme.archive.components.any { it.category == category }
             }
     }
     val visibleSelections = selections.values.filter { it.category.isPersonalizationOption() }
