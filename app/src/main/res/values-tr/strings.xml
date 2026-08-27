@@ -9,7 +9,9 @@
     <string name="dest_fonts">Yazı tipleri</string>
     <string name="dest_lockscreen">Kilit ekranı stili</string>
     <string name="dest_icons">Simgeler</string>
-    <string name="dest_system_ui">Durum çubuğu</string>
+    <string name="dest_system_ui">Bildirim paneli</string>
+    <string name="dest_contacts">Arama tuşları</string>
+    <string name="dest_mms">SMS Ekranı</string>
     <string name="dest_system_ui_plugin">Kontrol merkezi ve bildirim paneli</string>
     <string name="dest_launcher">Başlatıcı</string>
     <string name="dest_aod">Her zaman açık ekran</string>
@@ -25,8 +27,10 @@
     <string name="category_icons">Simgeler</string>
     <string name="category_lockscreen">Kilit ekranı stili</string>
     <string name="category_wallpaper">Duvar kâğıdı</string>
+    <string name="category_system_ui">Bildirim paneli</string>
+    <string name="category_contacts">Arama tuşları</string>
+    <string name="category_mms">SMS Ekranı</string>
     <string name="category_framework">Sistem kaynakları</string>
-    <string name="category_system_ui">Durum çubuğu</string>
     <string name="category_system_ui_plugin">Kontrol merkezi ve bildirim paneli</string>
     <string name="category_launcher">Başlatıcı</string>
     <string name="category_aod">Her zaman açık ekran</string>

@@ -34,6 +34,8 @@ internal object ComponentRecognizer {
             root == "framework-miui-res" -> ComponentCategory.FRAMEWORK
             root == "com.android.systemui" -> ComponentCategory.SYSTEM_UI
             root == "miui.systemui.plugin" -> ComponentCategory.SYSTEM_UI_PLUGIN
+            root == "com.android.contacts" || root == "com.android.incallui" || root == "com.android.phone" -> ComponentCategory.CONTACTS
+            root == "com.android.mms" || root == "com.google.android.apps.messaging" -> ComponentCategory.MMS
             root == "com.miui.home" || root == "launcher" -> ComponentCategory.LAUNCHER
             root == "aod" || root == "com.miui.aod" -> ComponentCategory.AOD
             root == "ringtone" || root == "ringtones" || lower.startsWith("audio/ringtone") -> ComponentCategory.RINGTONE

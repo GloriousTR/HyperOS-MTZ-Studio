@@ -159,6 +159,31 @@ private fun previewCandidates(category: ComponentCategory?): List<String> = when
     )
     ComponentCategory.SYSTEM_UI -> listOf(
         "preview/preview_statusbar_0.jpg",
+        "preview/preview_statusbar_0.png",
+        "preview/preview_statusbar_1.jpg",
+        "preview/preview_notification_0.jpg",
+        "preview/preview_launcher_0.jpg",
+    )
+    ComponentCategory.CONTACTS -> listOf(
+        "preview/preview_contact_0.jpg",
+        "preview/preview_contact_0.png",
+        "preview/preview_contact_1.jpg",
+        "preview/preview_dialer_0.jpg",
+        "preview/preview_dialer_0.png",
+        "preview/preview_call_0.jpg",
+        "preview/preview_launcher_2.jpg",
+        "preview/preview_launcher_1.jpg",
+        "preview/preview_launcher_0.jpg",
+    )
+    ComponentCategory.MMS -> listOf(
+        "preview/preview_mms_0.jpg",
+        "preview/preview_mms_0.png",
+        "preview/preview_mms_1.jpg",
+        "preview/preview_sms_0.jpg",
+        "preview/preview_sms_0.png",
+        "preview/preview_message_0.jpg",
+        "preview/preview_launcher_1.jpg",
+        "preview/preview_launcher_2.jpg",
         "preview/preview_launcher_0.jpg",
     )
     ComponentCategory.LAUNCHER -> listOf("preview/preview_launcher_0.jpg", "preview/preview_launcher_1.jpg")
@@ -187,7 +212,9 @@ private fun previewKeywords(category: ComponentCategory?): List<String> = when (
     ComponentCategory.ICONS -> listOf("icon", "launcher")
     ComponentCategory.LOCKSCREEN -> listOf("lockscreen", "lock_style")
     ComponentCategory.WALLPAPER -> listOf("wallpaper", "launcher")
-    ComponentCategory.SYSTEM_UI -> listOf("statusbar", "launcher")
+    ComponentCategory.SYSTEM_UI -> listOf("statusbar", "notification", "controlcenter", "systemui", "launcher")
+    ComponentCategory.CONTACTS -> listOf("contact", "dialer", "call", "phone", "launcher")
+    ComponentCategory.MMS -> listOf("mms", "sms", "message", "launcher")
     ComponentCategory.LAUNCHER -> listOf("launcher", "home")
     ComponentCategory.AOD -> listOf("aod", "miwallpaper", "lockscreen")
     ComponentCategory.FONT -> listOf("font")

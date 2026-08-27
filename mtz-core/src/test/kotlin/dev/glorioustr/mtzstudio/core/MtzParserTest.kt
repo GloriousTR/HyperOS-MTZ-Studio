@@ -19,13 +19,18 @@ class MtzParserTest {
             "description.xml" to "<theme><title>Night</title><author>Ada</author><version>1</version></theme>".encodeToByteArray(),
             "icons" to byteArrayOf(1, 2, 3),
             "wallpaper/default.jpg" to byteArrayOf(4, 5),
+            "com.android.contacts" to byteArrayOf(6, 7),
+            "com.android.mms" to byteArrayOf(8, 9),
             "rights/rights.xml" to "owned-source-only".encodeToByteArray(),
         )
 
         val parsed = MtzParser().parse(mtz)
 
         assertEquals("Night", assertNotNull(parsed.metadata).name)
-        assertEquals(setOf(ComponentCategory.ICONS, ComponentCategory.WALLPAPER), parsed.components.map { it.category }.toSet())
+        assertEquals(
+            setOf(ComponentCategory.ICONS, ComponentCategory.WALLPAPER, ComponentCategory.CONTACTS, ComponentCategory.MMS),
+            parsed.components.map { it.category }.toSet(),
+        )
         assertEquals(listOf("rights/rights.xml"), parsed.rightsEntries)
         assertEquals(64, parsed.sha256.length)
     }

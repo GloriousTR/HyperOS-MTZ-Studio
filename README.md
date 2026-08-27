@@ -20,7 +20,9 @@
     - 📱 **Simgeler (Icons)**
     - 🔒 **Kilit Ekranı Stili (Lock Screen)**
     - 🖼️ **Duvar Kâğıdı (Wallpaper)**
-    - 📶 **Durum Çubuğu (Status Bar)**
+    - 🔔 **Bildirim Paneli (Notification Panel & Status Bar)**
+    - 📞 **Arama Tuşları (Dialer & Contacts)**
+    - 💬 **SMS Ekranı (SMS & Messages)**
     - 🏠 **Başlatıcı (Launcher)**
     - 🌙 **Her Zaman Açık Ekran (Always On Display / AOD)**
     - 🔤 **Yazı Tipi (Fonts)**

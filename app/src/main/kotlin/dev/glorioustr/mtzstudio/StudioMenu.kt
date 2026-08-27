@@ -58,6 +58,9 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Clear
@@ -115,6 +118,8 @@ internal enum class StudioDestination(
     LOCKSCREEN(R.string.dest_lockscreen, ComponentCategory.LOCKSCREEN),
     ICONS(R.string.dest_icons, ComponentCategory.ICONS),
     SYSTEM_UI(R.string.dest_system_ui, ComponentCategory.SYSTEM_UI),
+    CONTACTS(R.string.dest_contacts, ComponentCategory.CONTACTS),
+    MMS(R.string.dest_mms, ComponentCategory.MMS),
     SYSTEM_UI_PLUGIN(R.string.dest_system_ui_plugin, ComponentCategory.SYSTEM_UI_PLUGIN),
     LAUNCHER(R.string.dest_launcher, ComponentCategory.LAUNCHER),
     AOD(R.string.dest_aod, ComponentCategory.AOD),
@@ -2197,6 +2202,8 @@ private val THEME_GALLERY_CATEGORIES = setOf(
     ComponentCategory.LOCKSCREEN,
     ComponentCategory.WALLPAPER,
     ComponentCategory.SYSTEM_UI,
+    ComponentCategory.CONTACTS,
+    ComponentCategory.MMS,
     ComponentCategory.LAUNCHER,
     ComponentCategory.AOD,
 )
@@ -2207,6 +2214,8 @@ internal fun destinationFor(category: ComponentCategory): StudioDestination = wh
     ComponentCategory.WALLPAPER -> StudioDestination.WALLPAPERS
     ComponentCategory.FRAMEWORK -> StudioDestination.FRAMEWORK
     ComponentCategory.SYSTEM_UI -> StudioDestination.SYSTEM_UI
+    ComponentCategory.CONTACTS -> StudioDestination.CONTACTS
+    ComponentCategory.MMS -> StudioDestination.MMS
     ComponentCategory.SYSTEM_UI_PLUGIN -> StudioDestination.SYSTEM_UI_PLUGIN
     ComponentCategory.LAUNCHER -> StudioDestination.LAUNCHER
     ComponentCategory.AOD -> StudioDestination.AOD
@@ -2231,6 +2240,8 @@ internal fun categoryLabelRes(category: ComponentCategory): Int = when (category
     ComponentCategory.WALLPAPER -> R.string.category_wallpaper
     ComponentCategory.FRAMEWORK -> R.string.category_framework
     ComponentCategory.SYSTEM_UI -> R.string.category_system_ui
+    ComponentCategory.CONTACTS -> R.string.category_contacts
+    ComponentCategory.MMS -> R.string.category_mms
     ComponentCategory.SYSTEM_UI_PLUGIN -> R.string.category_system_ui_plugin
     ComponentCategory.LAUNCHER -> R.string.category_launcher
     ComponentCategory.AOD -> R.string.category_aod
@@ -2244,7 +2255,9 @@ private fun categoryIcon(category: ComponentCategory): ImageVector = when (categ
     ComponentCategory.LOCKSCREEN -> Icons.Filled.Lock
     ComponentCategory.WALLPAPER -> Icons.Filled.Image
     ComponentCategory.FRAMEWORK -> Icons.Filled.Build
-    ComponentCategory.SYSTEM_UI -> Icons.Filled.PhoneAndroid
+    ComponentCategory.SYSTEM_UI -> Icons.Filled.Notifications
+    ComponentCategory.CONTACTS -> Icons.Filled.Call
+    ComponentCategory.MMS -> Icons.Filled.Sms
     ComponentCategory.SYSTEM_UI_PLUGIN -> Icons.Filled.Widgets
     ComponentCategory.LAUNCHER -> Icons.Filled.Home
     ComponentCategory.AOD -> Icons.Filled.Nightlight

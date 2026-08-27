@@ -379,8 +379,10 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
             "preview/preview_launcher_0.jpg",
         )
         dev.glorioustr.mtzstudio.core.ComponentCategory.ICONS -> listOf("preview/preview_icons_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI -> listOf("preview/preview_statusbar_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI_PLUGIN -> listOf("preview/preview_statusbar_1.jpg")
+        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI -> listOf("preview/preview_statusbar_0.jpg", "preview/preview_launcher_0.jpg")
+        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI_PLUGIN -> listOf("preview/preview_statusbar_1.jpg", "preview/preview_statusbar_0.jpg")
+        dev.glorioustr.mtzstudio.core.ComponentCategory.CONTACTS -> listOf("preview/preview_contact_0.jpg", "preview/preview_dialer_0.jpg", "preview/preview_launcher_2.jpg")
+        dev.glorioustr.mtzstudio.core.ComponentCategory.MMS -> listOf("preview/preview_mms_0.jpg", "preview/preview_sms_0.jpg", "preview/preview_launcher_1.jpg")
         dev.glorioustr.mtzstudio.core.ComponentCategory.LAUNCHER -> listOf("preview/preview_launcher_0.jpg")
         dev.glorioustr.mtzstudio.core.ComponentCategory.AOD -> listOf("preview/preview_miwallpaper_0.jpg")
         else -> listOf("preview/preview_lockscreen_0.jpg", "preview/preview_launcher_0.jpg")
