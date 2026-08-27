@@ -12,11 +12,12 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0-spike"
+        versionCode = 3
+        versionName = "0.3.0-diagnostics"
     }
 
     buildFeatures {
+        aidl = true
         compose = true
         buildConfig = true
     }
@@ -43,7 +44,13 @@ dependencies {
     // 2.11+ requires compileSdk 37 / AGP 9.1; this spike is pinned to SDK 36 / AGP 8.13.
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.3")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
+    compileOnly("io.github.libxposed:api:101.0.0")
+    implementation("io.github.libxposed:service:101.0.0")
+    implementation("org.luckypray:dexkit:2.2.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

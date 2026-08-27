@@ -15,6 +15,102 @@ import kotlin.test.assertTrue
 
 class MtzComposerTest {
     @Test
+    fun `packages an active font as a verified font MTZ`() {
+        val directory = Files.createTempDirectory("mtz-font-export-test")
+        val font = directory.resolve("Current Font.ttf")
+        Files.write(font, byteArrayOf(0, 1, 0, 0, 7, 8, 9))
+        val preview = directory.resolve("font-preview.png")
+        Files.write(preview, byteArrayOf(1, 2, 3))
+
+        val result = MtzComposer().composeFont(
+            FontExportRequest(
+                metadata = CompositionMetadata(name = "Active device font"),
+                fontFile = font,
+                archiveFileName = font.fileName.toString(),
+                previewFile = preview,
+            ),
+            directory.resolve("active-font.mtz"),
+        )
+
+        assertEquals(setOf(ComponentCategory.FONT), result.verifiedArchive.components.map { it.category }.toSet())
+        ZipFile(result.output.toFile()).use { zip ->
+            assertTrue(zip.getEntry("fonts/Current-Font.ttf") != null)
+            assertTrue(zip.getEntry("preview/preview_fonts_0.png") != null)
+            val xml = zip.getInputStream(zip.getEntry("description.xml")).bufferedReader().readText()
+            assertTrue("<fontWeight>" in xml)
+        }
+    }
+
+    @Test
+    fun `composes one selected component for a single-source custom theme`() {
+        val parser = MtzParser()
+        val source = parser.parse(zip("icons" to byteArrayOf(1, 2, 3)))
+        val request = CompositionRequest(
+            metadata = CompositionMetadata(name = "Tek Kaynak"),
+            selections = listOf(selection("one", source, ComponentCategory.ICONS)),
+        )
+
+        val result = MtzComposer(parser).compose(
+            request,
+            Files.createTempDirectory("mtz-single-compose-test").resolve("single.mtz"),
+        )
+
+        assertEquals(setOf(ComponentCategory.ICONS), result.verifiedArchive.components.map { it.category }.toSet())
+    }
+
+    @Test
+    fun `base theme keeps every unchanged root while selected categories override it`() {
+        val parser = MtzParser()
+        val base = parser.parse(
+            zip(
+                "description.xml" to """
+                    <theme>
+                      <title>Circle</title>
+                      <uiVersion>17</uiVersion>
+                      <author>VedaT</author>
+                      <miuiAdapterVersion>4.2</miuiAdapterVersion>
+                    </theme>
+                """.trimIndent().encodeToByteArray(),
+                "icons" to byteArrayOf(1),
+                "com.android.systemui" to byteArrayOf(2),
+                "miui.systemui.plugin" to byteArrayOf(3),
+                "framework-miui-res" to byteArrayOf(4),
+                "com.android.settings" to byteArrayOf(5),
+                "rights/rights.xml" to byteArrayOf(9),
+            ),
+        )
+        val icons = parser.parse(zip("icons" to byteArrayOf(7)))
+        val font = parser.parse(zip("fonts/Roboto-Regular.ttf" to byteArrayOf(8)))
+        val request = CompositionRequest(
+            metadata = CompositionMetadata(name = "Inherited mix"),
+            baseSource = CompositionSource(ThemeId("base"), "Circle", base),
+            selections = listOf(
+                selection("icons", icons, ComponentCategory.ICONS),
+                selection("font", font, ComponentCategory.FONT),
+            ),
+        )
+
+        val result = MtzComposer(parser).compose(
+            request,
+            Files.createTempDirectory("mtz-base-compose-test").resolve("inherited.mtz"),
+        )
+
+        ZipFile(result.output.toFile()).use { output ->
+            assertTrue(output.getInputStream(output.getEntry("icons")).readBytes().contentEquals(byteArrayOf(7)))
+            assertTrue(output.getInputStream(output.getEntry("fonts/Roboto-Regular.ttf")).readBytes().contentEquals(byteArrayOf(8)))
+            assertTrue(output.getInputStream(output.getEntry("com.android.systemui")).readBytes().contentEquals(byteArrayOf(2)))
+            assertTrue(output.getInputStream(output.getEntry("miui.systemui.plugin")).readBytes().contentEquals(byteArrayOf(3)))
+            assertTrue(output.getInputStream(output.getEntry("framework-miui-res")).readBytes().contentEquals(byteArrayOf(4)))
+            assertTrue(output.getInputStream(output.getEntry("com.android.settings")).readBytes().contentEquals(byteArrayOf(5)))
+            assertTrue(output.getEntry("rights/rights.xml") == null)
+            val description = output.getInputStream(output.getEntry("description.xml")).bufferedReader().readText()
+            assertTrue("<uiVersion>17</uiVersion>" in description)
+            assertTrue("<miuiAdapterVersion>4.2</miuiAdapterVersion>" in description)
+            assertTrue("<author>VedaT</author>" in description)
+        }
+    }
+
+    @Test
     fun `composes two themes deterministically excludes rights and reopens output`() {
         val parser = MtzParser()
         val first = parser.parse(zip("icons" to byteArrayOf(1, 2), "rights/rights.xml" to byteArrayOf(9)))

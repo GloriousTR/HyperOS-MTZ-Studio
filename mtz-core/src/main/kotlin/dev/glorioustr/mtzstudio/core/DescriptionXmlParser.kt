@@ -4,22 +4,28 @@ import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
 import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
+import org.xml.sax.SAXException
 
 internal object DescriptionXmlParser {
     fun parse(bytes: ByteArray): MtzMetadata {
         try {
+            rejectDeclarations(bytes)
             val factory = DocumentBuilderFactory.newInstance().apply {
                 isNamespaceAware = true
-                isXIncludeAware = false
-                setExpandEntityReferences(false)
-                setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-                setFeature("http://xml.org/sax/features/external-general-entities", false)
-                setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-                setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-                setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "")
-                setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
+                isValidating = false
+                optionalSetting { isXIncludeAware = false }
+                optionalSetting { setExpandEntityReferences(false) }
+                optionalSetting { setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
+                optionalSetting { setFeature("http://xml.org/sax/features/external-general-entities", false) }
+                optionalSetting { setFeature("http://xml.org/sax/features/external-parameter-entities", false) }
+                optionalSetting { setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false) }
+                optionalSetting { setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "") }
+                optionalSetting { setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "") }
             }
-            val document = factory.newDocumentBuilder().parse(ByteArrayInputStream(bytes))
+            val builder = factory.newDocumentBuilder().apply {
+                setEntityResolver { _, _ -> throw SAXException("External XML entities are disabled") }
+            }
+            val document = builder.parse(ByteArrayInputStream(bytes))
             val fields = linkedMapOf<String, String>()
             collect(document.documentElement, fields)
             return MtzMetadata(
@@ -60,5 +66,20 @@ internal object DescriptionXmlParser {
 
     private fun first(fields: Map<String, String>, vararg names: String): String? =
         names.firstNotNullOfOrNull(fields::get)
-}
 
+    private fun rejectDeclarations(bytes: ByteArray) {
+        val text = String(bytes, Charsets.ISO_8859_1)
+        if (FORBIDDEN_DECLARATION.containsMatchIn(text)) {
+            throw UnsafeMtzException(
+                UnsafeMtzException.Reason.UNSAFE_XML,
+                "description.xml contains a forbidden DOCTYPE or ENTITY declaration",
+            )
+        }
+    }
+
+    private inline fun DocumentBuilderFactory.optionalSetting(block: DocumentBuilderFactory.() -> Unit) {
+        runCatching { block() }
+    }
+
+    private val FORBIDDEN_DECLARATION = Regex("<!\\s*(DOCTYPE|ENTITY)\\b", RegexOption.IGNORE_CASE)
+}

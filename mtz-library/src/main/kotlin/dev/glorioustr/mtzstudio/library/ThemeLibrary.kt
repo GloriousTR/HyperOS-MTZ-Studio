@@ -20,6 +20,7 @@ data class LibraryTheme(
     val displayName: String,
     val importedAt: Instant,
     val archive: MtzArchive,
+    val includeInThemeGallery: Boolean = false,
 )
 
 data class LibrarySnapshot(
@@ -42,14 +43,33 @@ class ThemeLibrary internal constructor(
     private val exportsRoot: Path = filesRoot.resolve("exports")
     private val historyRoot: Path = filesRoot.resolve("mtz-history")
 
-    fun importTheme(input: InputStream, suggestedName: String?): LibraryTheme {
+    fun importTheme(
+        input: InputStream,
+        suggestedName: String?,
+        observer: ImportObserver = ImportObserver.NONE,
+        includeInThemeGallery: Boolean = false,
+    ): LibraryTheme {
         Files.createDirectories(libraryRoot)
         val staging = libraryRoot.resolve(".import-${UUID.randomUUID()}.tmp")
+        var stage = "staging"
+        notify(observer, ImportEvent.StagingCreated(staging.fileName.toString()))
         try {
-            copyBounded(input, staging)
-            parser.parse(staging)
+            stage = "copy"
+            notify(observer, ImportEvent.CopyStarted)
+            val copiedBytes = copyBounded(input, staging, observer)
+            notify(observer, ImportEvent.CopyCompleted(copiedBytes))
+
+            stage = "validation"
+            notify(observer, ImportEvent.ValidationStarted)
+            val stagedArchive = parser.parse(staging)
+            notify(
+                observer,
+                ImportEvent.ValidationCompleted(stagedArchive.sha256, stagedArchive.entries.size),
+            )
 
             val id = ThemeId(UUID.randomUUID().toString())
+            stage = "commit"
+            notify(observer, ImportEvent.CommitStarted(id.value))
             val themeDirectory = libraryRoot.resolve(id.value)
             Files.createDirectory(themeDirectory)
             val source = themeDirectory.resolve("source.mtz")
@@ -63,15 +83,24 @@ class ThemeLibrary internal constructor(
                         ?: "Imported MTZ",
                     importedAt = Instant.now(),
                     archive = archive,
+                    includeInThemeGallery = includeInThemeGallery,
                 )
                 writeManifest(themeDirectory, theme)
+                notify(observer, ImportEvent.CommitCompleted(id.value, archive.sha256))
                 return theme
             } catch (error: Exception) {
                 themeDirectory.toFile().deleteRecursively()
                 throw error
             }
+        } catch (error: Exception) {
+            notify(
+                observer,
+                ImportEvent.Failed(stage, error.message ?: error::class.simpleName ?: "unknown error"),
+            )
+            throw error
         } finally {
-            Files.deleteIfExists(staging)
+            val removed = Files.deleteIfExists(staging)
+            notify(observer, ImportEvent.StagingCleaned(removed))
         }
     }
 
@@ -104,6 +133,23 @@ class ThemeLibrary internal constructor(
         return candidate
     }
 
+    fun exportTheme(theme: LibraryTheme): Path {
+        val current = parser.parse(theme.archive.source)
+        if (current.sha256 != theme.archive.sha256) error("Private source hash changed")
+        val target = newExportPath(theme.archive.metadata?.name ?: theme.displayName)
+        Files.copy(theme.archive.source, target)
+        return target
+    }
+
+    fun deleteTheme(themeId: ThemeId): Boolean {
+        val themeDirectory = libraryRoot.resolve(themeId.value)
+        return if (Files.exists(themeDirectory)) {
+            themeDirectory.toFile().deleteRecursively()
+        } else {
+            false
+        }
+    }
+
     fun recordComposition(result: CompositionResult) {
         Files.createDirectories(historyRoot)
         val record = Properties().apply {
@@ -123,10 +169,11 @@ class ThemeLibrary internal constructor(
         Files.newOutputStream(target).use { record.store(it, "HyperOS MTZ Studio provenance") }
     }
 
-    private fun copyBounded(input: InputStream, target: Path) {
+    private fun copyBounded(input: InputStream, target: Path, observer: ImportObserver): Long {
         Files.newOutputStream(target).use { output ->
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             var total = 0L
+            var lastReported = 0L
             while (true) {
                 val count = input.read(buffer)
                 if (count < 0) break
@@ -138,8 +185,18 @@ class ThemeLibrary internal constructor(
                 }
                 output.write(buffer, 0, count)
                 total += count
+                if (total - lastReported >= PROGRESS_INTERVAL_BYTES) {
+                    notify(observer, ImportEvent.CopyProgress(total))
+                    lastReported = total
+                }
             }
+            if (total != lastReported) notify(observer, ImportEvent.CopyProgress(total))
+            return total
         }
+    }
+
+    private fun notify(observer: ImportObserver, event: ImportEvent) {
+        runCatching { observer.onEvent(event) }
     }
 
     private fun readTheme(directory: Path): LibraryTheme {
@@ -155,6 +212,7 @@ class ThemeLibrary internal constructor(
             displayName = manifest.required("displayName"),
             importedAt = Instant.parse(manifest.required("importedAt")),
             archive = archive,
+            includeInThemeGallery = manifest.getProperty("includeInThemeGallery", "false").toBoolean(),
         )
     }
 
@@ -164,6 +222,7 @@ class ThemeLibrary internal constructor(
             setProperty("displayName", theme.displayName)
             setProperty("importedAt", theme.importedAt.toString())
             setProperty("sha256", theme.archive.sha256)
+            setProperty("includeInThemeGallery", theme.includeInThemeGallery.toString())
         }
         val temporary = directory.resolve(".manifest-${UUID.randomUUID()}.tmp")
         Files.newOutputStream(temporary).use { manifest.store(it, "HyperOS MTZ Studio library item") }
@@ -180,5 +239,8 @@ class ThemeLibrary internal constructor(
             Files.move(source, target)
         }
     }
-}
 
+    private companion object {
+        const val PROGRESS_INTERVAL_BYTES = 8L * 1024 * 1024
+    }
+}

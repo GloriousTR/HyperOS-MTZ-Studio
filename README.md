@@ -1,41 +1,97 @@
 # HyperOS MTZ Studio
 
-HyperOS MTZ Studio is an independent Android application for inspecting MTZ files owned by the user, keeping safe private working copies, and composing selected theme components into a new verifiable MTZ. It does not install themes permanently and does not bypass Xiaomi Theme Manager licensing, trial, rights, or rollback behavior.
+<p align="center">
+  <strong>Modern, Powerful Theme Composer & Customization Studio for Xiaomi HyperOS & MIUI</strong>
+</p>
 
-## Spike scope
+---
 
-The first spike provides:
+## 🌟 Overview
 
-- MTZ selection through Android Storage Access Framework.
-- Bounded copying into app-private storage and SHA-256 calculation.
-- Safe ZIP inspection and hardened `description.xml` parsing.
-- Component classification and a local theme library.
-- Selection of components from two or more source themes.
-- Deterministic composition, reopen verification, provenance history, and sharing.
-- Startup Theme Manager compatibility diagnostics for the user-supplied Global-version behavior matrix.
-- An explicit, root-authorized compatibility downgrade flow that accepts only a user-selected, package/version/signature-verified `2.15.5.46` APK.
-- An isolated Theme Manager tester adapter seam.
+**HyperOS MTZ Studio** is a comprehensive, standalone Android utility designed for Xiaomi HyperOS and MIUI devices. It empowers users to inspect, deconstruct, mix, and compose custom `.mtz` themes with precision, safety, and full component flexibility.
 
-Xposed, hooks, fabricated rights/identifiers, DRM changes, APK downloads, a theme store, and permanent theme installation are deliberately out of scope. Root is restricted to the confirmed compatibility action; it is never used to apply an MTZ or bypass a license/result check.
+---
 
-## Modules
+## ✨ Key Features
+
+- **🎨 Temanı Oluştur (Theme Mixer):**
+  - Select a **Base Theme (Temel Tema)** to automatically populate all theme components.
+  - Seamlessly mix and swap individual components from different MTZ themes:
+    - 📱 **Simgeler (Icons)**
+    - 🔒 **Kilit Ekranı Stili (Lock Screen)**
+    - 🖼️ **Duvar Kâğıdı (Wallpaper)**
+    - 📶 **Durum Çubuğu (Status Bar)**
+    - 🏠 **Başlatıcı (Launcher)**
+    - 🌙 **Her Zaman Açık Ekran (Always On Display / AOD)**
+    - 🔤 **Yazı Tipi (Fonts)**
+
+- **📸 Custom Gallery Wallpapers:**
+  - Assign distinct high-resolution custom images directly from your Gallery for the **Home Screen** and **Lock Screen** independently during theme composition.
+
+- **📥 Selective Device Theme Import:**
+  - Scan installed themes directly from Xiaomi Themes storage (`/data/system/theme/` and storage caches).
+  - Select and import only the themes you want with a clean multi-select picker dialog to save device storage.
+
+- **💾 Public Storage Export:**
+  - Composed themes are automatically exported to both the internal library and your public storage (`Downloads/MTZ Studio/<ThemeName>.mtz`) for instant sharing and manual backup.
+
+- **🛡️ Embedded Global Theme Protection (LibXposed / Vector Hook):**
+  - Built-in, lightweight LibXposed DRM validation bypass.
+  - Prevents Xiaomi Theme Manager from automatically resetting 3rd-party MTZ themes back to default after 15–30 minutes or device reboots.
+  - Works seamlessly with modern Xposed frameworks (Vector, LSPosed) without modifying system APKs or risking bootloops.
+
+- **☁️ Cloud Backup & Synchronization:**
+  - Backup and restore your custom MTZ library to cloud storage and Google Drive.
+
+- **⚡ Live Diagnostics & Hardened Verification:**
+  - Real-time logging of MTZ import flows.
+  - Hardened XML parsing (`description.xml`), deterministic ZIP compression, SHA-256 integrity validation, and structure diagnostics.
+
+- **💎 Modern Material 3 & Liquid Glass UI:**
+  - Beautiful, responsive Compose interface supporting Dark Mode, AMOLED Black, and Liquid Glass backdrop styling.
+
+---
+
+## 🏗️ Architecture & Modules
+
+The project is structured into modular Gradle subprojects:
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Compose UI, SAF picker, orchestration, and Android share sheet |
-| `mtz-core` | Safe ZIP inspection, metadata parsing, hashes, and component models |
-| `mtz-library` | App-private source copies, manifests, and composition history |
-| `mtz-composer` | Selection validation, conflict policy, deterministic writing, and reopen verification |
-| `tester-adapter` | Theme Manager version diagnostics, verified root downgrade boundary, and optional public-intent seam; no hidden API or hook |
+| **`app`** | Jetpack Compose UI, Navigation, LibXposed Module (`ThemeProtectionModule`), Shevery/Root IPC, SAF pickers, and Export Coordinator. |
+| **`mtz-core`** | Hardened MTZ parsing, XML deserialization, cryptographic SHA-256 calculation, and component models. |
+| **`mtz-library`** | App-private theme storage, metadata indexing, device theme scanner, and backup/restore engine. |
+| **`mtz-composer`** | Deterministic multi-layer theme composer, asset recombination, and reopen verification. |
+| **`tester-adapter`** | Xiaomi Theme Manager version inspector, compatibility heuristics, and privileged command runners (Su / Shevery). |
 
-See [docs/architecture.md](docs/architecture.md), [docs/threat-model.md](docs/threat-model.md), [docs/spike-plan.md](docs/spike-plan.md), and [docs/theme-manager-compatibility.md](docs/theme-manager-compatibility.md).
+---
 
-## Build
+## 🛠️ Building & Requirements
 
-Requirements: JDK 17 or newer and Android SDK 36.
+- **JDK:** 17 or newer
+- **Android SDK:** API 34+ (Target SDK 36, Min SDK 29)
+- **Gradle:** 8.11.1+
+
+### Build Commands
 
 ```shell
-./gradlew test assembleDebug
+# Run unit tests
+./gradlew test
+
+# Assemble Debug APK
+./gradlew assembleDebug
+
+# Assemble Release APK
+./gradlew assembleRelease
 ```
 
-On Windows use `gradlew.bat test assembleDebug`.
+On Windows PowerShell:
+```powershell
+.\gradlew.bat test assembleDebug
+```
+
+---
+
+## 📜 License
+
+This project is open-source and intended for personal customization and device enhancement. All trademarks, logos, and brand names are the property of their respective owners.

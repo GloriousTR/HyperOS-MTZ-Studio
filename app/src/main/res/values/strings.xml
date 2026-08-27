@@ -1,4 +1,288 @@
 <resources>
     <string name="app_name">HyperOS MTZ Studio</string>
-</resources>
 
+    <!-- Navigation & Destinations -->
+    <string name="dest_home">HyperOS MTZ Studio</string>
+    <string name="dest_themes">Themes</string>
+    <string name="dest_wallpapers">Wallpapers</string>
+    <string name="dest_ringtones">Ringtones</string>
+    <string name="dest_fonts">Fonts</string>
+    <string name="dest_lockscreen">Lock screen style</string>
+    <string name="dest_icons">Icons</string>
+    <string name="dest_system_ui">Status bar</string>
+    <string name="dest_system_ui_plugin">Control center and notifications</string>
+    <string name="dest_launcher">Launcher</string>
+    <string name="dest_aod">Always-on display</string>
+    <string name="dest_framework">System resources</string>
+    <string name="dest_other">Other components</string>
+    <string name="dest_personalize">Create Theme</string>
+    <string name="dest_appearance">Appearance</string>
+    <string name="dest_backup">Backup</string>
+    <string name="dest_diagnostics">Live Diagnostics</string>
+    <string name="dest_theme_protection">Global theme protection</string>
+
+    <!-- Categories -->
+    <string name="category_icons">Icons</string>
+    <string name="category_lockscreen">Lock screen style</string>
+    <string name="category_wallpaper">Wallpaper</string>
+    <string name="category_framework">System resources</string>
+    <string name="category_system_ui">Status bar</string>
+    <string name="category_system_ui_plugin">Control center and notifications</string>
+    <string name="category_launcher">Launcher</string>
+    <string name="category_aod">Always-on display</string>
+    <string name="category_ringtone">Ringtone</string>
+    <string name="category_font">Font</string>
+    <string name="category_other">Other component</string>
+
+    <!-- Units & Actions -->
+    <string name="unit_local_theme">local theme</string>
+    <string name="unit_component">component</string>
+    <string name="menu_title">Settings</string>
+    <string name="menu_subtitle">Application settings and tools</string>
+    <string name="menu_close">Close</string>
+    <string name="nav_back">‹ Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Remove</string>
+    <string name="delete_theme_dialog_title">Remove theme?</string>
+    <string name="delete_theme_dialog_desc">\"%1$s\" will be removed from your private library. This action cannot be undone.</string>
+    <string name="status_theme_removed">\"%1$s\" removed from library</string>
+    <string name="not_selected">Not selected</string>
+    <string name="entries_count">%1$d entries</string>
+
+    <!-- Overlay Menu -->
+    <string name="overlay_appearance_desc">Change color mode and content style</string>
+    <string name="overlay_backup_desc">Backup or restore theme library</string>
+    <string name="overlay_diagnostics_desc">Monitor import workflow and results</string>
+    <string name="overlay_theme_protection_desc">Prevent third-party themes from reverting to default</string>
+    <string name="xposed_module_description">Built-in Xposed support that protects local MTZ themes on Global devices</string>
+    <string name="theme_protection_title">Global theme protection</string>
+    <string name="theme_protection_active">Protection is active at both validation points</string>
+    <string name="theme_protection_inactive">Setup or restart is required</string>
+    <string name="theme_protection_explanation">Prevents Xiaomi validation from reverting a locally imported theme after it is applied. Support is built into the MTZ Studio APK; no separate Xposed module is installed.</string>
+    <string name="theme_protection_status_title">Protection status</string>
+    <string name="theme_protection_framework">Xposed framework</string>
+    <string name="theme_protection_framework_missing">Enable the MTZ Studio module once in Vector/LSPosed</string>
+    <string name="theme_protection_compatibility">Theme Manager compatibility</string>
+    <string name="theme_protection_compatible">Required rights check was found</string>
+    <string name="theme_protection_incompatible">No safe match was found in this version: %1$s</string>
+    <string name="theme_protection_checking">Checking Theme Manager…</string>
+    <string name="theme_protection_scope">Required scopes</string>
+    <string name="theme_protection_scope_ready">System and Theme Manager are approved</string>
+    <string name="theme_protection_scope_missing">Vector/LSPosed scope approval is required</string>
+    <string name="theme_protection_system_hook">System theme validation</string>
+    <string name="theme_protection_manager_hook">Theme Manager rights check</string>
+    <string name="theme_protection_hook_ready">Loaded and running</string>
+    <string name="theme_protection_reboot_required">Not loaded; enable the module and restart</string>
+    <string name="theme_protection_open_framework">Open Xposed manager</string>
+    <string name="theme_protection_enable">Enable protection</string>
+    <string name="theme_protection_waiting_approval">Waiting for Xposed scope approval…</string>
+    <string name="theme_protection_restart">Restart device</string>
+    <string name="theme_protection_activation_hint">First enable HyperOS MTZ Studio in the Xposed manager, then return here and restart the device.</string>
+    <string name="theme_protection_refresh">Refresh status</string>
+    <string name="theme_protection_disable">Disable protection</string>
+    <string name="theme_protection_notice">This feature requires root and an active Vector/LSPosed-compatible Xposed framework. Shizuku or root permission alone cannot replace the framework. Use it only with local themes you own or have permission to use.</string>
+    <string name="theme_protection_restart_title">Restart the device?</string>
+    <string name="theme_protection_restart_message">First make sure HyperOS MTZ Studio is enabled in the Xposed manager. The restart loads the protection into the system and Theme Manager.</string>
+    <string name="theme_protection_restart_confirm">Restart</string>
+    <string name="theme_protection_restart_cancel">Cancel</string>
+    <string name="theme_protection_manager_missing">Vector or LSPosed manager was not found</string>
+    <string name="theme_protection_manager_open_failed">Xposed manager could not be opened: %1$s</string>
+    <string name="theme_protection_reboot_failed">Could not start restart: %1$s</string>
+
+    <!-- Home / MTZ Import -->
+    <string name="mtz_import_title">MTZ Import</string>
+    <string name="mtz_import_desc">Securely copy, verify, and categorize components from your owned MTZ file to the private library.</string>
+    <string name="mtz_import_btn_select">Select MTZ file</string>
+    <string name="mtz_import_btn_importing">Importing…</string>
+    <string name="status_loading_library">Loading private library…</string>
+    <string name="status_library_warnings">Loaded with %1$d private library warnings</string>
+    <string name="status_library_empty">Select an MTZ you own to import</string>
+    <string name="status_verified_themes">%1$d verified local MTZ files</string>
+    <string name="status_copying_verifying">Copying and verifying selected MTZ…</string>
+    <string name="status_import_rejected">Import rejected: %1$s</string>
+    <string name="error_open_document">The selected document could not be opened</string>
+
+    <!-- Themes Screen -->
+    <string name="empty_themes_title">No verified themes yet</string>
+    <string name="empty_themes_desc">You can add a theme by opening the MTZ Import section in the main menu.</string>
+    <string name="empty_category_title">No content in this category</string>
+    <string name="empty_category_desc">You can import another MTZ or browse the Themes section.</string>
+    <string name="category_select_hint">Selecting a source will update this component on the Personalize Theme screen.</string>
+
+    <!-- Personalize / Create Theme Screen -->
+    <string name="empty_personalize_title">No components to create theme</string>
+    <string name="empty_personalize_desc">Add at least one theme from the MTZ Import section first.</string>
+    <string name="base_theme_title">Base Theme (Main Theme)</string>
+    <string name="base_theme_desc">The complete base theme is preserved; only the areas you select are replaced from other sources.</string>
+    <string name="base_theme_select_btn">Select Base Theme</string>
+    <string name="base_theme_change_btn">Change</string>
+    <string name="base_theme_clear_btn">Clear</string>
+    <string name="base_theme_dialog_title">Select Base Theme</string>
+    <string name="save_theme_as">Save theme as</string>
+    <string name="theme_name_label">Theme name</string>
+    <string name="default_composition_name">My HyperOS Mix</string>
+    <string name="personalize_stats">%1$d components · %2$d source themes</string>
+    <string name="status_composing">Composing new MTZ and saving to Downloads/MTZ Studio…</string>
+    <string name="status_compose_success">\"%1$s\" created and saved to Downloads/MTZ Studio</string>
+    <string name="status_compose_failed">Composition failed: %1$s</string>
+
+    <!-- Appearance Screen -->
+    <string name="appearance_color_mode_title">Color mode</string>
+    <string name="appearance_content_style_title">Content style</string>
+    <string name="appearance_system_title">System default</string>
+    <string name="appearance_system_desc">Follows the device light or dark mode setting</string>
+    <string name="appearance_light_title">Light Mode</string>
+    <string name="appearance_light_desc">Always light appearance</string>
+    <string name="appearance_dark_title">Dark Mode</string>
+    <string name="appearance_dark_desc">Always dark appearance</string>
+    <string name="appearance_amoled_title">AMOLED</string>
+    <string name="appearance_amoled_desc">Dark appearance with pure black background</string>
+    <string name="style_default_title">Default</string>
+    <string name="style_default_desc">Solid colors with classic card and menu layout</string>
+    <string name="style_material_you_title">Material You</string>
+    <string name="style_material_you_desc">Dynamic colors sampled from wallpaper with rounded Material 3 layout</string>
+    <string name="style_liquid_glass_title">Liquid Glass</string>
+    <string name="style_liquid_glass_desc">Translucent, glowing and fluid glass surfaces</string>
+
+    <!-- Backup & Restore Screen -->
+    <string name="tab_backup">Backup</string>
+    <string name="tab_restore">Restore</string>
+    <string name="section_cloud_storage">Cloud Storage</string>
+    <string name="section_local_storage">Local Storage</string>
+    <string name="cloud_not_connected">No cloud account connected</string>
+    <string name="cloud_connected_as">Connected: %1$s (%2$s)</string>
+    <string name="cloud_last_backup">Last cloud backup: %1$s</string>
+    <string name="cloud_no_previous_backup">No backup stored in cloud yet</string>
+    <string name="btn_connect_cloud">Connect Cloud Account</string>
+    <string name="btn_disconnect_cloud">Disconnect Account</string>
+    <string name="btn_backup_to_cloud">Backup Directly to Cloud</string>
+    <string name="btn_restore_from_cloud">Restore From Cloud</string>
+    <string name="btn_backup_to_local">Save Backup to Device (.zip)</string>
+    <string name="btn_restore_from_local">Select Backup File (.zip)</string>
+    <string name="cloud_backup_desc">Directly uploads your verified themes, exports, and diagnostics to your private cloud storage folder without opening file pickers.</string>
+    <string name="cloud_restore_desc">Restores the latest backup package directly from your connected cloud storage folder into the application library.</string>
+    <string name="local_backup_desc">Exports all themes and settings into a standalone .zip archive file saved to your device storage or SD card.</string>
+    <string name="local_restore_desc">Imports a previously exported .zip backup file from your device storage into the application library.</string>
+
+    <!-- Cloud Account Dialog -->
+    <string name="cloud_dialog_title">Connect Cloud Account</string>
+    <string name="cloud_dialog_subtitle">Choose a cloud service provider to sync your theme backups</string>
+    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
+    <string name="cloud_google_desc">Select a Google account configured on this device</string>
+    <string name="cloud_webdav_desc">Connect to a private cloud server with URL and password</string>
+    <string name="cloud_account_email_label">Google Account Email</string>
+    <string name="cloud_server_url_label">WebDAV Server URL</string>
+    <string name="cloud_username_label">Username</string>
+    <string name="cloud_password_label">App Password</string>
+    <string name="cloud_btn_connect">Connect</string>
+    <string name="cloud_btn_cancel">Cancel</string>
+
+    <string name="status_no_backup_yet">No backup or restore operation in this session yet</string>
+    <string name="status_backup_preparing">Preparing backup package…</string>
+    <string name="status_backup_success">%1$d themes and %2$d files backed up successfully</string>
+    <string name="status_backup_failed">Backup failed: %1$s</string>
+    <string name="status_restore_preparing">Verifying and restoring backup…</string>
+    <string name="status_restore_success">Backup restored · %1$d themes · %2$d files</string>
+    <string name="status_restore_failed">Restore failed: %1$s</string>
+    <string name="status_cloud_connected">Cloud connected: %1$s</string>
+    <string name="status_cloud_disconnected">Cloud account disconnected</string>
+
+    <!-- Custom Wallpapers -->
+    <string name="custom_wallpaper_section_title">Custom Wallpapers (From Gallery)</string>
+    <string name="custom_home_wallpaper_title">Home Screen Wallpaper</string>
+    <string name="custom_home_wallpaper_desc">Use your own custom photo from device gallery as the home screen wallpaper</string>
+    <string name="custom_lock_wallpaper_title">Lock Screen Wallpaper</string>
+    <string name="custom_lock_wallpaper_desc">Preserves lock screen clock style, widgets, and animations; only replaces the background photo</string>
+    <string name="btn_pick_gallery_image">Pick Photo from Gallery</string>
+    <string name="btn_remove_custom_wallpaper">Remove</string>
+    <string name="custom_wallpaper_selected">Custom photo selected</string>
+    <string name="custom_home_wallpaper_selected">Custom home wallpaper selected</string>
+    <string name="custom_lock_wallpaper_selected">Custom lock screen wallpaper selected (Clock/Widgets preserved)</string>
+
+    <string name="status_cloud_uploading">Uploading backup to %1$s…</string>
+    <string name="status_cloud_upload_success">Cloud backup successfully synced to %1$s</string>
+    <string name="status_cloud_downloading">Downloading backup from %1$s…</string>
+    <string name="status_cloud_no_backup">No previous cloud backup found on %1$s</string>
+    <string name="error_backup_target">The selected backup target could not be opened</string>
+    <string name="error_restore_target">The selected backup file could not be opened</string>
+
+    <!-- Apply Theme Dialog -->
+    <string name="apply_dialog_title">Apply theme?</string>
+    <string name="apply_dialog_desc">%1$s will be transferred to Theme Manager as a local theme and applied. Theme components may restart the system interface.</string>
+    <string name="status_preparing_apply">Preparing theme for Theme Manager…</string>
+    <string name="status_apply_success">%1$s transferred to Theme Manager and applied</string>
+    <string name="status_apply_cancelled">Theme Manager could not complete the operation or was cancelled</string>
+    <string name="status_apply_failed">Could not apply theme: %1$s</string>
+
+    <!-- Live Diagnostics Screen -->
+    <string name="diag_title">Live Diagnostics</string>
+    <string name="diag_desc">Import checkpoints are written to private storage resilient to reboot. Raw file URIs are not recorded.</string>
+    <string name="diag_phase">Phase: %1$s</string>
+    <string name="diag_copied">%1$s copied</string>
+    <string name="diag_interrupted_session">Interrupted session: %1$s</string>
+    <string name="diag_orphan_staging">Protected incomplete import: %1$d files · %2$s</string>
+    <string name="btn_export_diagnostics">Export diagnostics package</string>
+    <string name="diag_export_failed">Failed to export diagnostics: %1$s</string>
+    <string name="diag_recent_events">Recent events</string>
+    <string name="diag_phase_staging_created">Staging area ready</string>
+    <string name="diag_phase_copying">Copying MTZ</string>
+    <string name="diag_phase_copy_completed">Copy completed</string>
+    <string name="diag_phase_validating">Validating ZIP/MTZ</string>
+    <string name="diag_phase_validated">MTZ validated</string>
+    <string name="diag_phase_committing">Saving to private library</string>
+
+    <!-- Theme Manager Compatibility Card -->
+    <string name="tm_card_title">Theme Manager compatibility</string>
+    <string name="tm_checking_version">Checking Theme Manager version…</string>
+    <string name="tm_recommended_active">Recommended version active. Independent local MTZ import behavior is expected.</string>
+    <string name="tm_recommendation_notice">%1$s is recommended for independent local MTZ import.</string>
+    <string name="tm_verifying_apk">Verifying APK package, version, SHA-256 and Xiaomi signature…</string>
+    <string name="tm_apk_verified">APK verified: %1$s · SHA-256 %2$s</string>
+    <string name="tm_apk_rejected">APK rejected: %1$s</string>
+    <string name="tm_error_apk_open">The selected APK could not be opened</string>
+    <string name="tm_device_installed_compatible">%1$s · Compatible</string>
+    <string name="tm_device_installed_incompatible">Device: %1$s</string>
+    <string name="tm_version_unknown">unknown version</string>
+    <string name="tm_device_not_found">No supported Xiaomi Theme Manager package found</string>
+    <string name="tm_btn_select_apk_version">Select %1$s APK</string>
+    <string name="tm_verified_apk_info">Verified APK: %1$s %2$s\nSHA-256: %3$s</string>
+    <string name="tm_btn_downgrade_to_version">Switch to %1$s with Root</string>
+    <string name="tm_risk_checkbox">I understand that downgrading with root may restart Theme Manager and could be rejected by ROM.</string>
+    <string name="tm_dialog_title">Change Theme Manager version?</string>
+    <string name="tm_dialog_text">Only the verified %1$s package will be targeted. The command runs `pm install -r -d` via root; it does not write system files or bypass verification. The operation may fail; back up your theme settings beforehand.</string>
+    <string name="tm_dialog_confirm">Confirm and execute</string>
+    <string name="tm_status_waiting_root">Waiting for root permission and package manager result…</string>
+    <string name="tm_status_root_failed">Root operation failed: %1$s</string>
+
+    <!-- Shevery Authorization Gate -->
+    <string name="shevery_dialog_title">Shevery permission required</string>
+    <string name="shevery_dialog_text">Grant Shevery access to HyperOS MTZ Studio to securely perform operations that require root, such as modifying Theme Manager version.</string>
+    <string name="shevery_btn_grant">Grant permission</string>
+    <string name="shevery_btn_skip">Skip for now</string>
+
+    <!-- Device theme extraction -->
+    <string name="device_theme_import_title">Import themes from Theme Manager</string>
+    <string name="device_theme_import_desc">Select and extract themes from Xiaomi Theme Manager as reusable local MTZ files.</string>
+    <string name="device_theme_import_button">Select themes to import</string>
+    <string name="device_theme_select_dialog_title">Select themes to import</string>
+    <string name="device_theme_select_all">Select all</string>
+    <string name="device_theme_deselect_all">Clear</string>
+    <string name="device_theme_import_selected_btn">Import selected (%1$d)</string>
+    <string name="device_theme_already_imported_badge">In library</string>
+    <string name="device_theme_scanning">Scanning Theme Manager themes…</string>
+    <string name="device_font_import_title">Get active font as MTZ</string>
+    <string name="device_font_import_desc">Packages the font currently applied by Theme Manager as a reusable local MTZ.</string>
+    <string name="device_font_import_button">Import active font</string>
+    <string name="device_active_font_name">Active system font</string>
+    <string name="device_import_idle">Nothing has been read from Theme Manager yet</string>
+    <string name="device_import_working">Reading and verifying with root access…</string>
+    <string name="device_import_added">%1$s was added to the private MTZ library</string>
+    <string name="device_import_duplicate">%1$s is already in the private MTZ library</string>
+    <string name="device_theme_import_summary">%1$d themes found · %2$d added · %3$d already present · %4$d failed</string>
+    <string name="device_import_failed">Could not read from Theme Manager: %1$s</string>
+    <string name="action_export_mtz">Export MTZ</string>
+    <string name="status_export_failed">MTZ could not be exported: %1$s</string>
+</resources>

@@ -28,6 +28,16 @@ data class CompositionMetadata(
 data class CompositionRequest(
     val metadata: CompositionMetadata,
     val selections: List<ComponentSelection>,
+    val baseSource: CompositionSource? = null,
+    val customHomeWallpaperBytes: ByteArray? = null,
+    val customLockWallpaperBytes: ByteArray? = null,
+)
+
+data class FontExportRequest(
+    val metadata: CompositionMetadata,
+    val fontFile: Path,
+    val archiveFileName: String = "Roboto-Regular.ttf",
+    val previewFile: Path? = null,
 )
 
 data class ProvenanceEntry(
@@ -46,4 +56,3 @@ data class CompositionResult(
 )
 
 class CompositionException(message: String, cause: Throwable? = null) : Exception(message, cause)
-

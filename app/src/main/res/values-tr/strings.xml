@@ -1,0 +1,288 @@
+<resources>
+    <string name="app_name">HyperOS MTZ Studio</string>
+
+    <!-- Navigation & Destinations -->
+    <string name="dest_home">HyperOS MTZ Studio</string>
+    <string name="dest_themes">Temalar</string>
+    <string name="dest_wallpapers">Duvar kâğıtları</string>
+    <string name="dest_ringtones">Zil sesleri</string>
+    <string name="dest_fonts">Yazı tipleri</string>
+    <string name="dest_lockscreen">Kilit ekranı stili</string>
+    <string name="dest_icons">Simgeler</string>
+    <string name="dest_system_ui">Durum çubuğu</string>
+    <string name="dest_system_ui_plugin">Kontrol merkezi ve bildirim paneli</string>
+    <string name="dest_launcher">Başlatıcı</string>
+    <string name="dest_aod">Her zaman açık ekran</string>
+    <string name="dest_framework">Sistem kaynakları</string>
+    <string name="dest_other">Diğer bileşenler</string>
+    <string name="dest_personalize">Temanı Oluştur</string>
+    <string name="dest_appearance">Görünüm</string>
+    <string name="dest_backup">Yedekleme</string>
+    <string name="dest_diagnostics">Live Diagnostics</string>
+    <string name="dest_theme_protection">Global tema koruması</string>
+ 
+    <!-- Categories -->
+    <string name="category_icons">Simgeler</string>
+    <string name="category_lockscreen">Kilit ekranı stili</string>
+    <string name="category_wallpaper">Duvar kâğıdı</string>
+    <string name="category_framework">Sistem kaynakları</string>
+    <string name="category_system_ui">Durum çubuğu</string>
+    <string name="category_system_ui_plugin">Kontrol merkezi ve bildirim paneli</string>
+    <string name="category_launcher">Başlatıcı</string>
+    <string name="category_aod">Her zaman açık ekran</string>
+    <string name="category_ringtone">Zil sesi</string>
+    <string name="category_font">Yazı tipi</string>
+    <string name="category_other">Diğer bileşen</string>
+ 
+    <!-- Units & Actions -->
+    <string name="unit_local_theme">yerel tema</string>
+    <string name="unit_component">bileşen</string>
+    <string name="menu_title">Ayarlar</string>
+    <string name="menu_subtitle">Uygulama ayarları ve araçları</string>
+    <string name="menu_close">Kapat</string>
+    <string name="nav_back">‹ Geri</string>
+    <string name="action_cancel">İptal</string>
+    <string name="action_apply">Uygula</string>
+    <string name="action_share">Paylaş</string>
+    <string name="action_delete">Kaldır</string>
+    <string name="delete_theme_dialog_title">Temayı kaldır?</string>
+    <string name="delete_theme_dialog_desc">\"%1$s\" özel kitaplığınızdan kaldırılacak. Bu işlem geri alınamaz.</string>
+    <string name="status_theme_removed">\"%1$s\" kitaplıktan kaldırıldı</string>
+    <string name="not_selected">Seçilmedi</string>
+    <string name="entries_count">%1$d girdi</string>
+ 
+    <!-- Overlay Menu -->
+    <string name="overlay_appearance_desc">Renk modunu ve içerik tasarımını değiştir</string>
+    <string name="overlay_backup_desc">Tema kitaplığını yedekle veya geri yükle</string>
+    <string name="overlay_diagnostics_desc">İçe aktarma akışını ve sonuçlarını izle</string>
+    <string name="overlay_theme_protection_desc">Üçüncü taraf temaların varsayılana dönmesini engelle</string>
+    <string name="xposed_module_description">Global cihazlarda yerel MTZ temalarını koruyan yerleşik Xposed desteği</string>
+    <string name="theme_protection_title">Global tema koruması</string>
+    <string name="theme_protection_active">Koruma iki doğrulama noktasında da etkin</string>
+    <string name="theme_protection_inactive">Kurulum veya yeniden başlatma gerekiyor</string>
+    <string name="theme_protection_explanation">Yerel olarak içe aktardığın tema uygulandıktan sonra Xiaomi doğrulaması tarafından varsayılana döndürülmesini engeller. Destek MTZ Studio APK’sının içindedir; ayrı bir Xposed modülü kurulmaz.</string>
+    <string name="theme_protection_status_title">Koruma durumu</string>
+    <string name="theme_protection_framework">Xposed altyapısı</string>
+    <string name="theme_protection_framework_missing">MTZ Studio modülünü Vector/LSPosed içinde bir kez etkinleştir</string>
+    <string name="theme_protection_compatibility">Temalar sürümü uyumluluğu</string>
+    <string name="theme_protection_compatible">Gerekli hak kontrolü bulundu</string>
+    <string name="theme_protection_incompatible">Bu sürümde güvenli eşleşme bulunamadı: %1$s</string>
+    <string name="theme_protection_checking">Temalar uygulaması kontrol ediliyor…</string>
+    <string name="theme_protection_scope">Gerekli kapsamlar</string>
+    <string name="theme_protection_scope_ready">Sistem ve Temalar uygulaması onaylandı</string>
+    <string name="theme_protection_scope_missing">Vector/LSPosed kapsam onayı gerekiyor</string>
+    <string name="theme_protection_system_hook">Sistem tema doğrulaması</string>
+    <string name="theme_protection_manager_hook">Temalar uygulaması hak kontrolü</string>
+    <string name="theme_protection_hook_ready">Yüklendi ve çalışıyor</string>
+    <string name="theme_protection_reboot_required">Yüklenmedi; modülü etkinleştirip yeniden başlat</string>
+    <string name="theme_protection_open_framework">Xposed yöneticisini aç</string>
+    <string name="theme_protection_enable">Korumayı etkinleştir</string>
+    <string name="theme_protection_waiting_approval">Xposed kapsam onayı bekleniyor…</string>
+    <string name="theme_protection_restart">Cihazı yeniden başlat</string>
+    <string name="theme_protection_activation_hint">Önce Xposed yöneticisinde HyperOS MTZ Studio modülünü etkinleştir, ardından buraya dönüp cihazı yeniden başlat.</string>
+    <string name="theme_protection_refresh">Durumu yenile</string>
+    <string name="theme_protection_disable">Korumayı devre dışı bırak</string>
+    <string name="theme_protection_notice">Bu özellik root ve etkin bir Vector/LSPosed uyumlu Xposed altyapısı gerektirir. Shizuku veya yalnızca root izni bu altyapının yerini tutamaz. Yalnızca sahibi olduğun veya kullanma iznin bulunan yerel temalar için kullan.</string>
+    <string name="theme_protection_restart_title">Cihaz yeniden başlatılsın mı?</string>
+    <string name="theme_protection_restart_message">Önce Xposed yöneticisinde HyperOS MTZ Studio’nun etkin olduğundan emin ol. Yeniden başlatma, korumayı sisteme ve Temalar uygulamasına yükler.</string>
+    <string name="theme_protection_restart_confirm">Yeniden başlat</string>
+    <string name="theme_protection_restart_cancel">İptal</string>
+    <string name="theme_protection_manager_missing">Vector veya LSPosed yöneticisi bulunamadı</string>
+    <string name="theme_protection_manager_open_failed">Xposed yöneticisi açılamadı: %1$s</string>
+    <string name="theme_protection_reboot_failed">Yeniden başlatma başlatılamadı: %1$s</string>
+ 
+    <!-- Home / MTZ Import -->
+    <string name="mtz_import_title">MTZ Import</string>
+    <string name="mtz_import_desc">Sahip olduğun MTZ dosyasını güvenli biçimde özel kitaplığa kopyala, doğrula ve bileşenlerini sınıflandır.</string>
+    <string name="mtz_import_btn_select">MTZ dosyası seç</string>
+    <string name="mtz_import_btn_importing">Import sürüyor…</string>
+    <string name="status_loading_library">Özel kitaplık yükleniyor…</string>
+    <string name="status_library_warnings">%1$d özel kitaplık uyarısıyla yüklendi</string>
+    <string name="status_library_empty">İçe aktarmak için sahip olduğun bir MTZ seç</string>
+    <string name="status_verified_themes">%1$d doğrulanmış yerel MTZ</string>
+    <string name="status_copying_verifying">Seçilen MTZ kopyalanıyor ve doğrulanıyor…</string>
+    <string name="status_import_rejected">Import reddedildi: %1$s</string>
+    <string name="error_open_document">Seçilen dosya açılamadı</string>
+ 
+    <!-- Themes Screen -->
+    <string name="empty_themes_title">Henüz doğrulanmış tema yok</string>
+    <string name="empty_themes_desc">Ana menüde MTZ Import bölümünü açarak tema ekleyebilirsin.</string>
+    <string name="empty_category_title">Bu kategoride içerik yok</string>
+    <string name="empty_category_desc">Başka bir MTZ içe aktarabilir veya Temalar bölümünü inceleyebilirsin.</string>
+    <string name="category_select_hint">Bir kaynağı seçtiğinde Temanı Oluştur ekranındaki bu bileşen güncellenir.</string>
+ 
+    <!-- Personalize / Temanı Oluştur Screen -->
+    <string name="empty_personalize_title">Tema oluşturulacak bileşen bulunamadı</string>
+    <string name="empty_personalize_desc">Önce MTZ Import bölümünden en az bir tema ekle.</string>
+    <string name="base_theme_title">Temel Tema (Ana Tema)</string>
+    <string name="base_theme_desc">Temel temanın tüm yapısı korunur; yalnızca seçtiğin alanlar başka kaynaklarla değiştirilir.</string>
+    <string name="base_theme_select_btn">Temel Tema Seç</string>
+    <string name="base_theme_change_btn">Değiştir</string>
+    <string name="base_theme_clear_btn">Temizle</string>
+    <string name="base_theme_dialog_title">Temel Tema Seç</string>
+    <string name="save_theme_as">Temayı Farklı Kaydet</string>
+    <string name="theme_name_label">Tema adı</string>
+    <string name="default_composition_name">HyperOS Karmam</string>
+    <string name="personalize_stats">%1$d bileşen · %2$d kaynak tema</string>
+    <string name="status_composing">Yeni MTZ oluşturuluyor ve İndirilenler/MTZ Studio klasörüne kaydediliyor…</string>
+    <string name="status_compose_success">\"%1$s\" oluşturuldu ve İndirilenler/MTZ Studio klasörüne kaydedildi</string>
+    <string name="status_compose_failed">Oluşturma başarısız: %1$s</string>
+
+    <!-- Appearance Screen -->
+    <string name="appearance_color_mode_title">Renk modu</string>
+    <string name="appearance_content_style_title">İçerik tasarımı</string>
+    <string name="appearance_system_title">Sistem varsayılanı</string>
+    <string name="appearance_system_desc">Telefonun açık veya koyu görünümünü takip eder</string>
+    <string name="appearance_light_title">Light Mode</string>
+    <string name="appearance_light_desc">Her zaman açık renkli görünüm</string>
+    <string name="appearance_dark_title">Dark Mode</string>
+    <string name="appearance_dark_desc">Her zaman koyu renkli görünüm</string>
+    <string name="appearance_amoled_title">AMOLED</string>
+    <string name="appearance_amoled_desc">Gerçek siyah arka planlı koyu görünüm</string>
+    <string name="style_default_title">Varsayılan</string>
+    <string name="style_default_desc">Sabit renkli, daha köşeli klasik kart ve menü düzeni</string>
+    <string name="style_material_you_title">Material You</string>
+    <string name="style_material_you_desc">Duvar kâğıdından dinamik renk alan, daha yuvarlak Material 3 düzeni</string>
+    <string name="style_liquid_glass_title">Liquid Glass</string>
+    <string name="style_liquid_glass_desc">Yarı saydam, parlak ve akışkan cam yüzeyler</string>
+
+    <!-- Backup & Restore Screen -->
+    <string name="tab_backup">Yedekleme</string>
+    <string name="tab_restore">Geri Yükleme</string>
+    <string name="section_cloud_storage">Bulut Depolama</string>
+    <string name="section_local_storage">Yerel Depolama</string>
+    <string name="cloud_not_connected">Bulut hesabı bağlı değil</string>
+    <string name="cloud_connected_as">Bağlı: %1$s (%2$s)</string>
+    <string name="cloud_last_backup">Son bulut yedeği: %1$s</string>
+    <string name="cloud_no_previous_backup">Henüz bulutta kayıtlı yedek yok</string>
+    <string name="btn_connect_cloud">Bulut Hesabı Bağla</string>
+    <string name="btn_disconnect_cloud">Bağlantıyı Kes</string>
+    <string name="btn_backup_to_cloud">Doğrudan Buluta Yedekle</string>
+    <string name="btn_restore_from_cloud">Buluttan Geri Yükle</string>
+    <string name="btn_backup_to_local">Cihaz Hafızasına Yedekle (.zip)</string>
+    <string name="btn_restore_from_local">Yedek Dosyası Seç (.zip)</string>
+    <string name="cloud_backup_desc">Doğrulanmış temalarınızı, dışa aktarımları ve ayarları dosya seçiciyle uğraşmadan doğrudan özel bulut klasörünüze yükler.</string>
+    <string name="cloud_restore_desc">Bağlı bulut klasörünüzdeki en son yedek paketini doğrudan indirerek uygulama kitaplığına geri yükler.</string>
+    <string name="local_backup_desc">Tüm temaları ve ayarları cihaz hafızasına veya SD karta kaydedilecek bağımsız bir .zip yedek arşivine aktarır.</string>
+    <string name="local_restore_desc">Cihaz hafızasındaki mevcut bir .zip yedek dosyasını seçerek uygulama kitaplığına geri yükler.</string>
+    
+    <!-- Cloud Account Dialog -->
+    <string name="cloud_dialog_title">Bulut Hesabı Bağla</string>
+    <string name="cloud_dialog_subtitle">Tema yedeklerinizi senkronize etmek için bir bulut sağlayıcısı seçin</string>
+    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
+    <string name="cloud_google_desc">Cihazınızda kayıtlı Google hesabını seçerek bağlanın</string>
+    <string name="cloud_webdav_desc">Özel bulut sunucusu adresi ve şifre ile bağlanın</string>
+    <string name="cloud_account_email_label">Google Hesap E-postası</string>
+    <string name="cloud_server_url_label">WebDAV Sunucu Adresi</string>
+    <string name="cloud_username_label">Kullanıcı Adı</string>
+    <string name="cloud_password_label">Uygulama Şifresi</string>
+    <string name="cloud_btn_connect">Bağlan</string>
+    <string name="cloud_btn_cancel">İptal</string>
+
+    <string name="status_no_backup_yet">Henüz bu oturumda işlem yapılmadı</string>
+    <string name="status_backup_preparing">Yedekleme paketi hazırlanıyor…</string>
+    <string name="status_backup_success">%1$d tema ve %2$d dosya başarıyla yedeklendi</string>
+    <string name="status_backup_failed">Yedekleme başarısız: %1$s</string>
+    <string name="status_restore_preparing">Yedek doğrulanıyor ve geri yükleniyor…</string>
+    <string name="status_restore_success">Yedek geri yüklendi · %1$d tema · %2$d dosya</string>
+    <string name="status_restore_failed">Geri yükleme başarısız: %1$s</string>
+    <string name="status_cloud_connected">Bulut bağlandı: %1$s</string>
+    <string name="status_cloud_disconnected">Bulut hesabı bağlantısı kesildi</string>
+
+    <!-- Custom Wallpapers -->
+    <string name="custom_wallpaper_section_title">Özel Duvar Kâğıtları (Galeriden)</string>
+    <string name="custom_home_wallpaper_title">Ana Ekran Duvar Kâğıdı</string>
+    <string name="custom_home_wallpaper_desc">Galerinizden istediğiniz bir fotoğrafı ana ekran arka planı olarak ayarlayın</string>
+    <string name="custom_lock_wallpaper_title">Kilit Ekranı Duvar Kâğıdı</string>
+    <string name="custom_lock_wallpaper_desc">Kilit ekranının saat stili, widget\'ları ve animasyonları korunur; yalnızca arka plan fotoğrafı değiştirilir</string>
+    <string name="btn_pick_gallery_image">Galeriden Fotoğraf Seç</string>
+    <string name="btn_remove_custom_wallpaper">Kaldır</string>
+    <string name="custom_wallpaper_selected">Özel fotoğraf seçildi</string>
+    <string name="custom_home_wallpaper_selected">Özel ana ekran duvar kâğıdı seçildi</string>
+    <string name="custom_lock_wallpaper_selected">Özel kilit ekranı duvar kâğıdı seçildi (Kilit stili korunur)</string>
+
+    <string name="status_cloud_uploading">Yedek %1$s bulutuna yükleniyor…</string>
+    <string name="status_cloud_upload_success">Bulut yedeği %1$s konumuna başarıyla eşitlendi</string>
+    <string name="status_cloud_downloading">%1$s bulutundan yedek indiriliyor…</string>
+    <string name="status_cloud_no_backup">%1$s üzerinde önceki bulut yedeği bulunamadı</string>
+    <string name="error_backup_target">Seçilen yedek hedefi açılamadı</string>
+    <string name="error_restore_target">Seçilen yedek dosyası açılamadı</string>
+
+    <!-- Apply Theme Dialog -->
+    <string name="apply_dialog_title">Tema uygulansın mı?</string>
+    <string name="apply_dialog_desc">%1$s Tema Yöneticisine yerel tema olarak aktarılacak ve uygulanacak. Tema bileşenleri sistem arayüzünü yeniden başlatabilir.</string>
+    <string name="status_preparing_apply">Tema, Tema Yöneticisine hazırlanıyor…</string>
+    <string name="status_apply_success">%1$s Tema Yöneticisine aktarıldı ve uygulandı</string>
+    <string name="status_apply_cancelled">Tema Yöneticisi işlemi tamamlamadı veya iptal edildi</string>
+    <string name="status_apply_failed">Tema uygulanamadı: %1$s</string>
+
+    <!-- Live Diagnostics Screen -->
+    <string name="diag_title">Live Diagnostics</string>
+    <string name="diag_desc">Import kontrol noktaları reboot\'a dayanıklı olarak özel depoya yazılır. Ham dosya URI\'si kaydedilmez.</string>
+    <string name="diag_phase">Durum: %1$s</string>
+    <string name="diag_copied">%1$s kopyalandı</string>
+    <string name="diag_interrupted_session">Kesilmiş oturum: %1$s</string>
+    <string name="diag_orphan_staging">Korunan yarım import: %1$d dosya · %2$s</string>
+    <string name="btn_export_diagnostics">Tanılama paketini dışa aktar</string>
+    <string name="diag_export_failed">Tanılama dışa aktarılamadı: %1$s</string>
+    <string name="diag_recent_events">Son olaylar</string>
+    <string name="diag_phase_staging_created">Geçici alan hazır</string>
+    <string name="diag_phase_copying">MTZ kopyalanıyor</string>
+    <string name="diag_phase_copy_completed">Kopyalama tamamlandı</string>
+    <string name="diag_phase_validating">ZIP/MTZ doğrulanıyor</string>
+    <string name="diag_phase_validated">MTZ doğrulandı</string>
+    <string name="diag_phase_committing">Özel kitaplığa kaydediliyor</string>
+
+    <!-- Theme Manager Compatibility Card -->
+    <string name="tm_card_title">Tema Yöneticisi uyumluluğu</string>
+    <string name="tm_checking_version">Tema Yöneticisi sürümü denetleniyor…</string>
+    <string name="tm_recommended_active">Önerilen sürüm etkin. Bağımsız yerel MTZ import davranışı bekleniyor.</string>
+    <string name="tm_recommendation_notice">Bağımsız yerel MTZ importu için %1$s önerilir.</string>
+    <string name="tm_verifying_apk">APK paket, sürüm, SHA-256 ve Xiaomi imzası doğrulanıyor…</string>
+    <string name="tm_apk_verified">APK doğrulandı: %1$s · SHA-256 %2$s</string>
+    <string name="tm_apk_rejected">APK reddedildi: %1$s</string>
+    <string name="tm_error_apk_open">Seçilen APK açılamadı</string>
+    <string name="tm_device_installed_compatible">%1$s · Uyumlu</string>
+    <string name="tm_device_installed_incompatible">Cihaz: %1$s</string>
+    <string name="tm_version_unknown">sürüm bilinmiyor</string>
+    <string name="tm_device_not_found">Desteklenen Xiaomi Tema Yöneticisi paketi bulunamadı</string>
+    <string name="tm_btn_select_apk_version">%1$s APK seç</string>
+    <string name="tm_verified_apk_info">Doğrulanan APK: %1$s %2$s\nSHA-256: %3$s</string>
+    <string name="tm_btn_downgrade_to_version">Root ile %1$s sürümüne geç</string>
+    <string name="tm_risk_checkbox">Root ile sürüm düşürmenin Tema Yöneticisini yeniden başlatabileceğini ve ROM tarafından reddedilebileceğini anlıyorum.</string>
+    <string name="tm_dialog_title">Tema Yöneticisi sürümü değiştirilsin mi?</string>
+    <string name="tm_dialog_text">Yalnızca doğrulanan %1$s paketi hedeflenecek. Komut root üzerinden `pm install -r -d` çalıştırır; sistem dosyası yazmaz ve doğrulamayı devre dışı bırakmaz. İşlem başarısız olabilir; önemli tema ayarlarınızı önceden yedekleyin.</string>
+    <string name="tm_dialog_confirm">Onayla ve çalıştır</string>
+    <string name="tm_status_waiting_root">Root izni ve paket yöneticisi sonucu bekleniyor…</string>
+    <string name="tm_status_root_failed">Root işlemi başarısız: %1$s</string>
+
+    <!-- Shevery Authorization Gate -->
+    <string name="shevery_dialog_title">Shevery yetkisi gerekli</string>
+    <string name="shevery_dialog_text">Tema Yöneticisi sürümünü değiştirme gibi root gerektiren işlemleri güvenli biçimde yapabilmek için HyperOS MTZ Studio\'ya Shevery erişimi verin.</string>
+    <string name="shevery_btn_grant">Yetki ver</string>
+    <string name="shevery_btn_skip">Şimdilik geç</string>
+
+    <!-- Cihazdan tema çıkarma -->
+    <string name="device_theme_import_title">Tema Yöneticisinden tema al</string>
+    <string name="device_theme_import_desc">Xiaomi Tema Yöneticisindeki temaları seçip özel kitaplığınıza MTZ olarak aktarın.</string>
+    <string name="device_theme_import_button">Seçilen temaları al</string>
+    <string name="device_theme_select_dialog_title">İçe aktarılacak temaları seç</string>
+    <string name="device_theme_select_all">Tümünü seç</string>
+    <string name="device_theme_deselect_all">Seçimi temizle</string>
+    <string name="device_theme_import_selected_btn">Seçilenleri içeri al (%1$d)</string>
+    <string name="device_theme_already_imported_badge">Kitaplıkta mevcut</string>
+    <string name="device_theme_scanning">Tema Yöneticisindeki temalar taranıyor…</string>
+    <string name="device_font_import_title">Etkin yazı tipini MTZ olarak al</string>
+    <string name="device_font_import_desc">Tema Yöneticisinin şu anda uyguladığı yazı tipini yeniden kullanılabilir yerel bir MTZ olarak paketler.</string>
+    <string name="device_font_import_button">Etkin yazı tipini içeri al</string>
+    <string name="device_active_font_name">Etkin sistem yazı tipi</string>
+    <string name="device_import_idle">Tema Yöneticisinden henüz içerik alınmadı</string>
+    <string name="device_import_working">Root erişimiyle okunuyor ve aktarılıyor…</string>
+    <string name="device_import_added">%1$s özel MTZ kitaplığına eklendi</string>
+    <string name="device_import_duplicate">%1$s özel MTZ kitaplığında zaten mevcut</string>
+    <string name="device_theme_import_summary">%1$d tema seçildi · %2$d eklendi · %3$d zaten mevcuttu · %4$d başarısız</string>
+    <string name="device_import_failed">Tema Yöneticisinden alınamadı: %1$s</string>
+    <string name="action_export_mtz">MTZ dışa aktar</string>
+    <string name="status_export_failed">MTZ dışa aktarılamadı: %1$s</string>
+</resources>

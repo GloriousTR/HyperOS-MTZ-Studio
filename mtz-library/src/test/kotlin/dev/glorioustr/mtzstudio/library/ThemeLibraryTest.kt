@@ -58,6 +58,39 @@ class ThemeLibraryTest {
         assertTrue(Files.list(root.resolve("mtz-library")).use { it.count() } == 0L)
     }
 
+    @Test
+    fun `import observer receives durable phase boundaries`() {
+        val root = Files.createTempDirectory("mtz-library-diagnostics-test")
+        val events = mutableListOf<ImportEvent>()
+        val source = zip("icons" to ByteArray(32))
+
+        ThemeLibrary(root).importTheme(
+            ByteArrayInputStream(source),
+            "observed.mtz",
+            ImportObserver(events::add),
+        )
+
+        assertTrue(events.first() is ImportEvent.StagingCreated)
+        assertTrue(events.any { it is ImportEvent.CopyCompleted && it.bytesCopied == source.size.toLong() })
+        assertTrue(events.any { it is ImportEvent.ValidationCompleted })
+        assertTrue(events.any { it is ImportEvent.CommitCompleted })
+        assertTrue(events.last() is ImportEvent.StagingCleaned)
+    }
+
+    @Test
+    fun `studio gallery marker survives reload`() {
+        val root = Files.createTempDirectory("mtz-library-gallery-test")
+        val library = ThemeLibrary(root)
+        val imported = library.importTheme(
+            input = ByteArrayInputStream(zip("icons" to byteArrayOf(1))),
+            suggestedName = "My mix",
+            includeInThemeGallery = true,
+        )
+
+        assertTrue(imported.includeInThemeGallery)
+        assertTrue(library.load().themes.single().includeInThemeGallery)
+    }
+
     private fun selection(theme: LibraryTheme, category: ComponentCategory): ComponentSelection {
         val component = theme.archive.components.single { it.category == category }
         return ComponentSelection(

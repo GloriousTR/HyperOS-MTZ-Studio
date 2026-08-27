@@ -1,0 +1,2254 @@
+package dev.glorioustr.mtzstudio
+
+import android.net.Uri
+import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FontDownload
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Nightlight
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import dev.glorioustr.mtzstudio.composer.CompositionResult
+import dev.glorioustr.mtzstudio.core.ComponentCategory
+import dev.glorioustr.mtzstudio.library.LibraryTheme
+import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
+import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
+import java.io.InputStream
+import java.nio.file.Path
+
+internal enum class StudioDestination(
+    @StringRes val titleRes: Int,
+    val category: ComponentCategory? = null,
+) {
+    HOME(R.string.dest_home),
+    THEMES(R.string.dest_themes),
+    WALLPAPERS(R.string.dest_wallpapers, ComponentCategory.WALLPAPER),
+    RINGTONES(R.string.dest_ringtones, ComponentCategory.RINGTONE),
+    FONTS(R.string.dest_fonts, ComponentCategory.FONT),
+    LOCKSCREEN(R.string.dest_lockscreen, ComponentCategory.LOCKSCREEN),
+    ICONS(R.string.dest_icons, ComponentCategory.ICONS),
+    SYSTEM_UI(R.string.dest_system_ui, ComponentCategory.SYSTEM_UI),
+    SYSTEM_UI_PLUGIN(R.string.dest_system_ui_plugin, ComponentCategory.SYSTEM_UI_PLUGIN),
+    LAUNCHER(R.string.dest_launcher, ComponentCategory.LAUNCHER),
+    AOD(R.string.dest_aod, ComponentCategory.AOD),
+    FRAMEWORK(R.string.dest_framework, ComponentCategory.FRAMEWORK),
+    OTHER(R.string.dest_other, ComponentCategory.OTHER),
+    PERSONALIZE(R.string.dest_personalize),
+    APPEARANCE(R.string.dest_appearance),
+    BACKUP(R.string.dest_backup),
+    DIAGNOSTICS(R.string.dest_diagnostics),
+    THEME_PROTECTION(R.string.dest_theme_protection),
+}
+
+@Composable
+internal fun HomeMenuScreen(
+    themes: List<LibraryTheme>,
+    status: String,
+    importExpanded: Boolean,
+    importing: Boolean,
+    themeManagerInspector: ThemeManagerInspector,
+    themeManagerUpdater: RootThemeManagerUpdater,
+    openInput: (Uri) -> InputStream?,
+    onToggleImport: () -> Unit,
+    onAddMtz: () -> Unit,
+    onNavigate: (StudioDestination) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val rows = listOf(
+        MenuSpec(
+            StudioDestination.THEMES,
+            Icons.Filled.ColorLens,
+            Color(0xFFFFB52E),
+            themes.count(LibraryTheme::isThemeGalleryItem),
+            R.string.unit_local_theme,
+        ),
+        MenuSpec(StudioDestination.PERSONALIZE, Icons.Filled.Tune, Color(0xFF8054E8), null, null),
+    )
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                MenuHeader(
+                    icon = Icons.Filled.Add,
+                    color = Color(0xFF26A69A),
+                    title = stringResource(R.string.mtz_import_title),
+                    subtitle = status,
+                    expanded = importExpanded,
+                    onClick = onToggleImport,
+                )
+                AnimatedVisibility(importExpanded) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        HorizontalDivider()
+                        Text(
+                            stringResource(R.string.mtz_import_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(enabled = !importing, onClick = onAddMtz) {
+                            Text(if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.mtz_import_btn_select))
+                        }
+                        ThemeManagerCompatibilityCard(
+                            inspector = themeManagerInspector,
+                            updater = themeManagerUpdater,
+                            openInput = openInput,
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column {
+                    rows.forEachIndexed { index, row ->
+                        MenuRow(row, onClick = { onNavigate(row.destination) })
+                        if (index != rows.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 18.dp))
+                    }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+internal fun StudioOverlayMenu(
+    onDismiss: () -> Unit,
+    onNavigate: (StudioDestination) -> Unit,
+) {
+    val items = listOf(
+        OverlayMenuItem(
+            destination = StudioDestination.APPEARANCE,
+            icon = Icons.Filled.Palette,
+            color = Color(0xFF5C6BC0),
+            descriptionRes = R.string.overlay_appearance_desc,
+        ),
+        OverlayMenuItem(
+            destination = StudioDestination.BACKUP,
+            icon = Icons.Filled.CloudUpload,
+            color = Color(0xFF3F7FD9),
+            descriptionRes = R.string.overlay_backup_desc,
+        ),
+        OverlayMenuItem(
+            destination = StudioDestination.DIAGNOSTICS,
+            icon = Icons.Filled.MonitorHeart,
+            color = Color(0xFF607D8B),
+            descriptionRes = R.string.overlay_diagnostics_desc,
+        ),
+        OverlayMenuItem(
+            destination = StudioDestination.THEME_PROTECTION,
+            icon = Icons.Filled.Security,
+            color = Color(0xFF2E7D32),
+            descriptionRes = R.string.overlay_theme_protection_desc,
+        ),
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(onClick = onDismiss)
+                .padding(start = 12.dp, end = 24.dp, top = 48.dp, bottom = 36.dp),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            StudioCard(
+                modifier = Modifier
+                    .fillMaxWidth(0.88f)
+                    .clickable(enabled = false) {},
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(stringResource(R.string.menu_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+                        Text(
+                            stringResource(R.string.menu_subtitle),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    items.forEach { item ->
+                        OverlayMenuCard(item = item, onClick = { onNavigate(item.destination) })
+                    }
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.menu_close))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
+    StudioCard(
+        modifier = Modifier.fillMaxWidth().height(80.dp).clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            MenuIconBox(item.icon, item.color)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    stringResource(item.destination.titleRes),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    stringResource(item.descriptionRes),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Icon(
+                Icons.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ThemesScreen(
+    themes: List<LibraryTheme>,
+    deviceImportStatus: String,
+    deviceImportRunning: Boolean,
+    onOpenDeviceThemePicker: () -> Unit,
+    onApplyTheme: (LibraryTheme) -> Unit,
+    onDeleteTheme: (LibraryTheme) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var pendingDeleteTheme by remember { mutableStateOf<LibraryTheme?>(null) }
+    val galleryThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = modifier.fillMaxSize().padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            DeviceImportCard(
+                title = stringResource(R.string.device_theme_import_title),
+                description = stringResource(R.string.device_theme_import_desc),
+                status = deviceImportStatus,
+                buttonText = stringResource(R.string.device_theme_import_button),
+                running = deviceImportRunning,
+                onImport = onOpenDeviceThemePicker,
+            )
+        }
+        if (galleryThemes.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                EmptyState(
+                    stringResource(R.string.empty_themes_title),
+                    stringResource(R.string.empty_themes_desc),
+                )
+            }
+        }
+        gridItems(galleryThemes, key = { it.id.value }) { theme ->
+            ThemeGalleryCard(theme, onApplyTheme, onDeleteTheme = { pendingDeleteTheme = it })
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(20.dp)) }
+    }
+
+    pendingDeleteTheme?.let { themeToDelete ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteTheme = null },
+            title = { Text(stringResource(R.string.delete_theme_dialog_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.delete_theme_dialog_desc,
+                        themeToDelete.archive.metadata?.name ?: themeToDelete.displayName,
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteTheme(themeToDelete)
+                        pendingDeleteTheme = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteTheme = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+internal fun CategoryScreen(
+    destination: StudioDestination,
+    themes: List<LibraryTheme>,
+    selections: MutableMap<ComponentCategory, UiSelection>,
+    customHomeWallpaperUri: String? = null,
+    customLockWallpaperUri: String? = null,
+    onPickHomeWallpaper: () -> Unit = {},
+    onRemoveHomeWallpaper: () -> Unit = {},
+    onPickLockWallpaper: () -> Unit = {},
+    onRemoveLockWallpaper: () -> Unit = {},
+    deviceImportStatus: String = "",
+    deviceImportRunning: Boolean = false,
+    onImportActiveFont: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val category = requireNotNull(destination.category)
+    val sources = themes.filter { theme -> hasThemePreview(theme, category) }.flatMap { theme ->
+        theme.archive.components.filter { it.category == category }.map { theme to it }
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = modifier.fillMaxSize().padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(
+                stringResource(R.string.category_select_hint),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        if (category == ComponentCategory.FONT) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DeviceImportCard(
+                    title = stringResource(R.string.device_font_import_title),
+                    description = stringResource(R.string.device_font_import_desc),
+                    status = deviceImportStatus,
+                    buttonText = stringResource(R.string.device_font_import_button),
+                    running = deviceImportRunning,
+                    onImport = onImportActiveFont,
+                )
+            }
+        }
+
+        // Custom Wallpaper Upload Card for Wallpaper Category
+        if (category == ComponentCategory.WALLPAPER) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                StudioCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.custom_home_wallpaper_title),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                Text(
+                                    stringResource(R.string.custom_home_wallpaper_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        if (customHomeWallpaperUri != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp, 90.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                ) {
+                                    UriImagePreview(
+                                        uri = Uri.parse(customHomeWallpaperUri),
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        stringResource(R.string.custom_home_wallpaper_selected),
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = onPickHomeWallpaper) {
+                                            Text(stringResource(R.string.btn_pick_gallery_image))
+                                        }
+                                        OutlinedButton(onClick = onRemoveHomeWallpaper) {
+                                            Text(stringResource(R.string.btn_remove_custom_wallpaper))
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = onPickHomeWallpaper,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_pick_gallery_image))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Custom Wallpaper Upload Card for Lockscreen Category
+        if (category == ComponentCategory.LOCKSCREEN) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                StudioCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.custom_lock_wallpaper_title),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                Text(
+                                    stringResource(R.string.custom_lock_wallpaper_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        if (customLockWallpaperUri != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp, 90.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                ) {
+                                    UriImagePreview(
+                                        uri = Uri.parse(customLockWallpaperUri),
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        stringResource(R.string.custom_lock_wallpaper_selected),
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = onPickLockWallpaper) {
+                                            Text(stringResource(R.string.btn_pick_gallery_image))
+                                        }
+                                        OutlinedButton(onClick = onRemoveLockWallpaper) {
+                                            Text(stringResource(R.string.btn_remove_custom_wallpaper))
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = onPickLockWallpaper,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_pick_gallery_image))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (sources.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                EmptyState(
+                    stringResource(R.string.empty_category_title),
+                    stringResource(R.string.empty_category_desc),
+                )
+            }
+        }
+        gridItems(sources, key = { (theme, component) -> "${theme.id.value}:${component.rootPath}" }) { (theme, component) ->
+            val selected = selections[category]
+            val checked = selected?.themeId == theme.id && selected.rootPath == component.rootPath
+            StudioCard(
+                modifier = Modifier.fillMaxWidth().clickable {
+                    if (checked) selections.remove(category)
+                    else selections[category] = UiSelection(theme.id, category, component.rootPath)
+                },
+            ) {
+                Column {
+                    Box {
+                        ThemePreview(
+                            theme = theme,
+                            category = category,
+                            modifier = Modifier.fillMaxWidth().aspectRatio(0.68f),
+                        )
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { enabled ->
+                                if (enabled) selections[category] = UiSelection(theme.id, category, component.rootPath)
+                                else if (checked) selections.remove(category)
+                            },
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
+                    }
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            theme.archive.metadata?.name ?: theme.displayName,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            stringResource(R.string.entries_count, component.entryPaths.size),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+            }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+internal fun PersonalizeScreen(
+    themes: List<LibraryTheme>,
+    selections: MutableMap<ComponentCategory, UiSelection>,
+    compositionName: String,
+    lastResult: CompositionResult?,
+    status: String,
+    baseThemeId: String? = null,
+    onSelectBaseTheme: (LibraryTheme?) -> Unit = {},
+    customHomeWallpaperUri: String? = null,
+    customLockWallpaperUri: String? = null,
+    onPickHomeWallpaper: () -> Unit = {},
+    onRemoveHomeWallpaper: () -> Unit = {},
+    onPickLockWallpaper: () -> Unit = {},
+    onRemoveLockWallpaper: () -> Unit = {},
+    onCompositionNameChange: (String) -> Unit,
+    onOpenCategory: (StudioDestination) -> Unit,
+    onCompose: () -> Unit,
+    onShare: (Path) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showBaseThemeDialog by remember { mutableStateOf(false) }
+    val baseTheme = baseThemeId?.let { id -> themes.firstOrNull { it.id.value == id } }
+
+    val availableCategories = ComponentCategory.entries.filter { category ->
+        category.isPersonalizationOption() &&
+            themes.any { theme ->
+                hasThemePreview(theme, category) &&
+                    theme.archive.components.any { it.category == category }
+            }
+    }
+    val visibleSelections = selections.values.filter { it.category.isPersonalizationOption() }
+    val sourceCount = visibleSelections.map(UiSelection::themeId).distinct().size
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+    ) {
+        // Base Theme (Ana Tema) Selection Card
+        item {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StudioCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(Icons.Default.ColorLens, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.base_theme_title),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    stringResource(R.string.base_theme_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        if (baseTheme != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp, 76.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                ) {
+                                    ThemePreview(
+                                        theme = baseTheme,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        baseTheme.archive.metadata?.name ?: baseTheme.displayName,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleSmall,
+                                    )
+                                    Text(
+                                        stringResource(R.string.entries_count, baseTheme.archive.components.count { it.category.isPersonalizationOption() }),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = { showBaseThemeDialog = true }) {
+                                            Text(stringResource(R.string.base_theme_change_btn))
+                                        }
+                                        OutlinedButton(onClick = { onSelectBaseTheme(null) }) {
+                                            Text(stringResource(R.string.base_theme_clear_btn))
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = { showBaseThemeDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.base_theme_select_btn))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (availableCategories.isEmpty()) {
+            item {
+                Box(Modifier.padding(16.dp)) {
+                    EmptyState(
+                        stringResource(R.string.empty_personalize_title),
+                        stringResource(R.string.empty_personalize_desc),
+                    )
+                }
+            }
+        }
+        items(availableCategories.chunked(2)) { rowCategories ->
+            Row(Modifier.fillMaxWidth()) {
+                rowCategories.forEach { category ->
+                    val selected = selections[category]
+                    val selectedTheme = selected?.let { sel -> themes.firstOrNull { it.id == sel.themeId } }
+                    PersonalizeTile(
+                        icon = categoryIcon(category),
+                        title = stringResource(categoryLabelRes(category)),
+                        selectedTheme = selectedTheme,
+                        category = category,
+                        onClick = { onOpenCategory(destinationFor(category)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (rowCategories.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+
+        // Custom Wallpapers in 2 Columns matching the grid above
+        item {
+            Column(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    stringResource(R.string.custom_wallpaper_section_title),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                )
+                Row(Modifier.fillMaxWidth()) {
+                    CustomWallpaperTile(
+                        icon = Icons.Default.Image,
+                        title = stringResource(R.string.custom_home_wallpaper_title),
+                        uriString = customHomeWallpaperUri,
+                        onPick = onPickHomeWallpaper,
+                        onRemove = onRemoveHomeWallpaper,
+                        modifier = Modifier.weight(1f),
+                    )
+                    CustomWallpaperTile(
+                        icon = Icons.Default.Lock,
+                        title = stringResource(R.string.custom_lock_wallpaper_title),
+                        uriString = customLockWallpaperUri,
+                        onPick = onPickLockWallpaper,
+                        onRemove = onRemoveLockWallpaper,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // Save Theme Card directly below
+        item {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                StudioCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.save_theme_as),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        OutlinedTextField(
+                            value = compositionName,
+                            onValueChange = onCompositionNameChange,
+                            label = { Text(stringResource(R.string.theme_name_label)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            stringResource(R.string.personalize_stats, visibleSelections.size, sourceCount),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (status.isNotBlank()) {
+                            Text(status, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val canCompose = compositionName.isNotBlank() && (visibleSelections.isNotEmpty() || customHomeWallpaperUri != null || customLockWallpaperUri != null)
+                            Button(
+                                enabled = canCompose,
+                                onClick = onCompose,
+                            ) { Text(stringResource(R.string.save_theme_as)) }
+                            lastResult?.let { result ->
+                                OutlinedButton(onClick = { onShare(result.output) }) {
+                                    Text(stringResource(R.string.action_share))
+                                }
+                            }
+                        }
+                        lastResult?.let { result ->
+                            Text(
+                                "${result.output.fileName}\nSHA-256 ${result.outputSha256}",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+            }
+        }
+    }
+
+    if (showBaseThemeDialog) {
+        val fullThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
+        AlertDialog(
+            onDismissRequest = { showBaseThemeDialog = false },
+            title = { Text(stringResource(R.string.base_theme_dialog_title)) },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(fullThemes) { theme ->
+                        StudioCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelectBaseTheme(theme)
+                                    showBaseThemeDialog = false
+                                },
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp, 64.dp)
+                                        .clip(RoundedCornerShape(6.dp)),
+                                ) {
+                                    ThemePreview(
+                                        theme = theme,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        theme.archive.metadata?.name ?: theme.displayName,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        stringResource(
+                                            R.string.entries_count,
+                                            theme.archive.components.count { it.category.isPersonalizationOption() },
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showBaseThemeDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+internal fun BackupRestoreScreen(
+    themeCount: Int,
+    status: String,
+    cloudAccount: CloudAccount,
+    onSelectGoogleDrive: () -> Unit,
+    onConnectCloud: (CloudAccount) -> Unit,
+    onDisconnectCloud: () -> Unit,
+    onBackupCloud: () -> Unit,
+    onRestoreCloud: () -> Unit,
+    onBackupLocal: () -> Unit,
+    onRestoreLocal: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var showConnectDialog by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text(stringResource(R.string.tab_backup), fontWeight = FontWeight.Bold) },
+                    icon = { Icon(Icons.Filled.Backup, contentDescription = null) },
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text(stringResource(R.string.tab_restore), fontWeight = FontWeight.Bold) },
+                    icon = { Icon(Icons.Filled.Restore, contentDescription = null) },
+                )
+            }
+        }
+
+        if (selectedTab == 0) {
+            // ==================== YEDEKLEME ====================
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                if (cloudAccount.isConnected) Icons.Filled.CloudDone else Icons.Filled.Cloud,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.section_cloud_storage),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    if (cloudAccount.isConnected) {
+                                        stringResource(R.string.cloud_connected_as, cloudAccount.accountName, cloudAccount.provider.displayName)
+                                    } else {
+                                        stringResource(R.string.cloud_not_connected)
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (cloudAccount.isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        Text(
+                            stringResource(R.string.cloud_backup_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        if (cloudAccount.isConnected) {
+                            cloudAccount.lastBackupTime?.let { time ->
+                                Text(
+                                    stringResource(R.string.cloud_last_backup, time),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Button(
+                                onClick = onBackupCloud,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_backup_to_cloud))
+                            }
+                            OutlinedButton(
+                                onClick = onDisconnectCloud,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.btn_disconnect_cloud))
+                            }
+                        } else {
+                            Button(
+                                onClick = { showConnectDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Filled.Cloud, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_connect_cloud))
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Folder,
+                                contentDescription = null,
+                                tint = Color(0xFFFFA000),
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Text(
+                                stringResource(R.string.section_local_storage),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.local_backup_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(
+                            onClick = onBackupLocal,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                        ) {
+                            Text(stringResource(R.string.btn_backup_to_local))
+                        }
+                    }
+                }
+            }
+        } else {
+            // ==================== GERİ YÜKLEME ====================
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                if (cloudAccount.isConnected) Icons.Filled.CloudDone else Icons.Filled.CloudOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.section_cloud_storage),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    if (cloudAccount.isConnected) {
+                                        stringResource(R.string.cloud_connected_as, cloudAccount.accountName, cloudAccount.provider.displayName)
+                                    } else {
+                                        stringResource(R.string.cloud_not_connected)
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (cloudAccount.isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        Text(
+                            stringResource(R.string.cloud_restore_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        if (cloudAccount.isConnected) {
+                            cloudAccount.lastBackupTime?.let { time ->
+                                Text(
+                                    stringResource(R.string.cloud_last_backup, time),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } ?: Text(
+                                stringResource(R.string.cloud_no_previous_backup),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Button(
+                                onClick = onRestoreCloud,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Filled.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_restore_from_cloud))
+                            }
+                        } else {
+                            Button(
+                                onClick = { showConnectDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Filled.Cloud, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.btn_connect_cloud))
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Folder,
+                                contentDescription = null,
+                                tint = Color(0xFFFFA000),
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Text(
+                                stringResource(R.string.section_local_storage),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.local_restore_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(
+                            onClick = onRestoreLocal,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                        ) {
+                            Text(stringResource(R.string.btn_restore_from_local))
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                status,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+        item { Spacer(Modifier.height(24.dp)) }
+    }
+
+    if (showConnectDialog) {
+        CloudConnectDialog(
+            currentAccount = cloudAccount,
+            onDismiss = { showConnectDialog = false },
+            onSelectGoogleDrive = {
+                showConnectDialog = false
+                onSelectGoogleDrive()
+            },
+            onConnectWebDav = {
+                showConnectDialog = false
+                onConnectCloud(it)
+            },
+        )
+    }
+}
+
+@Composable
+private fun CloudConnectDialog(
+    currentAccount: CloudAccount,
+    onDismiss: () -> Unit,
+    onSelectGoogleDrive: () -> Unit,
+    onConnectWebDav: (CloudAccount) -> Unit,
+) {
+    var isWebDavMode by remember { mutableStateOf(false) }
+    var serverUrl by remember { mutableStateOf(currentAccount.serverUrl) }
+    var username by remember { mutableStateOf(if (currentAccount.provider == CloudProvider.WEBDAV) currentAccount.accountName else "") }
+    var password by remember { mutableStateOf("") }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .clickable(onClick = onDismiss)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            StudioCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = false) {},
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        if (isWebDavMode) stringResource(R.string.cloud_provider_webdav) else stringResource(R.string.cloud_dialog_title),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+
+                    if (!isWebDavMode) {
+                        Text(
+                            stringResource(R.string.cloud_dialog_subtitle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        // Google Drive Option Card
+                        StudioCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelectGoogleDrive()
+                                },
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Cloud,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.cloud_provider_google),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        stringResource(R.string.cloud_google_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(
+                                    Icons.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        // WebDAV Option Card
+                        StudioCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isWebDavMode = true },
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Folder,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.cloud_provider_webdav),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        stringResource(R.string.cloud_webdav_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(
+                                    Icons.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            OutlinedButton(onClick = onDismiss) {
+                                Text(stringResource(R.string.cloud_btn_cancel))
+                            }
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = serverUrl,
+                            onValueChange = { serverUrl = it },
+                            label = { Text(stringResource(R.string.cloud_server_url_label)) },
+                            placeholder = { Text("https://cloud.example.com/remote.php/webdav") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text(stringResource(R.string.cloud_username_label)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text(stringResource(R.string.cloud_password_label)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        ) {
+                            OutlinedButton(onClick = { isWebDavMode = false }) {
+                                Text(stringResource(R.string.cloud_btn_cancel))
+                            }
+                            Button(
+                                onClick = {
+                                    val account = CloudAccount(
+                                        provider = CloudProvider.WEBDAV,
+                                        accountName = if (username.isBlank()) "nextcloud.user" else username.trim(),
+                                        serverUrl = serverUrl.trim(),
+                                        isConnected = true,
+                                    )
+                                    onConnectWebDav(account)
+                                },
+                            ) {
+                                Text(stringResource(R.string.cloud_btn_connect))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun ThemeProtectionScreen(
+    state: ThemeProtectionState,
+    onEnable: () -> Unit,
+    onDisable: () -> Unit,
+    onOpenFramework: () -> Unit,
+    onRestartDevice: () -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
+    ) {
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        MenuIconBox(
+                            if (state.fullyActive) Icons.Filled.VerifiedUser else Icons.Filled.Security,
+                            if (state.fullyActive) Color(0xFF2E7D32) else Color(0xFFF57C00),
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.theme_protection_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                if (state.fullyActive) {
+                                    stringResource(R.string.theme_protection_active)
+                                } else {
+                                    stringResource(R.string.theme_protection_inactive)
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.theme_protection_explanation),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.theme_protection_status_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    ProtectionStep(
+                        ready = state.serviceConnected,
+                        title = stringResource(R.string.theme_protection_framework),
+                        detail = if (state.serviceConnected) {
+                            listOfNotNull(state.frameworkName, state.frameworkVersion, state.apiVersion?.let { "API $it" })
+                                .joinToString(" · ")
+                        } else stringResource(R.string.theme_protection_framework_missing),
+                    )
+                    ProtectionStep(
+                        ready = state.themeManagerCompatible == true,
+                        title = stringResource(R.string.theme_protection_compatibility),
+                        detail = when (state.themeManagerCompatible) {
+                            true -> stringResource(R.string.theme_protection_compatible)
+                            false -> stringResource(
+                                R.string.theme_protection_incompatible,
+                                state.compatibilityDetail.orEmpty(),
+                            )
+                            null -> stringResource(R.string.theme_protection_checking)
+                        },
+                    )
+                    ProtectionStep(
+                        ready = state.scopesApproved,
+                        title = stringResource(R.string.theme_protection_scope),
+                        detail = if (state.scopesApproved) {
+                            stringResource(R.string.theme_protection_scope_ready)
+                        } else stringResource(R.string.theme_protection_scope_missing),
+                    )
+                    ProtectionStep(
+                        ready = state.systemHookReady,
+                        title = stringResource(R.string.theme_protection_system_hook),
+                        detail = if (state.systemHookReady) {
+                            stringResource(R.string.theme_protection_hook_ready)
+                        } else stringResource(R.string.theme_protection_reboot_required),
+                    )
+                    ProtectionStep(
+                        ready = state.themeManagerHookReady,
+                        title = stringResource(R.string.theme_protection_manager_hook),
+                        detail = if (state.themeManagerHookReady) {
+                            stringResource(R.string.theme_protection_hook_ready)
+                        } else stringResource(R.string.theme_protection_reboot_required),
+                    )
+                    state.error?.let { error ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    when {
+                        !state.serviceConnected -> Button(onClick = onOpenFramework, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.theme_protection_open_framework))
+                        }
+                        !state.scopesApproved -> Button(
+                            enabled = !state.waitingForApproval && state.themeManagerCompatible != false,
+                            onClick = onEnable,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                if (state.waitingForApproval) stringResource(R.string.theme_protection_waiting_approval)
+                                else stringResource(R.string.theme_protection_enable)
+                            )
+                        }
+                        !state.fullyActive -> {
+                            Text(
+                                stringResource(R.string.theme_protection_activation_hint),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Button(onClick = onOpenFramework, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.theme_protection_open_framework))
+                            }
+                            OutlinedButton(onClick = onRestartDevice, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Filled.RestartAlt, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.theme_protection_restart))
+                            }
+                        }
+                    }
+                    OutlinedButton(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.theme_protection_refresh))
+                    }
+                    if (state.scopesApproved) {
+                        TextButton(onClick = onDisable, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.theme_protection_disable))
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                stringResource(R.string.theme_protection_notice),
+                modifier = Modifier.padding(horizontal = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProtectionStep(ready: Boolean, title: String, detail: String) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            if (ready) Icons.Filled.VerifiedUser else Icons.Filled.Warning,
+            contentDescription = null,
+            tint = if (ready) Color(0xFF2E7D32) else Color(0xFFF57C00),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
+            Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+internal fun AppearanceScreen(
+    selected: AppAppearance,
+    onSelect: (AppAppearance) -> Unit,
+    contentStyle: AppContentStyle,
+    onContentStyleSelect: (AppContentStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item {
+            Text(
+                stringResource(R.string.appearance_color_mode_title),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column {
+                    AppAppearance.entries.forEachIndexed { index, appearance ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onSelect(appearance) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RadioButton(
+                                selected = selected == appearance,
+                                onClick = { onSelect(appearance) },
+                            )
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(appearance.titleRes), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(appearance.descriptionRes), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        if (index != AppAppearance.entries.lastIndex) {
+                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Text(
+                stringResource(R.string.appearance_content_style_title),
+                modifier = Modifier.padding(top = 8.dp),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column {
+                    AppContentStyle.entries.forEachIndexed { index, style ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onContentStyleSelect(style) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RadioButton(
+                                selected = contentStyle == style,
+                                onClick = { onContentStyleSelect(style) },
+                            )
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(style.titleRes), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(style.descriptionRes), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        if (index != AppContentStyle.entries.lastIndex) {
+                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+private fun ThemeGalleryCard(
+    theme: LibraryTheme,
+    onApplyTheme: (LibraryTheme) -> Unit,
+    onDeleteTheme: (LibraryTheme) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        ThemePreview(
+            theme = theme,
+            modifier = Modifier.fillMaxWidth().aspectRatio(0.58f).clip(RoundedCornerShape(14.dp)),
+        )
+        Text(
+            theme.archive.metadata?.name ?: theme.displayName,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Button(onClick = { onApplyTheme(theme) }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.action_apply))
+        }
+        OutlinedButton(
+            onClick = { onDeleteTheme(theme) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error,
+            ),
+        ) {
+            Text(stringResource(R.string.action_delete), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun DeviceImportCard(
+    title: String,
+    description: String,
+    status: String,
+    buttonText: String,
+    running: Boolean,
+    onImport: () -> Unit,
+) {
+    StudioCard(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                MenuIconBox(Icons.Filled.Download, Color(0xFF26A69A))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        description,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            Text(status, style = MaterialTheme.typography.labelSmall)
+            Button(
+                enabled = !running,
+                onClick = onImport,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (running) stringResource(R.string.device_import_working) else buttonText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuHeader(
+    icon: ImageVector,
+    color: Color,
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        MenuIconBox(icon, color)
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall)
+        }
+        Icon(
+            if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun MenuRow(spec: MenuSpec, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        MenuIconBox(spec.icon, spec.color)
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(spec.destination.titleRes),
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (spec.count != null && spec.unitRes != null) {
+                Text("${spec.count} ${stringResource(spec.unitRes)}", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        Icon(
+            Icons.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun MenuIconBox(icon: ImageVector, color: Color) {
+    val iconTint = if (color.luminance() > 0.179f) Color(0xFF111111) else Color.White
+    Box(
+        modifier = Modifier.size(46.dp).background(color, RoundedCornerShape(13.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+    }
+}
+
+@Composable
+private fun PersonalizeTile(
+    icon: ImageVector,
+    title: String,
+    selectedTheme: LibraryTheme?,
+    category: ComponentCategory,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val notSelectedText = stringResource(R.string.not_selected)
+    val subtitle = selectedTheme?.archive?.metadata?.name ?: selectedTheme?.displayName ?: notSelectedText
+    val hasPreview = selectedTheme != null && hasThemePreview(selectedTheme, category)
+    StudioCard(
+        modifier = modifier.padding(4.dp).height(80.dp).clickable(onClick = onClick),
+    ) {
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (hasPreview && selectedTheme != null) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp, 60.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                ) {
+                    ThemePreview(
+                        theme = selectedTheme,
+                        category = category,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    title,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (selectedTheme != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomWallpaperTile(
+    icon: ImageVector,
+    title: String,
+    uriString: String?,
+    onPick: () -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    StudioCard(
+        modifier = modifier
+            .padding(4.dp)
+            .height(80.dp)
+            .clickable(onClick = onPick),
+    ) {
+        Row(
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (uriString != null) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp, 60.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                ) {
+                    UriImagePreview(
+                        uri = Uri.parse(uriString),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(24.dp))
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    title,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    if (uriString != null) stringResource(R.string.custom_wallpaper_selected) else stringResource(R.string.btn_pick_gallery_image),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (uriString != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (uriString != null) {
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Clear,
+                        contentDescription = stringResource(R.string.btn_remove_custom_wallpaper),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                Icon(
+                    Icons.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DeviceThemePickerDialog(
+    availableThemes: List<DeviceThemeSummary>,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onImportSelected: (Set<String>) -> Unit,
+) {
+    var selectedIds by remember(availableThemes) {
+        mutableStateOf(
+            availableThemes.filterNot { it.isAlreadyImported }.map { it.localId }.toSet()
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.device_theme_select_dialog_title)) },
+        text = {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        CircularProgressIndicator()
+                        Text(stringResource(R.string.device_theme_scanning), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            } else if (availableThemes.isEmpty()) {
+                Text(stringResource(R.string.device_import_idle))
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                selectedIds = availableThemes.map { it.localId }.toSet()
+                            },
+                        ) {
+                            Text(stringResource(R.string.device_theme_select_all))
+                        }
+                        TextButton(
+                            onClick = {
+                                selectedIds = emptySet()
+                            },
+                        ) {
+                            Text(stringResource(R.string.device_theme_deselect_all))
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        items(availableThemes) { theme ->
+                            val isChecked = theme.localId in selectedIds
+                            StudioCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedIds = if (isChecked) {
+                                            selectedIds - theme.localId
+                                        } else {
+                                            selectedIds + theme.localId
+                                        }
+                                    },
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = { checked ->
+                                            selectedIds = if (checked) {
+                                                selectedIds + theme.localId
+                                            } else {
+                                                selectedIds - theme.localId
+                                            }
+                                        },
+                                    )
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            theme.title,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.entries_count, theme.componentCount),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            if (theme.isAlreadyImported) {
+                                                Text(
+                                                    "• " + stringResource(R.string.device_theme_already_imported_badge),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = !isLoading && selectedIds.isNotEmpty(),
+                onClick = {
+                    onImportSelected(selectedIds)
+                },
+            ) {
+                Text(stringResource(R.string.device_theme_import_selected_btn, selectedIds.size))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun EmptyState(title: String, description: String) {
+    StudioCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(description, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+private data class MenuSpec(
+    val destination: StudioDestination,
+    val icon: ImageVector,
+    val color: Color,
+    val count: Int?,
+    @StringRes val unitRes: Int?,
+)
+
+private data class OverlayMenuItem(
+    val destination: StudioDestination,
+    val icon: ImageVector,
+    val color: Color,
+    @StringRes val descriptionRes: Int,
+)
+
+internal fun LibraryTheme.isThemeGalleryItem(): Boolean {
+    if (includeInThemeGallery) return true
+    val appearanceCategories = archive.components.asSequence()
+        .map { it.category }
+        .filter { it in THEME_GALLERY_CATEGORIES }
+        .distinct()
+        .count()
+    return appearanceCategories >= 2
+}
+
+private val THEME_GALLERY_CATEGORIES = setOf(
+    ComponentCategory.ICONS,
+    ComponentCategory.LOCKSCREEN,
+    ComponentCategory.WALLPAPER,
+    ComponentCategory.SYSTEM_UI,
+    ComponentCategory.LAUNCHER,
+    ComponentCategory.AOD,
+)
+
+internal fun destinationFor(category: ComponentCategory): StudioDestination = when (category) {
+    ComponentCategory.ICONS -> StudioDestination.ICONS
+    ComponentCategory.LOCKSCREEN -> StudioDestination.LOCKSCREEN
+    ComponentCategory.WALLPAPER -> StudioDestination.WALLPAPERS
+    ComponentCategory.FRAMEWORK -> StudioDestination.FRAMEWORK
+    ComponentCategory.SYSTEM_UI -> StudioDestination.SYSTEM_UI
+    ComponentCategory.SYSTEM_UI_PLUGIN -> StudioDestination.SYSTEM_UI_PLUGIN
+    ComponentCategory.LAUNCHER -> StudioDestination.LAUNCHER
+    ComponentCategory.AOD -> StudioDestination.AOD
+    ComponentCategory.RINGTONE -> StudioDestination.RINGTONES
+    ComponentCategory.FONT -> StudioDestination.FONTS
+    ComponentCategory.OTHER -> StudioDestination.OTHER
+}
+
+internal fun ComponentCategory.isPersonalizationOption(): Boolean = when (this) {
+    ComponentCategory.FRAMEWORK,
+    ComponentCategory.SYSTEM_UI_PLUGIN,
+    ComponentCategory.OTHER,
+    ComponentCategory.RINGTONE,
+    -> false
+    else -> true
+}
+
+@StringRes
+internal fun categoryLabelRes(category: ComponentCategory): Int = when (category) {
+    ComponentCategory.ICONS -> R.string.category_icons
+    ComponentCategory.LOCKSCREEN -> R.string.category_lockscreen
+    ComponentCategory.WALLPAPER -> R.string.category_wallpaper
+    ComponentCategory.FRAMEWORK -> R.string.category_framework
+    ComponentCategory.SYSTEM_UI -> R.string.category_system_ui
+    ComponentCategory.SYSTEM_UI_PLUGIN -> R.string.category_system_ui_plugin
+    ComponentCategory.LAUNCHER -> R.string.category_launcher
+    ComponentCategory.AOD -> R.string.category_aod
+    ComponentCategory.RINGTONE -> R.string.category_ringtone
+    ComponentCategory.FONT -> R.string.category_font
+    ComponentCategory.OTHER -> R.string.category_other
+}
+
+private fun categoryIcon(category: ComponentCategory): ImageVector = when (category) {
+    ComponentCategory.ICONS -> Icons.Filled.GridView
+    ComponentCategory.LOCKSCREEN -> Icons.Filled.Lock
+    ComponentCategory.WALLPAPER -> Icons.Filled.Image
+    ComponentCategory.FRAMEWORK -> Icons.Filled.Build
+    ComponentCategory.SYSTEM_UI -> Icons.Filled.PhoneAndroid
+    ComponentCategory.SYSTEM_UI_PLUGIN -> Icons.Filled.Widgets
+    ComponentCategory.LAUNCHER -> Icons.Filled.Home
+    ComponentCategory.AOD -> Icons.Filled.Nightlight
+    ComponentCategory.RINGTONE -> Icons.Filled.MusicNote
+    ComponentCategory.FONT -> Icons.Filled.FontDownload
+    ComponentCategory.OTHER -> Icons.Filled.Dashboard
+}

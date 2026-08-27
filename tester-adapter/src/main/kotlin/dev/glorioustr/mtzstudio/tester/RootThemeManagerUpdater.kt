@@ -20,8 +20,34 @@ data class RootUpdateResult(
     val success: Boolean,
     val message: String,
     val commandOutput: String,
+    val authorizationSource: String,
     val installedAfter: InstalledThemeManager,
 )
+
+data class PrivilegedCommandResult(
+    val exitCode: Int,
+    val output: String,
+    val authorizationSource: String,
+)
+
+fun interface PrivilegedCommandRunner {
+    fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult
+}
+
+class SuPrivilegedCommandRunner : PrivilegedCommandRunner {
+    override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
+        val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+            process.destroyForcibly()
+            throw ThemeManagerUpdateException("Root package installation timed out")
+        }
+        return PrivilegedCommandResult(
+            exitCode = process.exitValue(),
+            output = process.inputStream.bufferedReader().use { it.readText().takeLast(8_192) }.trim(),
+            authorizationSource = "Root yöneticisi (su)",
+        )
+    }
+}
 
 class ThemeManagerUpdateException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
@@ -29,6 +55,7 @@ class RootThemeManagerUpdater(
     context: Context,
     private val inspector: ThemeManagerInspector = ThemeManagerInspector(context),
     private val maxApkBytes: Long = 256L * 1024 * 1024,
+    private val commandRunner: PrivilegedCommandRunner = SuPrivilegedCommandRunner(),
 ) {
     private val stagingRoot = context.cacheDir.toPath().resolve("theme-manager-update")
 
@@ -88,39 +115,30 @@ class RootThemeManagerUpdater(
             throw ThemeManagerUpdateException("APK no longer passes package, version, and signature checks")
         }
 
-        val size = Files.size(apk.stagedPath)
-        val command = RootInstallCommand.forApkBytes(size)
-        val process = try {
-            ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+        val temporaryPath = "/data/local/tmp/mtzstudio-theme-manager-${UUID.randomUUID()}.apk"
+        val command = RootInstallCommand.forStagedApk(apk.stagedPath.toString(), temporaryPath)
+        val execution = try {
+            commandRunner.run(command, 180)
         } catch (error: Exception) {
-            throw ThemeManagerUpdateException("Could not start root shell", error)
+            throw ThemeManagerUpdateException("Could not start a privileged installation", error)
         }
         return try {
-            Files.newInputStream(apk.stagedPath).use { source ->
-                process.outputStream.use { destination -> source.copyTo(destination) }
-            }
-            val finished = process.waitFor(180, TimeUnit.SECONDS)
-            if (!finished) {
-                process.destroyForcibly()
-                throw ThemeManagerUpdateException("Root package installation timed out")
-            }
-            val output = process.inputStream.bufferedReader().use { it.readText().takeLast(8_192) }.trim()
             val after = inspector.inspect()
             val installedTarget = after.packageName == apk.packageName && after.isRecommended
             RootUpdateResult(
-                success = process.exitValue() == 0 && installedTarget,
+                success = execution.exitCode == 0 && installedTarget,
                 message = when {
-                    process.exitValue() != 0 -> "Root package manager rejected the downgrade"
+                    execution.exitCode != 0 -> "Root package manager rejected the downgrade"
                     !installedTarget -> "Package manager returned success but the target version is not active"
                     else -> "Theme Manager ${ThemeManagerContract.RECOMMENDED_VERSION} is now active"
                 },
-                commandOutput = output,
+                commandOutput = execution.output,
+                authorizationSource = execution.authorizationSource,
                 installedAfter = after,
             )
         } catch (error: ThemeManagerUpdateException) {
             throw error
         } catch (error: Exception) {
-            process.destroyForcibly()
             throw ThemeManagerUpdateException("Root installation failed", error)
         }
     }
@@ -160,8 +178,21 @@ class RootThemeManagerUpdater(
 }
 
 internal object RootInstallCommand {
-    fun forApkBytes(size: Long): String {
-        require(size > 0) { "APK size must be positive" }
-        return "pm install -r -d --user 0 -S $size -"
+    fun forStagedApk(sourcePath: String, temporaryPath: String): String {
+        require(sourcePath.isNotBlank()) { "Source path must not be blank" }
+        require(temporaryPath.startsWith("/data/local/tmp/mtzstudio-theme-manager-")) {
+            "Temporary path must stay in the app-owned install namespace"
+        }
+        val source = shellQuote(sourcePath)
+        val temporary = shellQuote(temporaryPath)
+        return buildString {
+            append("/system/bin/cp ").append(source).append(' ').append(temporary)
+            append(" && /system/bin/chmod 0644 ").append(temporary)
+            append(" && /system/bin/pm install -r -d --user 0 ").append(temporary)
+            append("; result=${'$'}?; /system/bin/rm -f ").append(temporary)
+            append("; exit ${'$'}result")
+        }
     }
+
+    private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
 }

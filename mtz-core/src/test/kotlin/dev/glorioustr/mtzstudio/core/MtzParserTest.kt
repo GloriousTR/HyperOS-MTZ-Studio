@@ -74,6 +74,24 @@ class MtzParserTest {
     }
 
     @Test
+    fun `parses Xiaomi metadata with CDATA and localized fields`() {
+        val xml = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+            <theme>
+              <version><![CDATA[OS3 v1.2]]></version>
+              <author><![CDATA[Huy KZ, MtzIconPack]]></author>
+              <title><![CDATA[iP27 Pro Eng Mod New]]></title>
+              <titles><title locale="en_US"><![CDATA[iP27 Pro Eng Mod New]]></title></titles>
+            </theme>
+        """.trimIndent()
+
+        val parsed = MtzParser().parse(zip("description.xml" to xml.encodeToByteArray(), "icons" to byteArrayOf(1)))
+
+        assertEquals("iP27 Pro Eng Mod New", assertNotNull(parsed.metadata).name)
+        assertEquals("Huy KZ, MtzIconPack", parsed.metadata?.author)
+        assertEquals("OS3 v1.2", parsed.metadata?.version)
+    }
+
+    @Test
     fun `rejects unix symlink entries`() {
         val mtz = zip("icons" to "target".encodeToByteArray())
         val bytes = Files.readAllBytes(mtz)

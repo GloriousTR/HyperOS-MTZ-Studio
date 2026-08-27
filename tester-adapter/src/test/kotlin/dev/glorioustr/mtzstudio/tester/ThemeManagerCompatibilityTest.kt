@@ -3,6 +3,7 @@ package dev.glorioustr.mtzstudio.tester
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ThemeManagerCompatibilityTest {
     @Test
@@ -25,9 +26,15 @@ class ThemeManagerCompatibilityTest {
     }
 
     @Test
-    fun `root command is limited to replacement and explicit downgrade`() {
-        val command = RootInstallCommand.forApkBytes(1234)
-        assertEquals("pm install -r -d --user 0 -S 1234 -", command)
+    fun `root command stages verified apk in a fixed temporary namespace and cleans it`() {
+        val command = RootInstallCommand.forStagedApk(
+            "/data/user/0/dev.glorioustr.mtzstudio/cache/theme-manager-update/themes-id.apk",
+            "/data/local/tmp/mtzstudio-theme-manager-id.apk",
+        )
+        assertTrue(command.contains("/system/bin/cp '/data/user/0/dev.glorioustr.mtzstudio/cache/theme-manager-update/themes-id.apk'"))
+        assertTrue(command.contains("/system/bin/pm install -r -d --user 0 '/data/local/tmp/mtzstudio-theme-manager-id.apk'"))
+        assertTrue(command.contains("/system/bin/rm -f '/data/local/tmp/mtzstudio-theme-manager-id.apk'"))
+        assertFalse(" -S " in command)
         assertFalse("skip-verification" in command)
         assertFalse("uninstall" in command)
     }
