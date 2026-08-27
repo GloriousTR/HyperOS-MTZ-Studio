@@ -9,7 +9,7 @@ enum class ComponentCategory(val label: String) {
     ICONS("Icons"),
     LOCKSCREEN("Lock screen"),
     WALLPAPER("Wallpaper"),
-    SYSTEM_UI("Notification panel"),
+    SYSTEM_UI("Status bar"),
     CONTACTS("Dialer & Contacts"),
     MMS("SMS & Messages"),
     FRAMEWORK("Framework resources"),
