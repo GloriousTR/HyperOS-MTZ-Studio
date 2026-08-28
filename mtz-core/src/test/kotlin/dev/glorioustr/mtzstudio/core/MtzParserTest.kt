@@ -97,6 +97,38 @@ class MtzParserTest {
     }
 
     @Test
+    fun `recognizes alternate Theme Manager component names`() {
+        val parsed = MtzParser().parse(
+            zip(
+                "statusbar" to byteArrayOf(1),
+                "contact" to byteArrayOf(2),
+                "mms" to byteArrayOf(3),
+                "lockstyle" to byteArrayOf(4),
+                "miwallpaper" to byteArrayOf(5),
+                "spaod" to byteArrayOf(6),
+                "largeicons" to byteArrayOf(7),
+                "fonts_fallback" to byteArrayOf(8),
+                "framework-res" to byteArrayOf(9),
+            ),
+        )
+
+        assertEquals(
+            setOf(
+                ComponentCategory.SYSTEM_UI,
+                ComponentCategory.CONTACTS,
+                ComponentCategory.MMS,
+                ComponentCategory.LOCKSCREEN,
+                ComponentCategory.WALLPAPER,
+                ComponentCategory.AOD,
+                ComponentCategory.ICONS,
+                ComponentCategory.FONT,
+                ComponentCategory.FRAMEWORK,
+            ),
+            parsed.components.map { it.category }.toSet(),
+        )
+    }
+
+    @Test
     fun `rejects unix symlink entries`() {
         val mtz = zip("icons" to "target".encodeToByteArray())
         val bytes = Files.readAllBytes(mtz)

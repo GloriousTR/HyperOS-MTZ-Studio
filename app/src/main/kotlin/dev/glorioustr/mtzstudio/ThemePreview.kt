@@ -21,15 +21,22 @@ import dev.glorioustr.mtzstudio.library.LibraryTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipFile
+import java.nio.file.Path
+
+internal enum class ThemePreviewPurpose {
+    PERSONALIZATION,
+    GALLERY,
+}
 
 @Composable
 internal fun ThemePreview(
     theme: LibraryTheme,
     category: ComponentCategory? = null,
+    purpose: ThemePreviewPurpose = ThemePreviewPurpose.PERSONALIZATION,
     modifier: Modifier = Modifier,
 ) {
-    val bitmap by produceState<Bitmap?>(null, theme.id, category) {
-        value = withContext(Dispatchers.IO) { decodePreview(theme, category) }
+    val bitmap by produceState<Bitmap?>(null, theme.id, category, purpose) {
+        value = withContext(Dispatchers.IO) { decodePreview(theme, category, purpose) }
     }
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
@@ -51,6 +58,30 @@ internal fun ThemePreview(
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.displayMedium,
         )
+    }
+}
+
+@Composable
+internal fun ThemeWallpaperPreview(
+    theme: LibraryTheme,
+    lockScreen: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val bitmap by produceState<Bitmap?>(null, theme.id, lockScreen) {
+        value = withContext(Dispatchers.IO) { decodeWallpaper(theme, lockScreen) }
+    }
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
     }
 }
 
@@ -94,30 +125,94 @@ internal fun UriImagePreview(
     }
 }
 
-private fun decodePreview(theme: LibraryTheme, category: ComponentCategory?): Bitmap? = runCatching {
+@Composable
+internal fun DeviceThemePreview(
+    path: Path?,
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    val bitmap by produceState<Bitmap?>(null, path) {
+        value = withContext(Dispatchers.IO) {
+            path?.toFile()?.takeIf { it.isFile && it.length() > 0L }?.let { file ->
+                runCatching { BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
+            }
+        }
+    }
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it.asImageBitmap(),
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } ?: Text(
+            text = title.take(1).uppercase(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.displayMedium,
+        )
+    }
+}
+
+private fun decodePreview(
+    theme: LibraryTheme,
+    category: ComponentCategory?,
+    purpose: ThemePreviewPurpose,
+): Bitmap? = runCatching {
     ZipFile(theme.archive.source.toFile()).use { zip ->
-        val path = previewEntryPath(theme, category) ?: return@use null
-        val entry = zip.getEntry(path) ?: return@use null
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        zip.getInputStream(entry).use { BitmapFactory.decodeStream(it, null, bounds) }
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0 || bounds.outWidth > MAX_DIMENSION || bounds.outHeight > MAX_DIMENSION) {
-            return@use null
-        }
-        var sample = 1
-        while (bounds.outWidth / sample > TARGET_DIMENSION || bounds.outHeight / sample > TARGET_DIMENSION) sample *= 2
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = sample
-            inPreferredConfig = Bitmap.Config.RGB_565
-        }
-        zip.getInputStream(entry).use { BitmapFactory.decodeStream(it, null, options) }
+        val path = previewEntryPath(theme, category, purpose) ?: return@use null
+        decodeZipBitmap(zip, path)
     }
 }.getOrNull()
 
+private fun decodeWallpaper(theme: LibraryTheme, lockScreen: Boolean): Bitmap? = runCatching {
+    val path = wallpaperEntryPath(theme, lockScreen) ?: return@runCatching null
+    ZipFile(theme.archive.source.toFile()).use { zip -> decodeZipBitmap(zip, path) }
+}.getOrNull()
+
+internal fun hasThemeWallpaper(theme: LibraryTheme, lockScreen: Boolean): Boolean =
+    wallpaperEntryPath(theme, lockScreen) != null
+
+private fun wallpaperEntryPath(theme: LibraryTheme, lockScreen: Boolean): String? {
+    val requestedPath = if (lockScreen) {
+        "wallpaper/default_lock_wallpaper.jpg"
+    } else {
+        "wallpaper/default_wallpaper.jpg"
+    }
+    return theme.archive.entries.firstOrNull {
+        !it.directory && it.path.equals(requestedPath, ignoreCase = true)
+    }?.path
+}
+
+private fun decodeZipBitmap(zip: ZipFile, path: String): Bitmap? {
+    val entry = zip.getEntry(path) ?: return null
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    zip.getInputStream(entry).use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0 ||
+        bounds.outWidth > MAX_DIMENSION || bounds.outHeight > MAX_DIMENSION
+    ) return null
+    var sample = 1
+    while (bounds.outWidth / sample > TARGET_DIMENSION || bounds.outHeight / sample > TARGET_DIMENSION) sample *= 2
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sample
+        inPreferredConfig = Bitmap.Config.RGB_565
+    }
+    return zip.getInputStream(entry).use { BitmapFactory.decodeStream(it, null, options) }
+}
+
 /** True only when the selected component has a real image that can be shown in its picker. */
 internal fun hasThemePreview(theme: LibraryTheme, category: ComponentCategory): Boolean =
-    previewEntryPath(theme, category) != null
+    previewEntryPath(theme, category, ThemePreviewPurpose.PERSONALIZATION) != null
 
-private fun previewEntryPath(theme: LibraryTheme, category: ComponentCategory?): String? {
+private fun previewEntryPath(
+    theme: LibraryTheme,
+    category: ComponentCategory?,
+    purpose: ThemePreviewPurpose,
+): String? {
     val images = theme.archive.entries.asSequence()
         .filter { entry ->
             !entry.directory && entry.expandedBytes in 1..MAX_PREVIEW_BYTES && isImagePath(entry.path)
@@ -125,7 +220,21 @@ private fun previewEntryPath(theme: LibraryTheme, category: ComponentCategory?):
         .map { it.path }
         .toList()
     val byLowerPath = images.associateBy(String::lowercase)
-    previewCandidates(category).forEach { candidate ->
+    val candidates = if (category == null && purpose == ThemePreviewPurpose.GALLERY) {
+        if (theme.includeInThemeGallery) {
+            listOf("preview/mtz_studio_generated.jpg", "wallpaper/default_wallpaper.jpg")
+        } else {
+            listOf(
+                "wallpaper/default_wallpaper.jpg",
+                "preview/preview_launcher_0.jpg",
+                "preview/preview_launcher_1.jpg",
+                "preview/preview_wallpaper_0.jpg",
+            )
+        }
+    } else {
+        previewCandidates(category)
+    }
+    candidates.forEach { candidate ->
         byLowerPath[candidate.lowercase()]?.let { return it }
     }
     val keywords = previewKeywords(category)
@@ -135,7 +244,7 @@ private fun previewEntryPath(theme: LibraryTheme, category: ComponentCategory?):
                 keywords.any { keyword -> path.contains(keyword, ignoreCase = true) }
         }?.let { return it }
     }
-    return if (category == null) images.firstOrNull { it.startsWith("preview/", ignoreCase = true) } else null
+    return null
 }
 
 private fun isImagePath(path: String): Boolean =

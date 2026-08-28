@@ -6,9 +6,11 @@ import android.content.Intent
 import dev.glorioustr.mtzstudio.core.Hashing
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
+import dev.glorioustr.mtzstudio.tester.ThemeManagerContract
 import java.util.UUID
 
 data class PreparedThemeApply(
+    val themeId: String,
     val themeName: String,
     val stagedPath: String,
     val intent: Intent,
@@ -33,32 +35,17 @@ class ThemeApplyCoordinator(
         val result = commandRunner.run(command, 120)
         check(result.exitCode == 0) { "Tema, Tema Yöneticisine hazırlanamadı: ${result.output.takeLast(500)}" }
 
-        val candidateComponents = listOf(
-            ComponentName(THEME_MANAGER_PACKAGE, "com.android.thememanager.activity.ApplyThemeForScreenshot"),
-            ComponentName(THEME_MANAGER_PACKAGE, "com.android.thememanager.ApplyThemeForScreenshot"),
+        val request = ThemeManagerContract.legacyTesterRequest(
+            stagedPath,
+            context.packageName,
         )
-        val targetComponent = candidateComponents.firstOrNull { comp ->
-            val testIntent = Intent(THEME_TEST_ACTION).setComponent(comp)
-            context.packageManager.resolveActivity(testIntent, 0) != null
-        } ?: ComponentName(THEME_MANAGER_PACKAGE, THEME_TEST_ALIAS)
-
-        val intent = Intent(THEME_TEST_ACTION).apply {
-            component = targetComponent
-            putExtra("theme_file_path", stagedPath)
-            putExtra("file_path", stagedPath)
-            putExtra("theme_path", stagedPath)
-            putExtra("mThemePath", stagedPath)
-            putExtra("theme_apply_flags", -1L)
-            putExtra("theme_remove_flags", -1L)
-            putExtra("api_called_from", context.packageName)
-            putExtra("is_apply", true)
-            putExtra("apply", true)
-            putExtra("is_local", true)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val intent = Intent(request.action).apply {
+            component = ComponentName(THEME_MANAGER_PACKAGE, request.componentClassName)
+            request.stringExtras.forEach(::putExtra)
+            request.longExtras.forEach(::putExtra)
         }
         check(intent.resolveActivity(context.packageManager) != null) { "Uyumlu Tema Yöneticisi tester aktivitesi bulunamadı" }
-        return PreparedThemeApply(theme.archive.metadata?.name ?: theme.displayName, stagedPath, intent)
+        return PreparedThemeApply(theme.id.value, theme.archive.metadata?.name ?: theme.displayName, stagedPath, intent)
     }
 
     fun cleanup(prepared: PreparedThemeApply) {
@@ -70,8 +57,6 @@ class ThemeApplyCoordinator(
 
     private companion object {
         const val THEME_MANAGER_PACKAGE = "com.android.thememanager"
-        const val THEME_TEST_ALIAS = "com.android.thememanager.ApplyThemeForScreenshot"
-        const val THEME_TEST_ACTION = "com.android.thememanager.support3.0"
         const val THEME_MANAGER_STAGING_ROOT = "/sdcard/Android/data/com.android.thememanager/files/mtzstudio"
     }
 }

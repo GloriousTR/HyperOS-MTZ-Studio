@@ -1,99 +1,135 @@
 # HyperOS MTZ Studio
 
 <p align="center">
-  <strong>Modern, Powerful Theme Composer & Customization Studio for Xiaomi HyperOS & MIUI</strong>
+  <img src="app/src/main/res/drawable-nodpi/logo_banner.png" alt="HyperOS MTZ Studio" width="760">
+</p>
+
+<p align="center">
+  <strong>Import, organize, preview, mix and apply MTZ themes from one modern Android studio.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GloriousTR/HyperOS-MTZ-Studio?display_name=tag&style=for-the-badge&color=7357e6"></a>
+  <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/latest"><strong>Download the latest APK</strong></a>
+  ·
+  <a href="docs/theme-manager-compatibility.md">Theme Manager compatibility</a>
+  ·
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
 
 ---
 
-## 🌟 Overview
+## The MTZ workflow, rebuilt
 
-**HyperOS MTZ Studio** is a comprehensive, standalone Android utility designed for Xiaomi HyperOS and MIUI devices. It empowers users to inspect, deconstruct, mix, and compose custom `.mtz` themes with precision, safety, and full component flexibility.
+HyperOS MTZ Studio is an independent, open-source Android application for Xiaomi HyperOS and MIUI devices. It keeps imported and generated themes in a private library, presents them with real previews, and lets you build a new MTZ by combining the parts you actually want.
 
----
+<p align="center">
+  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio home screen" width="30%">
+  &nbsp;
+  <img src="docs/screenshots/themes.png" alt="Visual theme library" width="30%">
+  &nbsp;
+  <img src="docs/screenshots/composer.png" alt="MTZ theme composer" width="30%">
+</p>
 
-## ✨ Key Features
+## What you can do
 
-- **🎨 Temanı Oluştur (Theme Mixer):**
-  - Select a **Base Theme (Temel Tema)** to automatically populate all theme components.
-  - Seamlessly mix and swap individual components from different MTZ themes:
-    - 📱 **Simgeler (Icons)**
-    - 🔒 **Kilit Ekranı Stili (Lock Screen)**
-    - 🖼️ **Duvar Kâğıdı (Wallpaper)**
-    - 📶 **Durum Çubuğu (Status Bar & Notification Panel)**
-    - 📞 **Arama Tuşları (Dialer & Contacts)**
-    - 💬 **SMS Ekranı (SMS & Messages)**
-    - 🏠 **Başlatıcı (Launcher)**
-    - 🌙 **Her Zaman Açık Ekran (Always On Display / AOD)**
-    - 🔤 **Yazı Tipi (Fonts)**
+- **Import MTZ files safely.** Inspect structure and metadata before adding a theme to the app library.
+- **Bring themes from Xiaomi Theme Manager.** Scan compatible device theme locations and select the themes you want to preserve as MTZ files.
+- **Browse a visual theme library.** Home-screen previews, clear source labels, compact Apply actions and dedicated delete controls keep large collections manageable.
+- **Create your own theme.** Start from a complete base theme and replace any of eight visual components:
+  - Icons
+  - Lock screen
+  - Status bar
+  - Dialer and contacts
+  - Messages
+  - Launcher
+  - Always-on display
+  - Font
+- **Choose wallpapers independently.** Use the base theme wallpapers or select separate home-screen and lock-screen images from the gallery.
+- **Preserve creator information.** Leave the creator field blank to inherit the original author, or enter your own name for the generated theme.
+- **Keep generated previews.** The composer stores a persistent cover inside each generated MTZ so the library shows the theme's real home wallpaper.
+- **Export and back up.** Generated themes are saved to the private library and exported to `Downloads/MTZ Studio`. The complete library can also be backed up locally or through the supported cloud destinations.
+- **Diagnose difficult imports.** Live Diagnostics records the import/apply flow without crowding the main screen.
 
-- **📸 Custom Gallery Wallpapers:**
-  - Assign distinct high-resolution custom images directly from your Gallery for the **Home Screen** and **Lock Screen** independently during theme composition.
+## v1.2.0 highlights
 
-- **📥 Selective Device Theme Import:**
-  - Scan installed themes directly from Xiaomi Themes storage (`/data/system/theme/` and storage caches).
-  - Select and import only the themes you want with a clean multi-select picker dialog to save device storage.
+- Reworked Themes screen with visual cards, compact Apply buttons and trash actions.
+- Horizontal base-theme and component selection inside the composer.
+- Eight focused component categories; wallpapers are handled separately.
+- Persistent preview generation for newly composed MTZ themes.
+- Creator-name inheritance and optional author override.
+- Consistent two-line theme titles with aligned controls.
+- More polished About screen, menu cards and overall visual hierarchy.
+- Global Theme Manager apply path retained for the tested 3.0.5.x family.
 
-- **💾 Public Storage Export:**
-  - Composed themes are automatically exported to both the internal library and your public storage (`Downloads/MTZ Studio/<ThemeName>.mtz`) for instant sharing and manual backup.
+## Compatibility
 
-- **🛡️ Embedded Global Theme Protection (LibXposed / Vector Hook):**
-  - Built-in, lightweight LibXposed DRM validation bypass.
-  - Prevents Xiaomi Theme Manager from automatically resetting 3rd-party MTZ themes back to default after 15–30 minutes or device reboots.
-  - Works seamlessly with modern Xposed frameworks (Vector, LSPosed) without modifying system APKs or risking bootloops.
+| Xiaomi Themes version | v1.2.0 status | Notes |
+| --- | --- | --- |
+| **2.15.5.46** | Recommended for legacy local import | Imports MTZ as an independent local theme. Installing or downgrading a system app requires root and must be done carefully. |
+| **3.0.5.x Global** | Supported | The v1.2.0 apply flow is preserved and tested on the 3.0.5.6 global build. |
+| **3.0.6.8** | Limited | Xiaomi removed the legacy tester activity, so older tester-based flows are unavailable. |
+| **10.8.7.6 / HyperOS Theme Manager module** | Planned for v2.0.0 | The modded Theme Manager integration will be finalized and device-tested on the dedicated v2 track. |
 
-- **☁️ Cloud Backup & Synchronization:**
-  - Backup and restore your custom MTZ library to cloud storage and Google Drive.
+Some Global ROM restrictions require root plus a compatible Xposed environment such as Vector or LSPosed. HyperOS MTZ Studio only exposes these controls for themes you own or are permitted to use; it does not grant framework, root or theme rights by itself.
 
-- **⚡ Live Diagnostics & Hardened Verification:**
-  - Real-time logging of MTZ import flows.
-  - Hardened XML parsing (`description.xml`), deterministic ZIP compression, SHA-256 integrity validation, and structure diagnostics.
+See [Theme Manager compatibility](docs/theme-manager-compatibility.md) for the detailed decision flow and diagnostics.
 
-- **💎 Modern Material 3 & Liquid Glass UI:**
-  - Beautiful, responsive Compose interface supporting Dark Mode, AMOLED Black, and Liquid Glass backdrop styling.
+## Interface and accessibility
 
----
+- Material You and Liquid Glass presentation styles.
+- System, Light, Dark and AMOLED color modes.
+- System-language integration with Turkish and English resources.
+- Contrast-aware text and surfaces across every appearance combination.
+- Settings, backup, diagnostics and About collected in a large, card-based overlay menu.
 
-## 🏗️ Architecture & Modules
-
-The project is structured into modular Gradle subprojects:
+## Project structure
 
 | Module | Responsibility |
 | --- | --- |
-| **`app`** | Jetpack Compose UI, Navigation, LibXposed Module (`ThemeProtectionModule`), Shevery/Root IPC, SAF pickers, and Export Coordinator. |
-| **`mtz-core`** | Hardened MTZ parsing, XML deserialization, cryptographic SHA-256 calculation, and component models. |
-| **`mtz-library`** | App-private theme storage, metadata indexing, device theme scanner, and backup/restore engine. |
-| **`mtz-composer`** | Deterministic multi-layer theme composer, asset recombination, and reopen verification. |
-| **`tester-adapter`** | Xiaomi Theme Manager version inspector, compatibility heuristics, and privileged command runners (Su / Shevery). |
+| `app` | Jetpack Compose UI, navigation, theme previews, Xposed integration, Shevery/root coordination and export flow. |
+| `mtz-core` | Hardened MTZ parsing, metadata extraction, component recognition and SHA-256 validation. |
+| `mtz-library` | App-private theme storage, indexing, device scanning and backup/restore. |
+| `mtz-composer` | Deterministic component composition, wallpaper handling and reopen verification. |
+| `tester-adapter` | Xiaomi Theme Manager inspection, compatibility decisions and privileged runners. |
 
----
+## Build from source
 
-## 🛠️ Building & Requirements
+Requirements:
 
-- **JDK:** 17 or newer
-- **Android SDK:** API 34+ (Target SDK 36, Min SDK 29)
-- **Gradle:** 8.11.1+
+- JDK 17+
+- Android SDK with API 36 installed
+- Android 8.0 / API 26 or newer device target
 
-### Build Commands
+macOS or Linux:
 
 ```shell
-# Run unit tests
-./gradlew test
-
-# Assemble Debug APK
-./gradlew assembleDebug
-
-# Assemble Release APK
-./gradlew assembleRelease
+./gradlew test assembleDebug
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
+
 ```powershell
 .\gradlew.bat test assembleDebug
 ```
 
+Release APK:
+
+```powershell
+.\gradlew.bat assembleRelease
+```
+
+## Responsible use
+
+Use themes, fonts, icons and artwork only when you own them or have permission from their creators. Xiaomi, HyperOS and MIUI are trademarks of their respective owners; this independent project is not affiliated with or endorsed by Xiaomi.
+
 ---
 
-## 📜 License
-
-This project is open-source and intended for personal customization and device enhancement. All trademarks, logos, and brand names are the property of their respective owners.
+<p align="center">
+  Built for theme makers and HyperOS enthusiasts by <a href="https://github.com/GloriousTR">GloriousTR</a>.
+</p>

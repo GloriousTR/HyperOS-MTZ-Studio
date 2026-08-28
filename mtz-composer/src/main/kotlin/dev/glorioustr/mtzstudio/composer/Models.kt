@@ -31,6 +31,7 @@ data class CompositionRequest(
     val baseSource: CompositionSource? = null,
     val customHomeWallpaperBytes: ByteArray? = null,
     val customLockWallpaperBytes: ByteArray? = null,
+    val generatedPreviewBytes: ByteArray? = null,
 )
 
 data class FontExportRequest(

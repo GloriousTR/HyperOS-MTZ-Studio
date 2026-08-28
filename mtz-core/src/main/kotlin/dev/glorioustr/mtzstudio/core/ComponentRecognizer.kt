@@ -28,18 +28,22 @@ internal object ComponentRecognizer {
         if (root in ignoredRoots || root.startsWith("meta-inf")) return null
 
         val category = when {
-            root == "icons" -> ComponentCategory.ICONS
-            root == "lockscreen" || root == "lock_style" -> ComponentCategory.LOCKSCREEN
-            root == "wallpaper" || root == "wallpapers" -> ComponentCategory.WALLPAPER
-            root == "framework-miui-res" -> ComponentCategory.FRAMEWORK
-            root == "com.android.systemui" -> ComponentCategory.SYSTEM_UI
+            root == "icons" || root == "largeicons" -> ComponentCategory.ICONS
+            root == "lockscreen" || root == "lock_style" || root == "lockstyle" ||
+                root.startsWith("lockscreen_") || root.startsWith("lockstyle_") ||
+                root == "splockscreen" -> ComponentCategory.LOCKSCREEN
+            root == "wallpaper" || root == "wallpapers" || root == "miwallpaper" ||
+                root == "spwallpaper" -> ComponentCategory.WALLPAPER
+            root == "framework" || root == "framework-res" || root == "framework-miui-res" -> ComponentCategory.FRAMEWORK
+            root == "com.android.systemui" || root == "statusbar" -> ComponentCategory.SYSTEM_UI
             root == "miui.systemui.plugin" -> ComponentCategory.SYSTEM_UI_PLUGIN
-            root == "com.android.contacts" || root == "com.android.incallui" || root == "com.android.phone" -> ComponentCategory.CONTACTS
-            root == "com.android.mms" || root == "com.google.android.apps.messaging" -> ComponentCategory.MMS
+            root == "contact" || root == "contacts" || root == "com.android.contacts" ||
+                root == "com.android.incallui" || root == "com.android.phone" -> ComponentCategory.CONTACTS
+            root == "mms" || root == "com.android.mms" || root == "com.google.android.apps.messaging" -> ComponentCategory.MMS
             root == "com.miui.home" || root == "launcher" -> ComponentCategory.LAUNCHER
-            root == "aod" || root == "com.miui.aod" -> ComponentCategory.AOD
+            root == "aod" || root == "spaod" || root == "com.miui.aod" -> ComponentCategory.AOD
             root == "ringtone" || root == "ringtones" || lower.startsWith("audio/ringtone") -> ComponentCategory.RINGTONE
-            root == "font" || root == "fonts" -> ComponentCategory.FONT
+            root == "font" || root == "fonts" || root == "fonts_fallback" -> ComponentCategory.FONT
             root.startsWith("com.") || root.startsWith("miui.") || root.startsWith("framework-") -> ComponentCategory.OTHER
             else -> return null
         }

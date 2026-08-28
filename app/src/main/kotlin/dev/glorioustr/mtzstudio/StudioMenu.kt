@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -34,10 +36,12 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -61,6 +65,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Clear
@@ -75,8 +80,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -90,8 +97,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -130,12 +141,11 @@ internal enum class StudioDestination(
     BACKUP(R.string.dest_backup),
     DIAGNOSTICS(R.string.dest_diagnostics),
     THEME_PROTECTION(R.string.dest_theme_protection),
+    ABOUT(R.string.dest_about),
 }
 
 @Composable
 internal fun HomeMenuScreen(
-    themes: List<LibraryTheme>,
-    status: String,
     importExpanded: Boolean,
     importing: Boolean,
     themeManagerInspector: ThemeManagerInspector,
@@ -151,10 +161,8 @@ internal fun HomeMenuScreen(
             StudioDestination.THEMES,
             Icons.Filled.ColorLens,
             Color(0xFFFFB52E),
-            themes.count(LibraryTheme::isThemeGalleryItem),
-            R.string.unit_local_theme,
         ),
-        MenuSpec(StudioDestination.PERSONALIZE, Icons.Filled.Tune, Color(0xFF8054E8), null, null),
+        MenuSpec(StudioDestination.PERSONALIZE, Icons.Filled.Tune, Color(0xFF8054E8)),
     )
 
     LazyColumn(
@@ -167,7 +175,7 @@ internal fun HomeMenuScreen(
                     icon = Icons.Filled.Add,
                     color = Color(0xFF26A69A),
                     title = stringResource(R.string.mtz_import_title),
-                    subtitle = status,
+                    subtitle = stringResource(R.string.mtz_import_home_subtitle),
                     expanded = importExpanded,
                     onClick = onToggleImport,
                 )
@@ -237,6 +245,12 @@ internal fun StudioOverlayMenu(
             icon = Icons.Filled.Security,
             color = Color(0xFF2E7D32),
             descriptionRes = R.string.overlay_theme_protection_desc,
+        ),
+        OverlayMenuItem(
+            destination = StudioDestination.ABOUT,
+            icon = Icons.Filled.Info,
+            color = Color(0xFF7E57C2),
+            descriptionRes = R.string.overlay_about_desc,
         ),
     )
 
@@ -316,6 +330,7 @@ private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
 @Composable
 internal fun ThemesScreen(
     themes: List<LibraryTheme>,
+    activeThemeId: String?,
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
@@ -324,6 +339,7 @@ internal fun ThemesScreen(
     modifier: Modifier = Modifier,
 ) {
     var pendingDeleteTheme by remember { mutableStateOf<LibraryTheme?>(null) }
+    var detailsTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     val galleryThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
 
     LazyVerticalGrid(
@@ -351,9 +367,31 @@ internal fun ThemesScreen(
             }
         }
         gridItems(galleryThemes, key = { it.id.value }) { theme ->
-            ThemeGalleryCard(theme, onApplyTheme, onDeleteTheme = { pendingDeleteTheme = it })
+            ThemeGalleryCard(
+                theme = theme,
+                isActive = theme.id.value == activeThemeId,
+                onOpenDetails = { detailsTheme = theme },
+                onApplyTheme = onApplyTheme,
+                onDeleteTheme = { pendingDeleteTheme = it },
+            )
         }
         item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(20.dp)) }
+    }
+
+    detailsTheme?.let { theme ->
+        ThemeDetailsDialog(
+            theme = theme,
+            isActive = theme.id.value == activeThemeId,
+            onDismiss = { detailsTheme = null },
+            onApply = {
+                detailsTheme = null
+                onApplyTheme(theme)
+            },
+            onDelete = {
+                detailsTheme = null
+                pendingDeleteTheme = theme
+            },
+        )
     }
 
     pendingDeleteTheme?.let { themeToDelete ->
@@ -634,12 +672,9 @@ internal fun CategoryScreen(
                         Text(
                             theme.archive.metadata?.name ?: theme.displayName,
                             fontWeight = FontWeight.Bold,
+                            minLines = 2,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            stringResource(R.string.entries_count, component.entryPaths.size),
-                            style = MaterialTheme.typography.labelSmall,
                         )
                     }
                 }
@@ -654,6 +689,7 @@ internal fun PersonalizeScreen(
     themes: List<LibraryTheme>,
     selections: MutableMap<ComponentCategory, UiSelection>,
     compositionName: String,
+    compositionMakerName: String,
     lastResult: CompositionResult?,
     status: String,
     baseThemeId: String? = null,
@@ -665,22 +701,27 @@ internal fun PersonalizeScreen(
     onPickLockWallpaper: () -> Unit = {},
     onRemoveLockWallpaper: () -> Unit = {},
     onCompositionNameChange: (String) -> Unit,
-    onOpenCategory: (StudioDestination) -> Unit,
+    onCompositionMakerNameChange: (String) -> Unit,
     onCompose: () -> Unit,
     onShare: (Path) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showBaseThemeDialog by remember { mutableStateOf(false) }
+    var quickPickCategory by remember { mutableStateOf<ComponentCategory?>(null) }
     val baseTheme = baseThemeId?.let { id -> themes.firstOrNull { it.id.value == id } }
+    val baseMakerName = baseTheme?.archive?.metadata?.let { metadata ->
+        metadata.designer?.takeIf(String::isNotBlank)
+            ?: metadata.author?.takeIf(String::isNotBlank)
+    }
 
     val availableCategories = ComponentCategory.entries.filter { category ->
-        category.isPersonalizationOption() &&
+        category != ComponentCategory.WALLPAPER &&
+            category.isPersonalizationOption() &&
             themes.any { theme ->
-                theme.archive.components.any { it.category == category }
+                theme.archive.components.any { it.category == category } && hasThemePreview(theme, category)
             }
     }
     val visibleSelections = selections.values.filter { it.category.isPersonalizationOption() }
-    val sourceCount = visibleSelections.map(UiSelection::themeId).distinct().size
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -743,11 +784,6 @@ internal fun PersonalizeScreen(
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleSmall,
                                     )
-                                    Text(
-                                        stringResource(R.string.entries_count, baseTheme.archive.components.count { it.category.isPersonalizationOption() }),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Button(onClick = { showBaseThemeDialog = true }) {
                                             Text(stringResource(R.string.base_theme_change_btn))
@@ -793,7 +829,7 @@ internal fun PersonalizeScreen(
                         title = stringResource(categoryLabelRes(category)),
                         selectedTheme = selectedTheme,
                         category = category,
-                        onClick = { onOpenCategory(destinationFor(category)) },
+                        onClick = { quickPickCategory = category },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -819,6 +855,8 @@ internal fun PersonalizeScreen(
                         icon = Icons.Default.Image,
                         title = stringResource(R.string.custom_home_wallpaper_title),
                         uriString = customHomeWallpaperUri,
+                        baseTheme = baseTheme,
+                        lockScreen = false,
                         onPick = onPickHomeWallpaper,
                         onRemove = onRemoveHomeWallpaper,
                         modifier = Modifier.weight(1f),
@@ -827,6 +865,8 @@ internal fun PersonalizeScreen(
                         icon = Icons.Default.Lock,
                         title = stringResource(R.string.custom_lock_wallpaper_title),
                         uriString = customLockWallpaperUri,
+                        baseTheme = baseTheme,
+                        lockScreen = true,
                         onPick = onPickLockWallpaper,
                         onRemove = onRemoveLockWallpaper,
                         modifier = Modifier.weight(1f),
@@ -859,10 +899,22 @@ internal fun PersonalizeScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        Text(
-                            stringResource(R.string.personalize_stats, visibleSelections.size, sourceCount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        OutlinedTextField(
+                            value = compositionMakerName,
+                            onValueChange = onCompositionMakerNameChange,
+                            label = { Text(stringResource(R.string.theme_maker_name_label)) },
+                            placeholder = baseMakerName?.let { maker ->
+                                { Text(maker) }
+                            },
+                            supportingText = {
+                                Text(
+                                    baseMakerName?.let { maker ->
+                                        stringResource(R.string.theme_maker_inherited, maker)
+                                    } ?: stringResource(R.string.theme_maker_inherited_unknown),
+                                )
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         if (status.isNotBlank()) {
                             Text(status, style = MaterialTheme.typography.bodySmall)
@@ -893,70 +945,163 @@ internal fun PersonalizeScreen(
     }
 
     if (showBaseThemeDialog) {
-        val fullThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
-        AlertDialog(
-            onDismissRequest = { showBaseThemeDialog = false },
-            title = { Text(stringResource(R.string.base_theme_dialog_title)) },
-            text = {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+        HorizontalThemePickerDialog(
+            title = stringResource(R.string.base_theme_dialog_title),
+            description = stringResource(R.string.base_theme_picker_desc),
+            choices = themes.filter(LibraryTheme::isThemeGalleryItem).map { theme ->
+                ThemeChoice(theme = theme)
+            },
+            selectedKey = baseTheme?.id?.value,
+            onSelect = { choice ->
+                onSelectBaseTheme(choice.theme)
+                showBaseThemeDialog = false
+            },
+            onClear = if (baseTheme != null) {
+                {
+                    onSelectBaseTheme(null)
+                    showBaseThemeDialog = false
+                }
+            } else null,
+            onDismiss = { showBaseThemeDialog = false },
+        )
+    }
+
+    quickPickCategory?.let { category ->
+        val current = selections[category]
+        val choices = themes.mapNotNull { theme ->
+            if (!hasThemePreview(theme, category)) return@mapNotNull null
+            val component = theme.archive.components.firstOrNull { it.category == category }
+                ?: return@mapNotNull null
+            ThemeChoice(theme = theme, category = category, rootPath = component.rootPath)
+        }
+        HorizontalThemePickerDialog(
+            title = stringResource(R.string.category_quick_picker_title, stringResource(categoryLabelRes(category))),
+            description = stringResource(R.string.category_quick_picker_desc),
+            choices = choices,
+            selectedKey = current?.let { "${it.themeId.value}:${it.rootPath}" },
+            onSelect = { choice ->
+                selections[category] = UiSelection(choice.theme.id, category, requireNotNull(choice.rootPath))
+                quickPickCategory = null
+            },
+            onClear = if (current != null) {
+                {
+                    selections.remove(category)
+                    quickPickCategory = null
+                }
+            } else null,
+            onDismiss = { quickPickCategory = null },
+        )
+    }
+}
+
+private data class ThemeChoice(
+    val theme: LibraryTheme,
+    val category: ComponentCategory? = null,
+    val rootPath: String? = null,
+) {
+    val key: String get() = rootPath?.let { "${theme.id.value}:$it" } ?: theme.id.value
+}
+
+@Composable
+private fun HorizontalThemePickerDialog(
+    title: String,
+    description: String,
+    choices: List<ThemeChoice>,
+    selectedKey: String?,
+    onSelect: (ThemeChoice) -> Unit,
+    onClear: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(fullThemes) { theme ->
-                        StudioCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelectBaseTheme(theme)
-                                    showBaseThemeDialog = false
-                                },
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        description,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                if (choices.isEmpty()) {
+                    Box(Modifier.padding(horizontal = 20.dp)) {
+                        EmptyState(
+                            stringResource(R.string.empty_category_title),
+                            stringResource(R.string.empty_category_desc),
+                        )
+                    }
+                } else {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(choices, key = ThemeChoice::key) { choice ->
+                            val checked = choice.key == selectedKey
+                            Surface(
+                                modifier = Modifier.width(184.dp).clickable { onSelect(choice) },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                tonalElevation = if (checked) 6.dp else 1.dp,
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp, 64.dp)
-                                        .clip(RoundedCornerShape(6.dp)),
-                                ) {
-                                    ThemePreview(
-                                        theme = theme,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                }
-                                Column(Modifier.weight(1f)) {
+                                Column {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(248.dp)
+                                            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+                                    ) {
+                                        ThemePreview(
+                                            theme = choice.theme,
+                                            category = choice.category,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { enabled -> if (enabled) onSelect(choice) },
+                                            modifier = Modifier.align(Alignment.TopEnd),
+                                        )
+                                    }
                                     Text(
-                                        theme.archive.metadata?.name ?: theme.displayName,
+                                        choice.theme.archive.metadata?.name ?: choice.theme.displayName,
+                                        modifier = Modifier.padding(12.dp),
                                         fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 1,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        minLines = 2,
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
-                                    )
-                                    Text(
-                                        stringResource(
-                                            R.string.entries_count,
-                                            theme.archive.components.count { it.category.isPersonalizationOption() },
-                                        ),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
                         }
                     }
                 }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showBaseThemeDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+                    Spacer(Modifier.weight(1f))
+                    onClear?.let { clear ->
+                        OutlinedButton(onClick = clear) { Text(stringResource(R.string.base_theme_clear_btn)) }
+                    }
                 }
-            },
-        )
+            }
+        }
     }
 }
 
@@ -1727,31 +1872,429 @@ internal fun AppearanceScreen(
 @Composable
 private fun ThemeGalleryCard(
     theme: LibraryTheme,
+    isActive: Boolean,
+    onOpenDetails: () -> Unit,
     onApplyTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        ThemePreview(
-            theme = theme,
-            modifier = Modifier.fillMaxWidth().aspectRatio(0.58f).clip(RoundedCornerShape(14.dp)),
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.58f)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(onClick = onOpenDetails),
+        ) {
+            ThemePreview(
+                theme = theme,
+                purpose = ThemePreviewPurpose.GALLERY,
+                modifier = Modifier.fillMaxSize(),
+            )
+            ThemeSourceBadge(
+                theme = theme,
+                modifier = Modifier.align(Alignment.TopStart).padding(7.dp),
+            )
+            if (isActive) {
+                StatusBadge(
+                    text = stringResource(R.string.theme_active_badge),
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(7.dp),
+                )
+            }
+        }
         Text(
             theme.archive.metadata?.name ?: theme.displayName,
             fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
+            minLines = 2,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Button(onClick = { onApplyTheme(theme) }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.action_apply))
-        }
-        OutlinedButton(
-            onClick = { onDeleteTheme(theme) },
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error,
-            ),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.action_delete), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Button(
+                onClick = { onApplyTheme(theme) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+            ) {
+                Text(stringResource(R.string.action_apply), maxLines = 1)
+            }
+            OutlinedIconButton(
+                onClick = { onDeleteTheme(theme) },
+                modifier = Modifier.size(44.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeDetailsDialog(
+    theme: LibraryTheme,
+    isActive: Boolean,
+    onDismiss: () -> Unit,
+    onApply: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val title = theme.archive.metadata?.name ?: theme.displayName
+    val categories = theme.archive.components.asSequence()
+        .map { it.category }
+        .filter(ComponentCategory::isPersonalizationOption)
+        .distinct()
+        .toList()
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.92f).heightIn(max = 720.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+        ) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                item {
+                    Box(Modifier.fillMaxWidth().height(360.dp)) {
+                        ThemePreview(
+                            theme = theme,
+                            purpose = ThemePreviewPurpose.GALLERY,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        ThemeSourceBadge(
+                            theme = theme,
+                            modifier = Modifier.align(Alignment.TopStart).padding(14.dp),
+                        )
+                        if (isActive) {
+                            StatusBadge(
+                                text = stringResource(R.string.theme_active_badge),
+                                color = Color(0xFF2E7D32),
+                                modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
+                            )
+                        }
+                    }
+                }
+                item {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+                        val maker = theme.archive.metadata?.let { metadata ->
+                            metadata.designer?.takeIf(String::isNotBlank)
+                                ?: metadata.author?.takeIf(String::isNotBlank)
+                        }
+                        maker?.let { author ->
+                            Text(
+                                stringResource(R.string.theme_designed_by, author),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                        theme.archive.metadata?.description?.takeIf(String::isNotBlank)?.let { description ->
+                            Text(
+                                description,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (isActive) {
+                            Text(
+                                stringResource(R.string.theme_active_explanation),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+                if (categories.isNotEmpty()) {
+                    item {
+                        Text(
+                            stringResource(R.string.theme_includes_title),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(categories) { category ->
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    shape = RoundedCornerShape(50),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(categoryIcon(category), contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Text(stringResource(categoryLabelRes(category)), style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Button(onClick = onApply, modifier = Modifier.weight(1f).height(48.dp)) {
+                            Text(stringResource(R.string.action_apply))
+                        }
+                        OutlinedIconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.action_delete),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeSourceBadge(theme: LibraryTheme, modifier: Modifier = Modifier) {
+    StatusBadge(
+        text = stringResource(
+            if (theme.includeInThemeGallery) R.string.theme_source_created else R.string.theme_source_imported,
+        ),
+        color = if (theme.includeInThemeGallery) Color(0xFF6A3FC8) else Color(0xFF1565C0),
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun StatusBadge(text: String, color: Color, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = color.copy(alpha = 0.94f),
+        contentColor = Color.White,
+        shape = RoundedCornerShape(50),
+        shadowElevation = 3.dp,
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+internal fun AboutScreen(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color(0xFF7138F4).copy(alpha = 0.34f),
+                                        Color(0xFF00B8F0).copy(alpha = 0.28f),
+                                        Color(0xFF7138F4).copy(alpha = 0.18f),
+                                    ),
+                                ),
+                            )
+                            .padding(vertical = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.about_eyebrow),
+                                color = Color.White.copy(alpha = 0.88f),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(112.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.30f),
+                                        RoundedCornerShape(30.dp),
+                                    )
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                                    contentDescription = stringResource(R.string.app_name),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.app_name),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Text(
+                                stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.about_app_description),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Text(
+                        stringResource(R.string.about_capabilities_title),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(R.string.about_capabilities_desc),
+                        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    AboutCapabilityRow(
+                        icon = Icons.Filled.Download,
+                        color = Color(0xFF00897B),
+                        title = stringResource(R.string.about_capability_import_title),
+                        description = stringResource(R.string.about_capability_import_desc),
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                    AboutCapabilityRow(
+                        icon = Icons.Filled.Tune,
+                        color = Color(0xFF6A3FC8),
+                        title = stringResource(R.string.about_capability_create_title),
+                        description = stringResource(R.string.about_capability_create_desc),
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                    AboutCapabilityRow(
+                        icon = Icons.Filled.VerifiedUser,
+                        color = Color(0xFF1565C0),
+                        title = stringResource(R.string.about_capability_apply_title),
+                        description = stringResource(R.string.about_capability_apply_desc),
+                    )
+                }
+            }
+        }
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        MenuIconBox(Icons.Filled.Build, Color(0xFF4F46A5))
+                        Column {
+                            Text(
+                                stringResource(R.string.about_repository_title),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.about_repository_badge),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.about_repository_desc),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        stringResource(R.string.about_repository_url),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Button(
+                        onClick = { uriHandler.openUri(PROJECT_REPOSITORY_URL) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.OpenInNew, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.about_open_github))
+                    }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+private fun AboutCapabilityRow(
+    icon: ImageVector,
+    color: Color,
+    title: String,
+    description: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MenuIconBox(icon, color)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            Text(
+                description,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }
@@ -1837,9 +2380,6 @@ private fun MenuRow(spec: MenuSpec, onClick: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleMedium,
             )
-            if (spec.count != null && spec.unitRes != null) {
-                Text("${spec.count} ${stringResource(spec.unitRes)}", style = MaterialTheme.typography.labelSmall)
-            }
         }
         Icon(
             Icons.Filled.KeyboardArrowRight,
@@ -1934,10 +2474,13 @@ private fun CustomWallpaperTile(
     icon: ImageVector,
     title: String,
     uriString: String?,
+    baseTheme: LibraryTheme?,
+    lockScreen: Boolean,
     onPick: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hasBaseWallpaper = baseTheme != null && hasThemeWallpaper(baseTheme, lockScreen)
     StudioCard(
         modifier = modifier
             .padding(4.dp)
@@ -1951,16 +2494,24 @@ private fun CustomWallpaperTile(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (uriString != null) {
+            if (uriString != null || hasBaseWallpaper) {
                 Box(
                     modifier = Modifier
                         .size(46.dp, 60.dp)
                         .clip(RoundedCornerShape(8.dp)),
                 ) {
-                    UriImagePreview(
-                        uri = Uri.parse(uriString),
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    if (uriString != null) {
+                        UriImagePreview(
+                            uri = Uri.parse(uriString),
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else if (baseTheme != null) {
+                        ThemeWallpaperPreview(
+                            theme = baseTheme,
+                            lockScreen = lockScreen,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             } else {
                 Box(
@@ -1982,9 +2533,13 @@ private fun CustomWallpaperTile(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    if (uriString != null) stringResource(R.string.custom_wallpaper_selected) else stringResource(R.string.btn_pick_gallery_image),
+                    when {
+                        uriString != null -> stringResource(R.string.custom_wallpaper_selected)
+                        hasBaseWallpaper -> stringResource(R.string.custom_wallpaper_from_base)
+                        else -> stringResource(R.string.btn_pick_gallery_image)
+                    },
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (uriString != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (uriString != null || hasBaseWallpaper) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -2026,15 +2581,41 @@ internal fun DeviceThemePickerDialog(
         )
     }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.device_theme_select_dialog_title)) },
-        text = {
-            if (isLoading) {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.device_theme_select_dialog_title),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Text(
+                        stringResource(R.string.device_theme_visual_picker_desc),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+
+                if (isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp),
+                        .height(320.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(
@@ -2045,13 +2626,16 @@ internal fun DeviceThemePickerDialog(
                         Text(stringResource(R.string.device_theme_scanning), style = MaterialTheme.typography.bodySmall)
                     }
                 }
-            } else if (availableThemes.isEmpty()) {
-                Text(stringResource(R.string.device_import_idle))
-            } else {
+                } else if (availableThemes.isEmpty()) {
+                    Box(Modifier.padding(horizontal = 20.dp)) {
+                        EmptyState(
+                            stringResource(R.string.empty_themes_title),
+                            stringResource(R.string.device_import_idle),
+                        )
+                    }
+                } else {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 420.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(
@@ -2075,15 +2659,15 @@ internal fun DeviceThemePickerDialog(
                         }
                     }
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(availableThemes) { theme ->
                             val isChecked = theme.localId in selectedIds
-                            StudioCard(
+                            Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .width(184.dp)
                                     .clickable {
                                         selectedIds = if (isChecked) {
                                             selectedIds - theme.localId
@@ -2091,74 +2675,86 @@ internal fun DeviceThemePickerDialog(
                                             selectedIds + theme.localId
                                         }
                                     },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isChecked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                tonalElevation = if (isChecked) 6.dp else 1.dp,
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    Checkbox(
-                                        checked = isChecked,
-                                        onCheckedChange = { checked ->
-                                            selectedIds = if (checked) {
-                                                selectedIds + theme.localId
-                                            } else {
-                                                selectedIds - theme.localId
-                                            }
-                                        },
-                                    )
-                                    Column(Modifier.weight(1f)) {
+                                Column {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(248.dp)
+                                            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+                                    ) {
+                                        DeviceThemePreview(
+                                            path = theme.previewPath,
+                                            title = theme.title,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = { checked ->
+                                                selectedIds = if (checked) selectedIds + theme.localId
+                                                else selectedIds - theme.localId
+                                            },
+                                            modifier = Modifier.align(Alignment.TopEnd),
+                                        )
+                                        if (theme.isAlreadyImported) {
+                                            StatusBadge(
+                                                text = stringResource(R.string.device_theme_already_imported_badge),
+                                                color = Color(0xFF1565C0),
+                                                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                                            )
+                                        }
+                                    }
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                                    ) {
                                         Text(
                                             theme.title,
                                             fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            minLines = 2,
+                                            maxLines = 2,
                                             overflow = TextOverflow.Ellipsis,
                                         )
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
+                                        theme.author?.takeIf(String::isNotBlank)?.let { author ->
                                             Text(
-                                                stringResource(R.string.entries_count, theme.componentCount),
+                                                author,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
                                             )
-                                            if (theme.isAlreadyImported) {
-                                                Text(
-                                                    "• " + stringResource(R.string.device_theme_already_imported_badge),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                )
-                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                    Button(
+                        enabled = !isLoading && selectedIds.isNotEmpty(),
+                        onClick = { onImportSelected(selectedIds) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.device_theme_import_selected_btn, selectedIds.size))
+                    }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                enabled = !isLoading && selectedIds.isNotEmpty(),
-                onClick = {
-                    onImportSelected(selectedIds)
-                },
-            ) {
-                Text(stringResource(R.string.device_theme_import_selected_btn, selectedIds.size))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -2175,8 +2771,6 @@ private data class MenuSpec(
     val destination: StudioDestination,
     val icon: ImageVector,
     val color: Color,
-    val count: Int?,
-    @StringRes val unitRes: Int?,
 )
 
 private data class OverlayMenuItem(
@@ -2206,6 +2800,8 @@ private val THEME_GALLERY_CATEGORIES = setOf(
     ComponentCategory.LAUNCHER,
     ComponentCategory.AOD,
 )
+
+private const val PROJECT_REPOSITORY_URL = "https://github.com/GloriousTR/HyperOS-MTZ-Studio"
 
 internal fun destinationFor(category: ComponentCategory): StudioDestination = when (category) {
     ComponentCategory.ICONS -> StudioDestination.ICONS

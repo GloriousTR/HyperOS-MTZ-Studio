@@ -22,6 +22,7 @@
     <string name="dest_backup">Backup</string>
     <string name="dest_diagnostics">Live Diagnostics</string>
     <string name="dest_theme_protection">Global theme protection</string>
+    <string name="dest_about">About</string>
 
     <!-- Categories -->
     <string name="category_icons">Icons</string>
@@ -39,7 +40,6 @@
     <string name="category_other">Other component</string>
 
     <!-- Units & Actions -->
-    <string name="unit_local_theme">local theme</string>
     <string name="unit_component">component</string>
     <string name="menu_title">Settings</string>
     <string name="menu_subtitle">Application settings and tools</string>
@@ -53,13 +53,36 @@
     <string name="delete_theme_dialog_desc">\"%1$s\" will be removed from your private library. This action cannot be undone.</string>
     <string name="status_theme_removed">\"%1$s\" removed from library</string>
     <string name="not_selected">Not selected</string>
-    <string name="entries_count">%1$d entries</string>
 
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Change color mode and content style</string>
     <string name="overlay_backup_desc">Backup or restore theme library</string>
     <string name="overlay_diagnostics_desc">Monitor import workflow and results</string>
     <string name="overlay_theme_protection_desc">Prevent third-party themes from reverting to default</string>
+    <string name="overlay_about_desc">View version details and the project link</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_eyebrow">INDEPENDENT • OPEN SOURCE</string>
+    <string name="about_app_description">A professional MTZ studio that brings the HyperOS theme workflow into one workspace. Manage your on-device library, visually combine components, and keep every design as a reusable MTZ package.</string>
+    <string name="about_capabilities_title">Your theme workflow, unified</string>
+    <string name="about_capabilities_desc">Every step—from selecting a file to applying a personalized theme—is designed around your local library.</string>
+    <string name="about_capability_import_title">Secure importing</string>
+    <string name="about_capability_import_desc">Verifies and categorizes MTZ packages before storing them in the private theme library.</string>
+    <string name="about_capability_create_title">Visual theme creation</string>
+    <string name="about_capability_create_desc">Preview and combine supported components from different themes into one design.</string>
+    <string name="about_capability_apply_title">HyperOS-compatible applying</string>
+    <string name="about_capability_apply_desc">Transfers the prepared theme through the supported Xiaomi Theme Manager flow.</string>
+    <string name="about_repository_title">Open-source project</string>
+    <string name="about_repository_desc">View the source code, release notes, and current APK packages in the GitHub repository.</string>
+    <string name="about_repository_badge">COMMUNITY-DRIVEN DEVELOPMENT</string>
+    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_open_github">Open GitHub repository</string>
+    <string name="theme_active_badge">Active</string>
+    <string name="theme_active_explanation">The theme most recently applied by MTZ Studio.</string>
+    <string name="theme_source_created">Created</string>
+    <string name="theme_source_imported">Imported</string>
+    <string name="theme_designed_by">Design: %1$s</string>
+    <string name="theme_includes_title">Theme contents</string>
+    <string name="action_close">Close</string>
     <string name="xposed_module_description">Built-in Xposed support that protects local MTZ themes on Global devices</string>
     <string name="theme_protection_title">Global theme protection</string>
     <string name="theme_protection_active">Protection is active at both validation points</string>
@@ -97,13 +120,14 @@
 
     <!-- Home / MTZ Import -->
     <string name="mtz_import_title">MTZ Import</string>
+    <string name="mtz_import_home_subtitle">Securely add a theme from a file</string>
     <string name="mtz_import_desc">Securely copy, verify, and categorize components from your owned MTZ file to the private library.</string>
     <string name="mtz_import_btn_select">Select MTZ file</string>
     <string name="mtz_import_btn_importing">Importing…</string>
     <string name="status_loading_library">Loading private library…</string>
     <string name="status_library_warnings">Loaded with %1$d private library warnings</string>
     <string name="status_library_empty">Select an MTZ you own to import</string>
-    <string name="status_verified_themes">%1$d verified local MTZ files</string>
+    <string name="status_library_ready">Theme library ready</string>
     <string name="status_copying_verifying">Copying and verifying selected MTZ…</string>
     <string name="status_import_rejected">Import rejected: %1$s</string>
     <string name="error_open_document">The selected document could not be opened</string>
@@ -124,8 +148,14 @@
     <string name="base_theme_change_btn">Change</string>
     <string name="base_theme_clear_btn">Clear</string>
     <string name="base_theme_dialog_title">Select Base Theme</string>
+    <string name="base_theme_picker_desc">Swipe through themes, tap the one that will provide the base structure, and return directly to editing.</string>
+    <string name="category_quick_picker_title">Select %1$s</string>
+    <string name="category_quick_picker_desc">Swipe through previews. Your source is checked and you automatically return to Create Theme.</string>
     <string name="save_theme_as">Save theme as</string>
     <string name="theme_name_label">Theme name</string>
+    <string name="theme_maker_name_label">Creator name</string>
+    <string name="theme_maker_inherited">Leave blank to keep the base theme creator: %1$s</string>
+    <string name="theme_maker_inherited_unknown">Leave blank to keep the base theme creator</string>
     <string name="default_composition_name">My HyperOS Mix</string>
     <string name="personalize_stats">%1$d components · %2$d source themes</string>
     <string name="status_composing">Composing new MTZ and saving to Downloads/MTZ Studio…</string>
@@ -203,6 +233,7 @@
     <string name="btn_pick_gallery_image">Pick Photo from Gallery</string>
     <string name="btn_remove_custom_wallpaper">Remove</string>
     <string name="custom_wallpaper_selected">Custom photo selected</string>
+    <string name="custom_wallpaper_from_base">From base theme</string>
     <string name="custom_home_wallpaper_selected">Custom home wallpaper selected</string>
     <string name="custom_lock_wallpaper_selected">Custom lock screen wallpaper selected (Clock/Widgets preserved)</string>
 
@@ -275,6 +306,7 @@
     <string name="device_theme_select_all">Select all</string>
     <string name="device_theme_deselect_all">Clear</string>
     <string name="device_theme_import_selected_btn">Import selected (%1$d)</string>
+    <string name="device_theme_visual_picker_desc">Swipe through Theme Manager previews, choose the themes you want, and add them to your library.</string>
     <string name="device_theme_already_imported_badge">In library</string>
     <string name="device_theme_scanning">Scanning Theme Manager themes…</string>
     <string name="device_font_import_title">Get active font as MTZ</string>

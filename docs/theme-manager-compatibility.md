@@ -7,6 +7,7 @@ HyperOS MTZ Studio is an independent project. Its compatibility policy is define
 | Canonical version | Observed tester interpretation |
 | --- | --- |
 | `2.15.5.46` | Imports the MTZ as an independent local theme; recommended |
+| `3.0.5.6` | Imports the MTZ through the device-verified legacy tester contract |
 | `3.0.5.14` | Applies a temporary/composite result over “Default” |
 | `3.0.6.8` | Tester activity is removed |
 
@@ -14,7 +15,9 @@ Suffixes such as `-global` are ignored only for matrix matching. Unknown version
 
 ## Startup behavior
 
-The app queries `com.android.thememanager` through Android `PackageManager`. When the canonical installed version is not `2.15.5.46`, it recommends the compatible version and explains the detected behavior. The MTZ library and composer remain usable regardless of this result.
+The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46` and `3.0.5.6` use the exported legacy tester contract. The request is intentionally frozen to the `support3.0` action, the `ApplyThemeForScreenshot` alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
+
+Theme Manager `10.8.7.6` support is reserved for the separately validated `v2.0.0` module-compatible release. Until it is tested on a physical device, `v1.2.0` reports it as unverified rather than guessing compatibility. The MTZ library and composer remain usable regardless of this result.
 
 ## Root downgrade boundary
 

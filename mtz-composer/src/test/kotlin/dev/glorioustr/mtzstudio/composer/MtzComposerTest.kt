@@ -59,6 +59,32 @@ class MtzComposerTest {
     }
 
     @Test
+    fun `stores generated gallery preview inside composed MTZ`() {
+        val parser = MtzParser()
+        val source = parser.parse(zip("icons" to byteArrayOf(1, 2, 3)))
+        val preview = byteArrayOf(9, 8, 7, 6)
+        val request = CompositionRequest(
+            metadata = CompositionMetadata(name = "Preview theme"),
+            selections = listOf(selection("one", source, ComponentCategory.ICONS)),
+            generatedPreviewBytes = preview,
+        )
+
+        val result = MtzComposer(parser).compose(
+            request,
+            Files.createTempDirectory("mtz-preview-compose-test").resolve("preview.mtz"),
+        )
+
+        ZipFile(result.output.toFile()).use { zip ->
+            val entry = zip.getEntry("preview/preview_launcher_0.jpg")
+            assertTrue(entry != null)
+            assertTrue(zip.getInputStream(entry).readBytes().contentEquals(preview))
+            val markerEntry = zip.getEntry("preview/mtz_studio_generated.jpg")
+            assertTrue(markerEntry != null)
+            assertTrue(zip.getInputStream(markerEntry).readBytes().contentEquals(preview))
+        }
+    }
+
+    @Test
     fun `base theme keeps every unchanged root while selected categories override it`() {
         val parser = MtzParser()
         val base = parser.parse(
@@ -68,6 +94,7 @@ class MtzComposerTest {
                       <title>Circle</title>
                       <uiVersion>17</uiVersion>
                       <author>VedaT</author>
+                      <designer>Circle Designer</designer>
                       <miuiAdapterVersion>4.2</miuiAdapterVersion>
                     </theme>
                 """.trimIndent().encodeToByteArray(),
@@ -107,6 +134,46 @@ class MtzComposerTest {
             assertTrue("<uiVersion>17</uiVersion>" in description)
             assertTrue("<miuiAdapterVersion>4.2</miuiAdapterVersion>" in description)
             assertTrue("<author>VedaT</author>" in description)
+            assertTrue("<designer>Circle Designer</designer>" in description)
+        }
+    }
+
+    @Test
+    fun `custom maker replaces inherited author and designer metadata`() {
+        val parser = MtzParser()
+        val base = parser.parse(
+            zip(
+                "description.xml" to """
+                    <theme>
+                      <title>Base</title>
+                      <author>Original Author</author>
+                      <designer>Original Designer</designer>
+                    </theme>
+                """.trimIndent().encodeToByteArray(),
+                "icons" to byteArrayOf(1),
+            ),
+        )
+        val request = CompositionRequest(
+            metadata = CompositionMetadata(
+                name = "Renamed",
+                author = "New Maker",
+                designer = "New Maker",
+            ),
+            baseSource = CompositionSource(ThemeId("base"), "Base", base),
+            selections = emptyList(),
+        )
+
+        val result = MtzComposer(parser).compose(
+            request,
+            Files.createTempDirectory("mtz-maker-compose-test").resolve("maker.mtz"),
+        )
+
+        ZipFile(result.output.toFile()).use { output ->
+            val description = output.getInputStream(output.getEntry("description.xml")).bufferedReader().readText()
+            assertTrue("<author>New Maker</author>" in description)
+            assertTrue("<designer>New Maker</designer>" in description)
+            assertFalse("Original Author" in description)
+            assertFalse("Original Designer" in description)
         }
     }
 

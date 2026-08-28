@@ -3,8 +3,10 @@ package dev.glorioustr.mtzstudio.tester
 object ThemeManagerContract {
     const val RECOMMENDED_VERSION = "2.15.5.46"
     const val PACKAGE_NAME = "com.android.thememanager"
+    const val LEGACY_TESTER_ACTION = "com.android.thememanager.support3.0"
+    const val LEGACY_TESTER_COMPONENT = "com.android.thememanager.ApplyThemeForScreenshot"
 
-    val SUPPORTED_VERSIONS = setOf("2.15.5.46", "3.0.5.6", "10.8.7.6")
+    val SUPPORTED_VERSIONS = setOf("2.15.5.46", "3.0.5.6")
 
     fun canonicalVersion(versionName: String?): String? = versionName
         ?.trim()
@@ -15,13 +17,34 @@ object ThemeManagerContract {
         val canonical = canonicalVersion(versionName) ?: return ThemeManagerBehavior.UNKNOWN
         return when {
             canonical in SUPPORTED_VERSIONS -> ThemeManagerBehavior.LOCAL_THEME_IMPORT
-            canonical.startsWith("10.") -> ThemeManagerBehavior.LOCAL_THEME_IMPORT
             canonical == "3.0.5.14" -> ThemeManagerBehavior.TEMPORARY_DEFAULT_COMPOSITE
             canonical == "3.0.6.8" -> ThemeManagerBehavior.TESTER_ACTIVITY_REMOVED
             else -> ThemeManagerBehavior.UNKNOWN
         }
     }
+
+    /** The exact tester request verified on 2.15.5.46 and 3.0.5.6-global devices. */
+    fun legacyTesterRequest(themePath: String, callerPackage: String): LegacyTesterRequest =
+        LegacyTesterRequest(
+            action = LEGACY_TESTER_ACTION,
+            componentClassName = LEGACY_TESTER_COMPONENT,
+            stringExtras = linkedMapOf(
+                "theme_file_path" to themePath,
+                "api_called_from" to callerPackage,
+            ),
+            longExtras = linkedMapOf(
+                "theme_apply_flags" to -1L,
+                "theme_remove_flags" to -1L,
+            ),
+        )
 }
+
+data class LegacyTesterRequest(
+    val action: String,
+    val componentClassName: String,
+    val stringExtras: Map<String, String>,
+    val longExtras: Map<String, Long>,
+)
 
 enum class ThemeManagerBehavior(val explanation: String) {
     LOCAL_THEME_IMPORT("Imports the MTZ as an independent local theme"),
@@ -41,7 +64,6 @@ data class InstalledThemeManager(
     val isRecommended: Boolean
         get() = installed && (
             ThemeManagerContract.canonicalVersion(versionName) in ThemeManagerContract.SUPPORTED_VERSIONS ||
-            ThemeManagerContract.canonicalVersion(versionName)?.startsWith("10.") == true ||
             behavior == ThemeManagerBehavior.LOCAL_THEME_IMPORT
         )
 }

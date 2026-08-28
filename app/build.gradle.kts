@@ -12,8 +12,8 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "2.0.0"
+        versionCode = 7
+        versionName = "1.2.0"
     }
 
     buildFeatures {

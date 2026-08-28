@@ -27,7 +27,7 @@ internal data class DeviceThemeSummary(
     val title: String,
     val author: String?,
     val version: String?,
-    val componentCount: Int,
+    val previewPath: Path?,
     val isAlreadyImported: Boolean,
 )
 
@@ -68,6 +68,9 @@ internal class DeviceThemeImporter(
                 .sorted(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
                 .toList()
         }
+        val previewDirectory = stagingRoot.resolve("scan-previews")
+        Files.createDirectories(previewDirectory)
+        copyThemePreviewFiles(records, previewDirectory)
         val knownThemes = library.load().themes
         return records.map { record ->
             val isAlreadyImported = findExisting(record, knownThemes) != null
@@ -76,7 +79,8 @@ internal class DeviceThemeImporter(
                 title = record.title,
                 author = record.author,
                 version = record.version,
-                componentCount = record.resources.size,
+                previewPath = previewDirectory.resolve("${record.localId}.preview")
+                    .takeIf { Files.isRegularFile(it) && Files.size(it) > 0L },
                 isAlreadyImported = isAlreadyImported,
             )
         }
@@ -260,6 +264,26 @@ internal class DeviceThemeImporter(
                 error("Theme component ${record.resources[index].resourceCode} is missing")
             }
         }
+    }
+
+    private fun copyThemePreviewFiles(records: List<ThemeManagerRecord>, target: Path) {
+        if (records.isEmpty()) return
+        val command = buildString {
+            records.forEach { record ->
+                val destination = target.resolve("${record.localId}.preview").toAbsolutePath().toString()
+                append("for candidate in ")
+                record.previewNames.forEach { name ->
+                    append(shellQuote("$THEME_DATA_ROOT/preview/theme/${record.localId}/$name")).append(' ')
+                }
+                append("; do if [ -f \"${'$'}candidate\" ]; then cp \"${'$'}candidate\" ")
+                    .append(shellQuote(destination)).append("; break; fi; done\n")
+            }
+            append("chown -R ").append(Process.myUid()).append(':').append(Process.myUid()).append(' ')
+                .append(shellQuote(target.toAbsolutePath().toString())).append(" || exit 90\n")
+            append("chmod -R u+rwX,go-rwx ").append(shellQuote(target.toAbsolutePath().toString()))
+                .append(" || exit 91")
+        }
+        runPrivileged(command, 120, "Theme previews could not be copied")
     }
 
     private fun buildMtz(record: ThemeManagerRecord, sourceDirectory: Path, output: Path) {

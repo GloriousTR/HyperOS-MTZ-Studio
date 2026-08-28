@@ -133,6 +133,11 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
 
     private fun validate(request: CompositionRequest) {
         if (request.metadata.name.isBlank()) throw CompositionException("Output theme name is required")
+        request.generatedPreviewBytes?.let { preview ->
+            if (preview.size.toLong() !in 1..MAX_PREVIEW_BYTES) {
+                throw CompositionException("Generated theme preview is empty or too large")
+            }
+        }
         if (request.baseSource == null && request.selections.isEmpty() &&
             request.customHomeWallpaperBytes == null && request.customLockWallpaperBytes == null
         ) {
@@ -224,6 +229,9 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
                         lowerPath == "wallpaper/default_lock_wallpaper.jpg" && request.customLockWallpaperBytes != null -> {
                             output.write(request.customLockWallpaperBytes)
                         }
+                        lowerPath == "preview/preview_launcher_0.jpg" && request.generatedPreviewBytes != null -> {
+                            output.write(request.generatedPreviewBytes)
+                        }
                         lowerPath == "lockscreen" && request.customLockWallpaperBytes != null -> {
                             currentZip!!.getInputStream(inputEntry).use { inStream ->
                                 val repackaged = repackageLockscreen(inStream, request.customLockWallpaperBytes)
@@ -263,6 +271,19 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
                     output.closeEntry()
                     writtenEntries += "lockscreen"
                 }
+            }
+
+            if (request.generatedPreviewBytes != null && !writtenEntries.contains("preview/preview_launcher_0.jpg")) {
+                output.putNextEntry(deterministicEntry("preview/preview_launcher_0.jpg"))
+                output.write(request.generatedPreviewBytes)
+                output.closeEntry()
+                writtenEntries += "preview/preview_launcher_0.jpg"
+            }
+            if (request.generatedPreviewBytes != null && !writtenEntries.contains("preview/mtz_studio_generated.jpg")) {
+                output.putNextEntry(deterministicEntry("preview/mtz_studio_generated.jpg"))
+                output.write(request.generatedPreviewBytes)
+                output.closeEntry()
+                writtenEntries += "preview/mtz_studio_generated.jpg"
             }
         }
     }

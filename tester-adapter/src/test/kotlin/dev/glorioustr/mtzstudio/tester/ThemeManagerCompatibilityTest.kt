@@ -15,7 +15,7 @@ class ThemeManagerCompatibilityTest {
     @Test
     fun `known global versions map to observed tester behavior`() {
         assertEquals(
-            ThemeManagerBehavior.LOCAL_THEME_IMPORT,
+            ThemeManagerBehavior.UNKNOWN,
             ThemeManagerContract.behavior("10.8.7.6"),
         )
         assertEquals(
@@ -27,6 +27,32 @@ class ThemeManagerCompatibilityTest {
             ThemeManagerContract.behavior("3.0.6.8-global"),
         )
         assertEquals(ThemeManagerBehavior.UNKNOWN, ThemeManagerContract.behavior("4.0.0.0"))
+    }
+
+    @Test
+    fun `global tester request stays on the device verified contract`() {
+        val request = ThemeManagerContract.legacyTesterRequest(
+            themePath = "/staging/Circle-UI-Black-Icons.mtz",
+            callerPackage = "dev.glorioustr.mtzstudio",
+        )
+
+        assertEquals("com.android.thememanager.support3.0", request.action)
+        assertEquals("com.android.thememanager.ApplyThemeForScreenshot", request.componentClassName)
+        assertEquals(
+            linkedMapOf(
+                "theme_file_path" to "/staging/Circle-UI-Black-Icons.mtz",
+                "api_called_from" to "dev.glorioustr.mtzstudio",
+            ),
+            request.stringExtras,
+        )
+        assertEquals(
+            linkedMapOf(
+                "theme_apply_flags" to -1L,
+                "theme_remove_flags" to -1L,
+            ),
+            request.longExtras,
+        )
+        assertEquals(4, request.stringExtras.size + request.longExtras.size)
     }
 
     @Test

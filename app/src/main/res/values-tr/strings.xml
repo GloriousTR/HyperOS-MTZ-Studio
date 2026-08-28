@@ -22,6 +22,7 @@
     <string name="dest_backup">Yedekleme</string>
     <string name="dest_diagnostics">Live Diagnostics</string>
     <string name="dest_theme_protection">Global tema koruması</string>
+    <string name="dest_about">Hakkında</string>
  
     <!-- Categories -->
     <string name="category_icons">Simgeler</string>
@@ -39,7 +40,6 @@
     <string name="category_other">Diğer bileşen</string>
  
     <!-- Units & Actions -->
-    <string name="unit_local_theme">yerel tema</string>
     <string name="unit_component">bileşen</string>
     <string name="menu_title">Ayarlar</string>
     <string name="menu_subtitle">Uygulama ayarları ve araçları</string>
@@ -53,13 +53,36 @@
     <string name="delete_theme_dialog_desc">\"%1$s\" özel kitaplığınızdan kaldırılacak. Bu işlem geri alınamaz.</string>
     <string name="status_theme_removed">\"%1$s\" kitaplıktan kaldırıldı</string>
     <string name="not_selected">Seçilmedi</string>
-    <string name="entries_count">%1$d girdi</string>
  
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Renk modunu ve içerik tasarımını değiştir</string>
     <string name="overlay_backup_desc">Tema kitaplığını yedekle veya geri yükle</string>
     <string name="overlay_diagnostics_desc">İçe aktarma akışını ve sonuçlarını izle</string>
     <string name="overlay_theme_protection_desc">Üçüncü taraf temaların varsayılana dönmesini engelle</string>
+    <string name="overlay_about_desc">Sürüm bilgilerini ve proje bağlantısını görüntüle</string>
+    <string name="about_version">Sürüm %1$s</string>
+    <string name="about_eyebrow">BAĞIMSIZ • AÇIK KAYNAK</string>
+    <string name="about_app_description">HyperOS tema deneyimini tek bir çalışma alanında birleştiren profesyonel MTZ stüdyosu. Tema kitaplığını cihazında yönet, bileşenleri görsel olarak bir araya getir ve oluşturduğun tasarımı yeniden kullanılabilir bir MTZ paketi olarak sakla.</string>
+    <string name="about_capabilities_title">Tema iş akışın, tek merkezde</string>
+    <string name="about_capabilities_desc">Dosya seçiminden kişiselleştirilmiş temanın uygulanmasına kadar her adım, yerel kitaplığın etrafında tasarlandı.</string>
+    <string name="about_capability_import_title">Güvenli içe aktarma</string>
+    <string name="about_capability_import_desc">MTZ paketlerini doğrular, sınıflandırır ve özel tema kitaplığında saklar.</string>
+    <string name="about_capability_create_title">Görsel tema oluşturma</string>
+    <string name="about_capability_create_desc">Farklı temaların desteklenen bileşenlerini önizleyerek tek tasarımda birleştirir.</string>
+    <string name="about_capability_apply_title">HyperOS uyumlu uygulama</string>
+    <string name="about_capability_apply_desc">Hazırlanan temayı desteklenen Xiaomi Tema Yöneticisi akışıyla cihazına aktarır.</string>
+    <string name="about_repository_title">Açık kaynak proje</string>
+    <string name="about_repository_desc">Kaynak kodunu, sürüm notlarını ve güncel APK paketlerini GitHub deposunda görebilirsin.</string>
+    <string name="about_repository_badge">TOPLULUK TARAFINDAN GELİŞTİRİLİR</string>
+    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_open_github">GitHub deposunu aç</string>
+    <string name="theme_active_badge">Etkin</string>
+    <string name="theme_active_explanation">MTZ Studio tarafından en son uygulanan tema.</string>
+    <string name="theme_source_created">Oluşturulan</string>
+    <string name="theme_source_imported">İçe aktarılan</string>
+    <string name="theme_designed_by">Tasarım: %1$s</string>
+    <string name="theme_includes_title">Tema içeriği</string>
+    <string name="action_close">Kapat</string>
     <string name="xposed_module_description">Global cihazlarda yerel MTZ temalarını koruyan yerleşik Xposed desteği</string>
     <string name="theme_protection_title">Global tema koruması</string>
     <string name="theme_protection_active">Koruma iki doğrulama noktasında da etkin</string>
@@ -97,13 +120,14 @@
  
     <!-- Home / MTZ Import -->
     <string name="mtz_import_title">MTZ Import</string>
+    <string name="mtz_import_home_subtitle">Dosyadan güvenli biçimde tema ekle</string>
     <string name="mtz_import_desc">Sahip olduğun MTZ dosyasını güvenli biçimde özel kitaplığa kopyala, doğrula ve bileşenlerini sınıflandır.</string>
     <string name="mtz_import_btn_select">MTZ dosyası seç</string>
     <string name="mtz_import_btn_importing">Import sürüyor…</string>
     <string name="status_loading_library">Özel kitaplık yükleniyor…</string>
     <string name="status_library_warnings">%1$d özel kitaplık uyarısıyla yüklendi</string>
     <string name="status_library_empty">İçe aktarmak için sahip olduğun bir MTZ seç</string>
-    <string name="status_verified_themes">%1$d doğrulanmış yerel MTZ</string>
+    <string name="status_library_ready">Tema kitaplığı hazır</string>
     <string name="status_copying_verifying">Seçilen MTZ kopyalanıyor ve doğrulanıyor…</string>
     <string name="status_import_rejected">Import reddedildi: %1$s</string>
     <string name="error_open_document">Seçilen dosya açılamadı</string>
@@ -124,8 +148,14 @@
     <string name="base_theme_change_btn">Değiştir</string>
     <string name="base_theme_clear_btn">Temizle</string>
     <string name="base_theme_dialog_title">Temel Tema Seç</string>
+    <string name="base_theme_picker_desc">Temaları yana kaydır, ana yapıyı oluşturacak temaya dokun ve doğrudan düzenlemeye dön.</string>
+    <string name="category_quick_picker_title">%1$s seç</string>
+    <string name="category_quick_picker_desc">Önizlemeleri yana kaydır. Seçtiğin kaynak işaretlenir ve Temanı Oluştur ekranına otomatik dönersin.</string>
     <string name="save_theme_as">Temayı Farklı Kaydet</string>
     <string name="theme_name_label">Tema adı</string>
+    <string name="theme_maker_name_label">Yapımcı adı</string>
+    <string name="theme_maker_inherited">Boş bırakılırsa ana temanın yapımcısı korunur: %1$s</string>
+    <string name="theme_maker_inherited_unknown">Boş bırakılırsa ana temanın yapımcısı korunur</string>
     <string name="default_composition_name">HyperOS Karmam</string>
     <string name="personalize_stats">%1$d bileşen · %2$d kaynak tema</string>
     <string name="status_composing">Yeni MTZ oluşturuluyor ve İndirilenler/MTZ Studio klasörüne kaydediliyor…</string>
@@ -203,6 +233,7 @@
     <string name="btn_pick_gallery_image">Galeriden Fotoğraf Seç</string>
     <string name="btn_remove_custom_wallpaper">Kaldır</string>
     <string name="custom_wallpaper_selected">Özel fotoğraf seçildi</string>
+    <string name="custom_wallpaper_from_base">Temel temadan</string>
     <string name="custom_home_wallpaper_selected">Özel ana ekran duvar kâğıdı seçildi</string>
     <string name="custom_lock_wallpaper_selected">Özel kilit ekranı duvar kâğıdı seçildi (Kilit stili korunur)</string>
 
@@ -275,6 +306,7 @@
     <string name="device_theme_select_all">Tümünü seç</string>
     <string name="device_theme_deselect_all">Seçimi temizle</string>
     <string name="device_theme_import_selected_btn">Seçilenleri içeri al (%1$d)</string>
+    <string name="device_theme_visual_picker_desc">Tema Yöneticisindeki önizlemeleri yana kaydır, istediklerini seç ve kitaplığına ekle.</string>
     <string name="device_theme_already_imported_badge">Kitaplıkta mevcut</string>
     <string name="device_theme_scanning">Tema Yöneticisindeki temalar taranıyor…</string>
     <string name="device_font_import_title">Etkin yazı tipini MTZ olarak al</string>

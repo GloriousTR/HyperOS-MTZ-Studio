@@ -188,6 +188,7 @@ private fun StudioScreen(
     var status by remember { mutableStateOf(context.getString(R.string.status_loading_library)) }
     val defaultCompositionName = stringResource(R.string.default_composition_name)
     var compositionName by rememberSaveable { mutableStateOf(defaultCompositionName) }
+    var compositionMakerName by rememberSaveable { mutableStateOf("") }
     var lastResult by remember { mutableStateOf<CompositionResult?>(null) }
     val selections = remember { mutableStateMapOf<ComponentCategory, UiSelection>() }
     val diagnosticState by diagnostics.state.collectAsState()
@@ -211,6 +212,10 @@ private fun StudioScreen(
     var isScanningDeviceThemes by remember { mutableStateOf(false) }
     var showDeviceThemePicker by remember { mutableStateOf(false) }
     var showThemeProtectionRestartDialog by remember { mutableStateOf(false) }
+    val studioState = remember { context.getSharedPreferences("studio-ui-state", 0) }
+    var activeThemeId by rememberSaveable {
+        mutableStateOf(studioState.getString("last-applied-theme-id", null))
+    }
 
     val homeWallpaperPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -272,6 +277,8 @@ private fun StudioScreen(
                 }
             }
             status = context.getString(R.string.status_apply_success, prepared.themeName)
+            activeThemeId = prepared.themeId
+            studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
         }
     }
 
@@ -284,7 +291,7 @@ private fun StudioScreen(
             status = when {
                 snapshot.warnings.isNotEmpty() -> context.getString(R.string.status_library_warnings, snapshot.warnings.size)
                 themes.isEmpty() -> context.getString(R.string.status_library_empty)
-                else -> context.getString(R.string.status_verified_themes, themes.size)
+                else -> context.getString(R.string.status_library_ready)
             }
             if (openThemesAfter && snapshot.warnings.isEmpty()) destination = StudioDestination.THEMES
         }
@@ -298,6 +305,10 @@ private fun StudioScreen(
                 themes = snapshot.themes
                 if (baseThemeId == theme.id.value) {
                     baseThemeId = null
+                }
+                if (activeThemeId == theme.id.value) {
+                    activeThemeId = null
+                    studioState.edit().remove("last-applied-theme-id").apply()
                 }
                 status = context.getString(R.string.status_theme_removed, theme.archive.metadata?.name ?: theme.displayName)
             }
@@ -327,8 +338,23 @@ private fun StudioScreen(
                         openInput(Uri.parse(uriStr))?.use { it.readBytes() }
                     }
                     val baseTheme = baseThemeId?.let { id -> themes.firstOrNull { it.id.value == id } }
+                    val previewSource = homeBytes
+                        ?: baseTheme?.let(::readHomePreviewSource)
+                        ?: selections.values.asSequence()
+                            .mapNotNull { selected -> byId[selected.themeId] }
+                            .mapNotNull(::readHomePreviewSource)
+                            .firstOrNull()
+                    val generatedPreview = GeneratedThemePreviewFactory.create(
+                        themeName = compositionName.trim(),
+                        wallpaperBytes = previewSource,
+                    )
+                    val makerName = compositionMakerName.trim().takeIf(String::isNotEmpty)
                     val request = CompositionRequest(
-                        metadata = CompositionMetadata(compositionName.trim()),
+                        metadata = CompositionMetadata(
+                            name = compositionName.trim(),
+                            author = makerName,
+                            designer = makerName,
+                        ),
                         baseSource = baseTheme?.let { theme ->
                             CompositionSource(theme.id, theme.displayName, theme.archive)
                         },
@@ -344,6 +370,7 @@ private fun StudioScreen(
                         },
                         customHomeWallpaperBytes = homeBytes,
                         customLockWallpaperBytes = lockBytes,
+                        generatedPreviewBytes = generatedPreview,
                     )
                     val result = composer.compose(request, library.newExportPath(compositionName))
                     library.recordComposition(result)
@@ -582,8 +609,6 @@ private fun StudioScreen(
         val contentModifier = Modifier.padding(padding)
         when {
             destination == StudioDestination.HOME -> HomeMenuScreen(
-                themes = themes,
-                status = status,
                 importExpanded = importExpanded,
                 importing = diagnosticState.activeSessionId != null,
                 themeManagerInspector = themeManagerInspector,
@@ -599,6 +624,7 @@ private fun StudioScreen(
             )
             destination == StudioDestination.THEMES -> ThemesScreen(
                 themes = themes,
+                activeThemeId = activeThemeId,
                 deviceImportStatus = themeDeviceImportStatus,
                 deviceImportRunning = deviceImportRunning,
                 onOpenDeviceThemePicker = ::openDeviceThemePicker,
@@ -610,6 +636,7 @@ private fun StudioScreen(
                 themes = themes,
                 selections = selections,
                 compositionName = compositionName,
+                compositionMakerName = compositionMakerName,
                 lastResult = lastResult,
                 status = status,
                 baseThemeId = baseThemeId,
@@ -622,7 +649,11 @@ private fun StudioScreen(
                             }
                         }
                         val themeName = theme.archive.metadata?.name ?: theme.displayName
-                        compositionName = "$themeName Karmam"
+                        compositionName = if (themeName.endsWith(" Karmam", ignoreCase = true)) {
+                            themeName
+                        } else {
+                            "$themeName Karmam"
+                        }
                     } else {
                         selections.clear()
                     }
@@ -634,7 +665,7 @@ private fun StudioScreen(
                 onPickLockWallpaper = { lockWallpaperPickerLauncher.launch("image/*") },
                 onRemoveLockWallpaper = { customLockWallpaperUri = null },
                 onCompositionNameChange = { compositionName = it },
-                onOpenCategory = { navigateTo(it, StudioDestination.PERSONALIZE) },
+                onCompositionMakerNameChange = { compositionMakerName = it },
                 onCompose = ::composeTheme,
                 onShare = shareMtz,
                 modifier = contentModifier,
@@ -713,6 +744,7 @@ private fun StudioScreen(
                 onContentStyleSelect = onContentStyleChange,
                 modifier = contentModifier,
             )
+            destination == StudioDestination.ABOUT -> AboutScreen(modifier = contentModifier)
             destination == StudioDestination.THEME_PROTECTION -> ThemeProtectionScreen(
                 state = themeProtectionState,
                 onEnable = ThemeProtectionServiceClient::requestActivation,
@@ -812,6 +844,7 @@ private fun StudioScreen(
             isLoading = isScanningDeviceThemes,
             onDismiss = { showDeviceThemePicker = false },
             onImportSelected = { selectedIds ->
+                showDeviceThemePicker = false
                 importSelectedDeviceThemes(selectedIds)
             },
         )
