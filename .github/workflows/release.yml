@@ -60,10 +60,8 @@ jobs:
           mkdir -p release-artifacts
           TAG="${{ steps.release_meta.outputs.tag }}"
           cp app/build/outputs/apk/release/app-release.apk "release-artifacts/MTZ_Studio_${TAG}.apk"
-          cp app/build/outputs/apk/release/app-release.apk "release-artifacts/MTZ_Studio.apk"
           cd release-artifacts
           sha256sum "MTZ_Studio_${TAG}.apk" > "MTZ_Studio_${TAG}.apk.sha256"
-          sha256sum "MTZ_Studio.apk" > "MTZ_Studio.apk.sha256"
           ls -la
 
       - name: Publish GitHub Release
