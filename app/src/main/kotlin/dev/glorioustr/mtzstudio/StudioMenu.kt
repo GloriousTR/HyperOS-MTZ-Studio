@@ -218,6 +218,7 @@ internal fun HomeMenuScreen(
 
 @Composable
 internal fun StudioOverlayMenu(
+    showThemeProtection: Boolean,
     onDismiss: () -> Unit,
     onNavigate: (StudioDestination) -> Unit,
 ) {
@@ -252,7 +253,7 @@ internal fun StudioOverlayMenu(
             color = Color(0xFF7E57C2),
             descriptionRes = R.string.overlay_about_desc,
         ),
-    )
+    ).filter { showThemeProtection || it.destination != StudioDestination.THEME_PROTECTION }
 
     Dialog(
         onDismissRequest = onDismiss,

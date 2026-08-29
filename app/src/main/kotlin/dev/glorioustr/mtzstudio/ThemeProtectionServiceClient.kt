@@ -33,27 +33,42 @@ internal object ThemeProtectionServiceClient {
     private const val KEY_THEME_MANAGER_READY = "theme_manager_hook_ready"
     private const val KEY_SYSTEM_ERROR = "system_hook_error"
     private const val KEY_THEME_MANAGER_ERROR = "theme_manager_hook_error"
-    private val requiredScopes = listOf("system", "com.android.thememanager")
+    private val globalProtectionScopes = listOf("system", "com.android.thememanager")
+    private val themeManagerBridgeScope = listOf("com.android.thememanager")
     private val mutableState = MutableStateFlow(ThemeProtectionState())
     val state: StateFlow<ThemeProtectionState> = mutableState.asStateFlow()
 
     private var initialized = false
+    private var protectionRequired = true
     private var service: XposedService? = null
     private var remotePreferences: SharedPreferences? = null
     private var compatibility: ThemeProtectionCompatibility? = null
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refresh() }
 
     @Synchronized
-    fun initialize(context: Context) {
+    fun initialize(context: Context, protectionRequired: Boolean = true) {
         if (initialized) return
         initialized = true
-        Thread({
-            compatibility = ThemeProtectionCompatibilityScanner(context.applicationContext).scan()
-            refresh()
-        }, "mtz-theme-protection-scan").start()
+        this.protectionRequired = protectionRequired
+        if (protectionRequired) {
+            Thread({
+                compatibility = ThemeProtectionCompatibilityScanner(context.applicationContext).scan()
+                refresh()
+            }, "mtz-theme-protection-scan").start()
+        }
         XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
             override fun onServiceBind(boundService: XposedService) {
                 service = boundService
+                if (!ThemeProtectionServiceClient.protectionRequired) {
+                    // Theme Manager 10.8 only needs its process scope for the apply bridge.
+                    // The system-server scope belongs to Global theme protection and is redundant here.
+                    runCatching { boundService.removeScope(listOf("system")) }
+                    runCatching { boundService.getRemotePreferences(PREFS_GROUP).edit().clear().apply() }
+                    remotePreferences = null
+                    mutableState.value = ThemeProtectionState()
+                    requestThemeManagerBridgeScopeIfNeeded(boundService)
+                    return
+                }
                 runCatching {
                     remotePreferences?.unregisterOnSharedPreferenceChangeListener(preferenceListener)
                     remotePreferences = boundService.getRemotePreferences(PREFS_GROUP).also {
@@ -81,6 +96,17 @@ internal object ThemeProtectionServiceClient {
 
     fun setCommandRunner(runner: (String) -> String?) {
         commandRunner = runner
+    }
+
+    private fun requestThemeManagerBridgeScopeIfNeeded(activeService: XposedService) {
+        if (themeManagerBridgeScope.all(activeService.scope.toSet()::contains)) return
+        runCatching {
+            activeService.requestScope(themeManagerBridgeScope, object : XposedService.OnScopeEventListener {
+                override fun onScopeRequestApproved(approved: List<String>) = Unit
+
+                override fun onScopeRequestFailed(message: String) = Unit
+            })
+        }
     }
 
     private fun readMarker(fileName: String): Pair<Boolean, String?> {
@@ -118,6 +144,10 @@ internal object ThemeProtectionServiceClient {
 
     fun refresh() {
         clientScope.launch {
+            if (!protectionRequired) {
+                mutableState.value = ThemeProtectionState()
+                return@launch
+            }
             val activeService = service
             if (activeService == null) {
                 val (sysReady, _) = readMarker("mtz_protection_system")
@@ -150,7 +180,7 @@ internal object ThemeProtectionServiceClient {
                     frameworkName = activeService.frameworkName,
                     frameworkVersion = activeService.frameworkVersion,
                     apiVersion = activeService.apiVersion,
-                    scopesApproved = requiredScopes.all(scopes::contains),
+                    scopesApproved = globalProtectionScopes.all(scopes::contains),
                     systemHookReady = sysReady || (currentMarkers && (prefs?.getBoolean(KEY_SYSTEM_READY, false) == true)),
                     themeManagerHookReady = tmReady || (currentMarkers && (prefs?.getBoolean(KEY_THEME_MANAGER_READY, false) == true)),
                     themeManagerCompatible = compatibility?.compatible,
@@ -176,7 +206,7 @@ internal object ThemeProtectionServiceClient {
         }
         mutableState.value = mutableState.value.copy(waitingForApproval = true, error = null)
         runCatching {
-            activeService.requestScope(requiredScopes, object : XposedService.OnScopeEventListener {
+            activeService.requestScope(globalProtectionScopes, object : XposedService.OnScopeEventListener {
                 override fun onScopeRequestApproved(approved: List<String>) {
                     refresh()
                 }
@@ -199,7 +229,7 @@ internal object ThemeProtectionServiceClient {
     fun disable() {
         val activeService = service ?: return
         runCatching {
-            activeService.removeScope(requiredScopes)
+            activeService.removeScope(globalProtectionScopes)
             remotePreferences?.edit()?.clear()?.apply()
         }.onSuccess { refresh() }
             .onFailure { error ->

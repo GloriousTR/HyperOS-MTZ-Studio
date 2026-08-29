@@ -15,7 +15,7 @@ class ThemeManagerCompatibilityTest {
     @Test
     fun `known global versions map to observed tester behavior`() {
         assertEquals(
-            ThemeManagerBehavior.UNKNOWN,
+            ThemeManagerBehavior.MODDED_PERSISTENT_IMPORT,
             ThemeManagerContract.behavior("10.8.7.6"),
         )
         assertEquals(
@@ -27,6 +27,34 @@ class ThemeManagerCompatibilityTest {
             ThemeManagerContract.behavior("3.0.6.8-global"),
         )
         assertEquals(ThemeManagerBehavior.UNKNOWN, ThemeManagerContract.behavior("4.0.0.0"))
+    }
+
+    @Test
+    fun `modded persistent import disables redundant global protection`() {
+        val installed = InstalledThemeManager(
+            installed = true,
+            packageName = ThemeManagerContract.PACKAGE_NAME,
+            versionName = "10.8.7.6",
+            versionCode = 10876,
+            behavior = ThemeManagerContract.behavior("10.8.7.6"),
+        )
+
+        assertTrue(installed.isRecommended)
+        assertFalse(installed.requiresGlobalThemeProtection)
+    }
+
+    @Test
+    fun `verified global path continues to require protection`() {
+        val installed = InstalledThemeManager(
+            installed = true,
+            packageName = ThemeManagerContract.PACKAGE_NAME,
+            versionName = "3.0.5.6",
+            versionCode = 30506,
+            behavior = ThemeManagerContract.behavior("3.0.5.6"),
+        )
+
+        assertTrue(installed.isRecommended)
+        assertTrue(installed.requiresGlobalThemeProtection)
     }
 
     @Test

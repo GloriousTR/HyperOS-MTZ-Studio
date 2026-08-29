@@ -91,7 +91,9 @@ class MainActivity : ComponentActivity() {
         )
         val diagnostics = LiveDiagnosticsRecorder(applicationContext)
         val appearanceStore = AppearanceStore(applicationContext)
-        ThemeProtectionServiceClient.initialize(applicationContext)
+        val installedThemeManager = themeManagerInspector.inspect()
+        val globalThemeProtectionRequired = installedThemeManager.requiresGlobalThemeProtection
+        ThemeProtectionServiceClient.initialize(applicationContext, globalThemeProtectionRequired)
         setContent {
             var appearance by remember { mutableStateOf(appearanceStore.load()) }
             var contentStyle by remember { mutableStateOf(appearanceStore.loadContentStyle()) }
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
                         appearanceStore.saveContentStyle(selected)
                         contentStyle = selected
                     },
+                    globalThemeProtectionRequired = globalThemeProtectionRequired,
                 )
             }
         }
@@ -181,6 +184,7 @@ private fun StudioScreen(
     onAppearanceChange: (AppAppearance) -> Unit,
     contentStyle: AppContentStyle,
     onContentStyleChange: (AppContentStyle) -> Unit,
+    globalThemeProtectionRequired: Boolean,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -276,9 +280,18 @@ private fun StudioScreen(
                     runCatching { themeApplyCoordinator.cleanup(prepared) }
                 }
             }
-            status = context.getString(R.string.status_apply_success, prepared.themeName)
-            activeThemeId = prepared.themeId
-            studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+            val bridgeSucceeded = prepared.protocol != ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE ||
+                (result.resultCode == Activity.RESULT_OK &&
+                    result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_RESULT) == ThemeManagerBridgeContract.RESULT_OK)
+            if (bridgeSucceeded) {
+                status = context.getString(R.string.status_apply_success, prepared.themeName)
+                activeThemeId = prepared.themeId
+                studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+            } else {
+                val detail = result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_ERROR)
+                    ?: "Temalar 10.8 içe aktarma/uygulama işlemini tamamlamadı"
+                status = context.getString(R.string.status_apply_failed, detail)
+            }
         }
     }
 
@@ -556,6 +569,12 @@ private fun StudioScreen(
         ThemeProtectionServiceClient.refresh()
         reload()
     }
+    androidx.compose.runtime.LaunchedEffect(globalThemeProtectionRequired) {
+        if (!globalThemeProtectionRequired && destination == StudioDestination.THEME_PROTECTION) {
+            destination = StudioDestination.HOME
+            returnDestination = StudioDestination.HOME
+        }
+    }
     BackHandler(enabled = destination != StudioDestination.HOME, onBack = ::navigateBack)
 
     Scaffold(
@@ -797,6 +816,7 @@ private fun StudioScreen(
 
     if (appMenuExpanded) {
         StudioOverlayMenu(
+            showThemeProtection = globalThemeProtectionRequired,
             onDismiss = { appMenuExpanded = false },
             onNavigate = { target ->
                 appMenuExpanded = false
