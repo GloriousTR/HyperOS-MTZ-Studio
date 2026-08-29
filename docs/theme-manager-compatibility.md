@@ -13,11 +13,21 @@ HyperOS MTZ Studio is an independent project. Its compatibility policy is define
 
 Suffixes such as `-global` are ignored only for matrix matching. Unknown versions are shown as unverified rather than guessed.
 
+## Module-version matrix
+
+| Canonical version | v2.0.0 behavior |
+| --- | --- |
+| `10.8.7.6` | Uses the device-verified native Theme Manager importer and apply bridge. The installed HyperOS Theme Manager module provides persistent third-party theme use, so the separate Global Theme Protection path is disabled. |
+
 ## Startup behavior
 
 The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46` and `3.0.5.6` use the exported legacy tester contract. The request is intentionally frozen to the `support3.0` action, the `ApplyThemeForScreenshot` alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
 
-Theme Manager `10.8.7.6` support is reserved for the separately validated `v2.0.0` module-compatible release. Until it is tested on a physical device, `v1.2.0` reports it as unverified rather than guessing compatibility. The MTZ library and composer remain usable regardless of this result.
+When Theme Manager `10.8.7.6` is detected, v2.0.0 switches to its dedicated module-compatible protocol. MTZ Studio verifies the source archive, stages it in Theme Manager's local download area and opens the real local-theme activity. The in-process bridge invokes Theme Manager's native importer, waits for the imported `Resource`, applies it through Theme Manager and returns a verified result to MTZ Studio.
+
+This path was validated on a physical device with Theme Manager `10.8.7.6` and Vector API 102. It requires root plus an enabled modern Xposed environment. Only the `com.android.thememanager` scope is needed: v2.0.0 removes the redundant `system` scope and hides the Global Theme Protection menu for this version. Vector scope preparation can be completed by the app through its privileged runner; compatible LSPosed forks can use their normal scope approval flow.
+
+The legacy 2.15/3.0 Global protocol remains frozen to its v1.2.0 behavior and is not routed through the 10.8 bridge. The MTZ library and composer remain usable when the installed Theme Manager version is unknown.
 
 ## Root downgrade boundary
 
