@@ -251,6 +251,8 @@
     <string name="status_apply_success">%1$s Tema Yöneticisine aktarıldı ve uygulandı</string>
     <string name="status_apply_cancelled">Tema Yöneticisi işlemi tamamlamadı veya iptal edildi</string>
     <string name="status_apply_failed">Tema uygulanamadı: %1$s</string>
+    <string name="status_manual_import_ready">Otomatik 10.8 içe aktarımı kullanılamadı. MTZ, %1$s konumunda hazır. Temalar içinde İçe aktar’a dokunup bu dosyayı seçtikten sonra uygulayın.</string>
+    <string name="manual_import_toast">Tema otomatik uygulanmazsa İçe aktar’a dokunup %1$s dosyasını seçin</string>
 
     <!-- Live Diagnostics Screen -->
     <string name="diag_title">Live Diagnostics</string>

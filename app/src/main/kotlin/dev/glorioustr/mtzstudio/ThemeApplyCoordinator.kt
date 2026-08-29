@@ -15,11 +15,13 @@ data class PreparedThemeApply(
     val stagedPath: String,
     val intent: Intent,
     val protocol: ThemeApplyProtocol = ThemeApplyProtocol.LEGACY_TESTER,
+    val manualImportPath: String? = null,
 )
 
 enum class ThemeApplyProtocol {
     LEGACY_TESTER,
     THEME_MANAGER_10_8_BRIDGE,
+    THEME_MANAGER_10_8_MANUAL_IMPORT,
 }
 
 class ThemeApplyCoordinator(
@@ -38,7 +40,11 @@ class ThemeApplyCoordinator(
     }
 
     private fun prepareThemeManager10_8(theme: LibraryTheme): PreparedThemeApply {
-        ensureThemeManager10_8BridgeScope()
+        val themeName = theme.archive.metadata?.name ?: theme.displayName
+        val manualImportFile = checkNotNull(
+            MtzPublicExporter.exportToPublicDownloads(context, theme.archive.source, themeName),
+        ) { "Tema, 10.8.7.6 yerleşik içe aktarma akışı için İndirilenler/MTZ Studio klasörüne hazırlanamadı" }
+        val bridgeReady = ensureThemeManager10_8BridgeScope()
         val stagedPath = "$THEME_MANAGER_10_8_DOWNLOAD_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
             append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_10_8_DOWNLOAD_ROOT))
@@ -49,19 +55,38 @@ class ThemeApplyCoordinator(
         val result = commandRunner.run(command, 120)
         check(result.exitCode == 0) { "Tema, Temalar 10.8 içe aktarma alanına hazırlanamadı: ${result.output.takeLast(500)}" }
 
-        val intent = Intent(ThemeManagerBridgeContract.ACTION_APPLY_10_8).apply {
+        val intent = Intent().apply {
             component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_10_8_LOCAL_ACTIVITY)
             putExtra("REQUEST_RESOURCE_CODE", "theme")
-            putExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH, stagedPath)
-            putExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256, theme.archive.sha256)
+            if (bridgeReady) {
+                action = ThemeManagerBridgeContract.ACTION_APPLY_10_8
+                putExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH, stagedPath)
+                putExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256, theme.archive.sha256)
+            }
         }
         check(intent.resolveActivity(context.packageManager) != null) { "Temalar 10.8 yerel tema ekranı bulunamadı" }
         return PreparedThemeApply(
             themeId = theme.id.value,
-            themeName = theme.archive.metadata?.name ?: theme.displayName,
+            themeName = themeName,
             stagedPath = stagedPath,
             intent = intent,
-            protocol = ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE,
+            protocol = if (bridgeReady) {
+                ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE
+            } else {
+                ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT
+            },
+            manualImportPath = manualImportFile.absolutePath,
+        )
+    }
+
+    fun prepareThemeManager10_8ManualFallback(prepared: PreparedThemeApply): PreparedThemeApply {
+        check(prepared.manualImportPath != null) { "Yerleşik içe aktarma için hazırlanmış MTZ bulunamadı" }
+        return prepared.copy(
+            intent = Intent().apply {
+                component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_10_8_LOCAL_ACTIVITY)
+                putExtra("REQUEST_RESOURCE_CODE", "theme")
+            },
+            protocol = ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT,
         )
     }
 
@@ -116,7 +141,7 @@ class ThemeApplyCoordinator(
         return commandRunner.run(command, 30).exitCode == 0
     }
 
-    private fun ensureThemeManager10_8BridgeScope() {
+    private fun ensureThemeManager10_8BridgeScope(): Boolean {
         val vectorCommand = buildString {
             append("if [ -x ").append(shellQuote(VECTOR_CLI)).append(" ]; then ")
             append(shellQuote(VECTOR_CLI)).append(" modules enable ").append(shellQuote(context.packageName))
@@ -134,10 +159,8 @@ class ThemeApplyCoordinator(
             append("; exit 0; else exit 127; fi")
         }
         val vectorResult = commandRunner.run(vectorCommand, 30)
-        if (vectorResult.exitCode == 0) return
-        check(isImportBridgeReady()) {
-            "Temalar 10.8 uyumluluk köprüsü etkinleştirilemedi. Vector/LSPosed içinde MTZ Studio için yalnızca Temalar kapsamını etkinleştir."
-        }
+        if (vectorResult.exitCode == 0) return true
+        return isImportBridgeReady()
     }
 
     private companion object {

@@ -8,6 +8,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -280,17 +281,53 @@ private fun StudioScreen(
                     runCatching { themeApplyCoordinator.cleanup(prepared) }
                 }
             }
-            val bridgeSucceeded = prepared.protocol != ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE ||
-                (result.resultCode == Activity.RESULT_OK &&
-                    result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_RESULT) == ThemeManagerBridgeContract.RESULT_OK)
-            if (bridgeSucceeded) {
-                status = context.getString(R.string.status_apply_success, prepared.themeName)
-                activeThemeId = prepared.themeId
-                studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
-            } else {
-                val detail = result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_ERROR)
-                    ?: "Temalar 10.8 içe aktarma/uygulama işlemini tamamlamadı"
-                status = context.getString(R.string.status_apply_failed, detail)
+            when (prepared.protocol) {
+                ThemeApplyProtocol.LEGACY_TESTER -> {
+                    status = context.getString(R.string.status_apply_success, prepared.themeName)
+                    activeThemeId = prepared.themeId
+                    studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                }
+
+                ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE -> {
+                    val bridgeSucceeded = result.resultCode == Activity.RESULT_OK &&
+                        result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_RESULT) == ThemeManagerBridgeContract.RESULT_OK
+                    if (bridgeSucceeded) {
+                        status = context.getString(R.string.status_apply_success, prepared.themeName)
+                        activeThemeId = prepared.themeId
+                        studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                    } else {
+                        val fallback = runCatching {
+                            themeApplyCoordinator.prepareThemeManager10_8ManualFallback(prepared)
+                        }.getOrNull()
+                        if (fallback != null && result.data?.hasExtra(ThemeManagerBridgeContract.EXTRA_ERROR) == true) {
+                            status = context.getString(
+                                R.string.status_manual_import_ready,
+                                fallback.manualImportPath.orEmpty(),
+                            )
+                            Toast.makeText(
+                                context,
+                                context.getString(
+                                    R.string.manual_import_toast,
+                                    fallback.manualImportPath.orEmpty().substringAfterLast('/'),
+                                ),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                            context.startActivity(fallback.intent)
+                        } else {
+                            status = context.getString(
+                                R.string.status_manual_import_ready,
+                                prepared.manualImportPath.orEmpty(),
+                            )
+                        }
+                    }
+                }
+
+                ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT -> {
+                    status = context.getString(
+                        R.string.status_manual_import_ready,
+                        prepared.manualImportPath.orEmpty(),
+                    )
+                }
             }
         }
     }
@@ -892,6 +929,22 @@ private fun StudioScreen(
                                 withContext(Dispatchers.IO) { themeApplyCoordinator.prepare(theme) }
                             }.onSuccess { prepared ->
                                 preparedApply = prepared
+                                if (prepared.protocol != ThemeApplyProtocol.LEGACY_TESTER) {
+                                    if (prepared.protocol == ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT) {
+                                        status = context.getString(
+                                            R.string.status_manual_import_ready,
+                                            prepared.manualImportPath.orEmpty(),
+                                        )
+                                    }
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(
+                                            R.string.manual_import_toast,
+                                            prepared.manualImportPath.orEmpty().substringAfterLast('/'),
+                                        ),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
                                 applyLauncher.launch(prepared.intent)
                             }.onFailure { error ->
                                 status = context.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)

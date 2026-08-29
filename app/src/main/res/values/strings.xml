@@ -251,6 +251,8 @@
     <string name="status_apply_success">%1$s transferred to Theme Manager and applied</string>
     <string name="status_apply_cancelled">Theme Manager could not complete the operation or was cancelled</string>
     <string name="status_apply_failed">Could not apply theme: %1$s</string>
+    <string name="status_manual_import_ready">Automatic 10.8 import was unavailable. The MTZ is ready at %1$s. In Themes, tap Import, select this file, then apply it.</string>
+    <string name="manual_import_toast">If the theme is not applied automatically, tap Import and select %1$s</string>
 
     <!-- Live Diagnostics Screen -->
     <string name="diag_title">Live Diagnostics</string>
