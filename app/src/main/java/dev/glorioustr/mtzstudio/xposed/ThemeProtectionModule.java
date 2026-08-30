@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -21,10 +22,12 @@ import org.luckypray.dexkit.result.MethodDataList;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,10 +79,10 @@ public final class ThemeProtectionModule extends XposedModule {
         writeMarkerFile("mtz_protection_thememanager", false, null);
         writeMarkerFile(ThemeManagerBridgeContract.BRIDGE_MARKER, false, "bridge not initialized");
         try {
-            if (hasThemeManager10_8ImportSurface(param.getClassLoader())) {
+            if (hasModernThemeManagerImportSurface(param.getClassLoader())) {
                 installThemeManagerImportBridge(param.getClassLoader());
                 writeMarkerFile(ThemeManagerBridgeContract.BRIDGE_MARKER, true, null);
-                log(Log.INFO, TAG, "Theme Manager 10.8 bridge is ready; Global rights protection is not required");
+                log(Log.INFO, TAG, "Modern Theme Manager bridge is ready; Global rights protection is not required");
             } else {
                 installThemeManagerRightsHook(
                     param.getApplicationInfo().sourceDir,
@@ -95,7 +98,7 @@ public final class ThemeProtectionModule extends XposedModule {
         }
     }
 
-    private static boolean hasThemeManager10_8ImportSurface(ClassLoader classLoader) {
+    private static boolean hasModernThemeManagerImportSurface(ClassLoader classLoader) {
         try {
             Class.forName(
                 "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity",
@@ -113,11 +116,7 @@ public final class ThemeProtectionModule extends XposedModule {
         }
     }
 
-    /**
-     * Theme Manager 10.8 removed Xiaomi's exported tester activity. Its module-provided local
-     * importer remains authoritative, so this bridge validates one MTZ Studio request, imports
-     * through that native path, and applies the resulting local Resource.
-     */
+    /** Modern Theme Manager bridge: native catalog import, apply and delete operations. */
     private void installThemeManagerImportBridge(ClassLoader classLoader) throws Exception {
         Class<?> localThemeActivity = Class.forName(
             "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity",
@@ -133,22 +132,51 @@ public final class ThemeProtectionModule extends XposedModule {
                 Object result = chain.proceed();
                 Activity activity = (Activity) chain.getThisObject();
                 Intent request = activity.getIntent();
-                if (request != null && ThemeManagerBridgeContract.ACTION_APPLY_10_8.equals(request.getAction())) {
-                    activity.runOnUiThread(() -> beginThemeManager10_8Request(activity, classLoader, request));
+                if (request != null && isModernBridgeAction(request.getAction())) {
+                    activity.runOnUiThread(() -> beginModernThemeManagerRequest(activity, classLoader, request));
                 }
                 return result;
             });
     }
 
-    private void beginThemeManager10_8Request(Activity activity, ClassLoader classLoader, Intent request) {
+    private static boolean isModernBridgeAction(String action) {
+        return ThemeManagerBridgeContract.ACTION_APPLY_MODERN.equals(action)
+            || ThemeManagerBridgeContract.ACTION_IMPORT_MODERN.equals(action)
+            || ThemeManagerBridgeContract.ACTION_APPLY_EXISTING.equals(action)
+            || ThemeManagerBridgeContract.ACTION_DELETE_EXISTING.equals(action);
+    }
+
+    private void beginModernThemeManagerRequest(Activity activity, ClassLoader classLoader, Intent request) {
         try {
+            if (!BuildConfig.APPLICATION_ID.equals(activity.getCallingPackage())) {
+                throw new SecurityException("Untrusted Theme Manager bridge caller");
+            }
+            String action = request.getAction();
+            bridgeTrace(activity, "İstek alındı; çağıran doğrulandı: " + action);
+            if (ThemeManagerBridgeContract.ACTION_APPLY_EXISTING.equals(action)
+                    || ThemeManagerBridgeContract.ACTION_DELETE_EXISTING.equals(action)) {
+                String localId = validateLocalId(
+                    request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID)
+                );
+                Object resource = loadExistingThemeResource(activity, classLoader, localId);
+                bridgeTrace(activity, "Yerel tema kaydı çözümlendi: " + localId);
+                if (ThemeManagerBridgeContract.ACTION_DELETE_EXISTING.equals(action)) {
+                    deleteExistingTheme(activity, classLoader, resource, localId);
+                } else {
+                    applyThemeResource(activity, classLoader, resource,
+                        () -> finishBridgeActivity(activity, true, null, localId));
+                }
+                return;
+            }
             String path = request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH);
             String expectedHash = request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256);
             File themeFile = validateBridgeThemeFile(activity, path, expectedHash);
-            new BridgeSession(activity, classLoader, themeFile, expectedHash).start();
+            bridgeTrace(activity, "MTZ yolu ve SHA-256 doğrulandı");
+            boolean applyAfterImport = ThemeManagerBridgeContract.ACTION_APPLY_MODERN.equals(action);
+            new BridgeSession(activity, classLoader, themeFile, expectedHash, applyAfterImport).start();
         } catch (Throwable error) {
-            finishBridgeActivity(activity, false, concise(error));
-            log(Log.ERROR, TAG, "Theme Manager 10.8 request rejected", error);
+            finishBridgeActivity(activity, false, concise(error), null);
+            log(Log.ERROR, TAG, "Modern Theme Manager request rejected", error);
         }
     }
 
@@ -177,6 +205,7 @@ public final class ThemeProtectionModule extends XposedModule {
         private final ClassLoader classLoader;
         private final File themeFile;
         private final String expectedHash;
+        private final boolean applyAfterImport;
         private final AtomicBoolean finished = new AtomicBoolean(false);
         private final Handler mainHandler = new Handler(Looper.getMainLooper());
         private final Runnable timeout = () -> finish(false, "Theme Manager import/apply timed out");
@@ -192,25 +221,38 @@ public final class ThemeProtectionModule extends XposedModule {
                 log(
                     Log.INFO,
                     TAG,
-                    "Theme Manager 10.8 import callback: action=" + intent.getAction()
+                    "Modern Theme Manager import callback: action=" + intent.getAction()
                         + ", path=" + resourceValue(resource, "getDownloadPath")
                         + ", localId=" + resourceValue(resource, "getLocalId")
                 );
                 if (resource == null || !matchesRequestedResource(resource)) return;
+                bridgeTrace(activity, "İçe aktarma yanıtı doğrulandı: " + intent.getAction());
                 if (IMPORT_COMPLETE.equals(intent.getAction())) {
                     unregisterReceiver();
-                    activity.runOnUiThread(() -> applyImportedTheme(resource));
+                    activity.runOnUiThread(() -> {
+                        if (applyAfterImport) {
+                            applyImportedTheme(resource);
+                        } else {
+                            try {
+                                finish(true, null, resolvedLocalId(resource));
+                            } catch (Throwable error) {
+                                finish(false, "Imported theme identity is unavailable: " + concise(error));
+                            }
+                        }
+                    });
                 } else if (IMPORT_FAILED.equals(intent.getAction())) {
                     finish(false, "Theme Manager rejected the MTZ during import");
                 }
             }
         };
 
-        BridgeSession(Activity activity, ClassLoader classLoader, File themeFile, String expectedHash) {
+        BridgeSession(Activity activity, ClassLoader classLoader, File themeFile, String expectedHash,
+                boolean applyAfterImport) {
             this.activity = activity;
             this.classLoader = classLoader;
             this.themeFile = themeFile;
             this.expectedHash = expectedHash;
+            this.applyAfterImport = applyAfterImport;
         }
 
         void start() throws Exception {
@@ -227,6 +269,7 @@ public final class ThemeProtectionModule extends XposedModule {
             }
             receiverRegistered = true;
             mainHandler.postDelayed(timeout, IMPORT_APPLY_TIMEOUT_MS);
+            bridgeTrace(activity, "Yerleşik MTZ içe aktarma başlatılıyor");
             invokeThemeManagerImporter(activity, classLoader, themeFile);
         }
 
@@ -256,43 +299,8 @@ public final class ThemeProtectionModule extends XposedModule {
         private void applyImportedTheme(Object resource) {
             if (finished.get()) return;
             try {
-                Class<?> newContextClass = Class.forName(
-                    "com.android.thememanager.basemodule.resource.NewResourceContext", false, classLoader
-                );
-                Object newThemeContext = newContextClass.getMethod("getTheme").invoke(null);
-                Class<?> appInnerContextClass = Class.forName(
-                    "com.android.thememanager.AppInnerContext", false, classLoader
-                );
-                Object appInnerContext = appInnerContextClass.getMethod("zy").invoke(null);
-                Object contextManager = appInnerContextClass.getMethod("n").invoke(appInnerContext);
-                Object resourceContext = contextManager.getClass()
-                    .getMethod("g", newContextClass)
-                    .invoke(contextManager, newThemeContext);
-
-                Class<?> resourceClass = Class.forName(
-                    "com.android.thememanager.basemodule.resource.model.Resource", false, classLoader
-                );
-                Class<?> resourceContextClass = Class.forName(
-                    "com.android.thememanager.ResourceContext", false, classLoader
-                );
-                Class<?> applyInfoClass = Class.forName(
-                    "com.android.thememanager.detail.theme.model.ApplyThemeInfo", false, classLoader
-                );
-                Object applyInfo = applyInfoClass.getConstructor().newInstance();
-                invokeBooleanSetterIfPresent(applyInfo, "setShowProgress", false);
-                invokeBooleanSetterIfPresent(applyInfo, "setShowToastOfSuccess", true);
-                Class<?> applyUtils = Class.forName(
-                    "com.android.thememanager.util.ThemeApplyUtils", false, classLoader
-                );
-                Method apply = applyUtils.getMethod(
-                    "x2",
-                    Activity.class,
-                    resourceContextClass,
-                    resourceClass,
-                    applyInfoClass,
-                    Runnable.class
-                );
-                apply.invoke(null, activity, resourceContext, resource, applyInfo, (Runnable) () -> finish(true, null));
+                String localId = resolvedLocalId(resource);
+                applyThemeResource(activity, classLoader, resource, () -> finish(true, null, localId));
             } catch (Throwable error) {
                 finish(false, "Theme Manager apply failed: " + concise(error));
                 log(Log.ERROR, TAG, "Imported MTZ could not be applied", error);
@@ -300,10 +308,14 @@ public final class ThemeProtectionModule extends XposedModule {
         }
 
         private void finish(boolean success, String error) {
+            finish(success, error, null);
+        }
+
+        private void finish(boolean success, String error, String localId) {
             if (!finished.compareAndSet(false, true)) return;
             mainHandler.removeCallbacks(timeout);
             unregisterReceiver();
-            activity.runOnUiThread(() -> finishBridgeActivity(activity, success, error));
+            activity.runOnUiThread(() -> finishBridgeActivity(activity, success, error, localId));
         }
 
         private void unregisterReceiver() {
@@ -314,6 +326,157 @@ public final class ThemeProtectionModule extends XposedModule {
             } catch (Throwable ignored) {
             }
         }
+    }
+
+    private static void applyThemeResource(Activity activity, ClassLoader classLoader, Object resource,
+            Runnable completion) throws Exception {
+        Class<?> newContextClass = Class.forName(
+            "com.android.thememanager.basemodule.resource.NewResourceContext", false, classLoader
+        );
+        Object resourceContext = themeResourceContext(classLoader, newContextClass);
+        Class<?> resourceClass = Class.forName(
+            "com.android.thememanager.basemodule.resource.model.Resource", false, classLoader
+        );
+        Class<?> resourceContextClass = Class.forName(
+            "com.android.thememanager.ResourceContext", false, classLoader
+        );
+        Class<?> applyInfoClass = Class.forName(
+            "com.android.thememanager.detail.theme.model.ApplyThemeInfo", false, classLoader
+        );
+        Object applyInfo = applyInfoClass.getConstructor().newInstance();
+        invokeBooleanSetterIfPresent(applyInfo, "setShowProgress", false);
+        invokeBooleanSetterIfPresent(applyInfo, "setShowToastOfSuccess", true);
+        Class<?> applyUtils = Class.forName(
+            "com.android.thememanager.util.ThemeApplyUtils", false, classLoader
+        );
+        Method apply = applyUtils.getMethod(
+            "x2", Activity.class, resourceContextClass, resourceClass, applyInfoClass, Runnable.class
+        );
+        bridgeTrace(activity, "Yerleşik tema uygulama başlatılıyor");
+        Runnable tracedCompletion = () -> {
+            bridgeTrace(activity, "Temalar uygulama tamamlanma çağrısını gönderdi");
+            completion.run();
+        };
+        apply.invoke(null, activity, resourceContext, resource, applyInfo, tracedCompletion);
+    }
+
+    private static Object loadExistingThemeResource(Activity activity, ClassLoader classLoader, String localId)
+            throws Exception {
+        File externalMiui = activity.getExternalFilesDir("MIUI");
+        if (externalMiui == null) throw new IllegalStateException("Theme Manager storage is unavailable");
+        File metadataRoot = new File(externalMiui, "theme/.data/meta/theme").getCanonicalFile();
+        File metadata = new File(metadataRoot, localId + ".mrm").getCanonicalFile();
+        if (!metadata.getPath().startsWith(metadataRoot.getPath() + File.separator) || !metadata.isFile()) {
+            throw new IllegalArgumentException("Theme Manager theme record was not found");
+        }
+        Class<?> newContextClass = Class.forName(
+            "com.android.thememanager.basemodule.resource.NewResourceContext", false, classLoader
+        );
+        Object resourceContext = themeResourceContext(classLoader, newContextClass);
+        Class<?> resourceClass = Class.forName(
+            "com.android.thememanager.basemodule.resource.model.Resource", false, classLoader
+        );
+        Class<?> resourceContextClass = Class.forName(
+            "com.android.thememanager.ResourceContext", false, classLoader
+        );
+        Class<?> miuiUtilsClass = Class.forName(
+            "com.android.thememanager.basemodule.utils.MiuiUtils", false, classLoader
+        );
+        Method metadataLoader = null;
+        for (Method candidate : miuiUtilsClass.getDeclaredMethods()) {
+            Class<?>[] parameters = candidate.getParameterTypes();
+            if (Modifier.isStatic(candidate.getModifiers())
+                    && resourceClass.isAssignableFrom(candidate.getReturnType())
+                    && parameters.length == 2
+                    && parameters[0] == String.class
+                    && parameters[1] == resourceContextClass) {
+                metadataLoader = candidate;
+                break;
+            }
+        }
+        if (metadataLoader == null) {
+            throw new NoSuchMethodException("Theme Manager metadata loader is unavailable");
+        }
+        metadataLoader.setAccessible(true);
+        Object resource = metadataLoader.invoke(null, metadata.getAbsolutePath(), resourceContext);
+        if (resource == null || !localId.equals(String.valueOf(resourceClass.getMethod("getLocalId").invoke(resource)))) {
+            throw new SecurityException("Theme Manager record identity mismatch");
+        }
+        return resource;
+    }
+
+    private static Object themeResourceContext(ClassLoader classLoader, Class<?> newContextClass) throws Exception {
+        Object newThemeContext = newContextClass.getMethod("getTheme").invoke(null);
+        Class<?> appInnerContextClass = Class.forName(
+            "com.android.thememanager.AppInnerContext", false, classLoader
+        );
+        Object appInnerContext = appInnerContextClass.getMethod("zy").invoke(null);
+        Object contextManager = appInnerContextClass.getMethod("n").invoke(appInnerContext);
+        return contextManager.getClass().getMethod("g", newContextClass)
+            .invoke(contextManager, newThemeContext);
+    }
+
+    private static void deleteExistingTheme(Activity activity, ClassLoader classLoader, Object resource,
+            String localId) throws Exception {
+        File externalMiui = activity.getExternalFilesDir("MIUI");
+        if (externalMiui == null) throw new IllegalStateException("Theme Manager storage is unavailable");
+        File metadata = new File(externalMiui, "theme/.data/meta/theme/" + localId + ".mrm").getCanonicalFile();
+        Class<?> newContextClass = Class.forName(
+            "com.android.thememanager.basemodule.resource.NewResourceContext", false, classLoader
+        );
+        Object themeContext = newContextClass.getMethod("getTheme").invoke(null);
+        Class<?> listenerClass = Class.forName(
+            "com.android.thememanager.basemodule.local.ResourceDeleteListener", false, classLoader
+        );
+        AtomicBoolean completed = new AtomicBoolean(false);
+        Object listener = Proxy.newProxyInstance(classLoader, new Class<?>[]{listenerClass}, (proxy, method, args) -> {
+            if (method.getDeclaringClass() == Object.class) {
+                switch (method.getName()) {
+                    case "hashCode": return System.identityHashCode(proxy);
+                    case "equals": return args != null && args.length == 1 && proxy == args[0];
+                    case "toString": return "MtzStudioResourceDeleteListener";
+                    default: return null;
+                }
+            }
+            if (completed.compareAndSet(false, true)) {
+                boolean removed = !metadata.exists();
+                bridgeTrace(activity, "Silme yanıtı geldi; yerel kayıt kaldırıldı=" + removed);
+                activity.runOnUiThread(() -> finishBridgeActivity(
+                    activity,
+                    removed,
+                    removed ? null : "Theme Manager kept this protected theme",
+                    removed ? localId : null
+                ));
+            }
+            return null;
+        });
+        Class<?> taskClass = Class.forName(
+            "com.android.thememanager.controller.local.DeleteResourceTask", false, classLoader
+        );
+        Object task = taskClass.getConstructor(Activity.class, List.class, newContextClass, listenerClass)
+            .newInstance(activity, Collections.singletonList(resource), themeContext, listener);
+        // Reflection erases execute's signature, but DeleteResourceTask's generated
+        // doInBackground bridge still casts the array to Void[]. Object[] crashes
+        // the host process on the worker thread, beyond this method's try/catch.
+        bridgeTrace(activity, "Yerleşik tema silme başlatılıyor: " + localId);
+        AsyncTask.class.getMethod("execute", Object[].class).invoke(task, (Object) new Void[0]);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (completed.compareAndSet(false, true)) {
+                finishBridgeActivity(activity, false, "Theme Manager delete timed out", null);
+            }
+        }, IMPORT_APPLY_TIMEOUT_MS);
+    }
+
+    private static String validateLocalId(String value) {
+        if (value == null || !value.matches("[A-Za-z0-9._-]{1,128}")) {
+            throw new SecurityException("Invalid Theme Manager local ID");
+        }
+        return value;
+    }
+
+    private static String resolvedLocalId(Object resource) throws Exception {
+        Object value = resource.getClass().getMethod("getLocalId").invoke(resource);
+        return validateLocalId(value == null ? null : value.toString());
     }
 
     private static void invokeThemeManagerImporter(Activity activity, ClassLoader classLoader, File themeFile)
@@ -343,16 +506,43 @@ public final class ThemeProtectionModule extends XposedModule {
         }
     }
 
-    private static void finishBridgeActivity(Activity activity, boolean success, String error) {
+    private static void finishBridgeActivity(Activity activity, boolean success, String error, String localId) {
+        bridgeTrace(activity, success ? "Köprü işlemi tamamlandı" : "Köprü hatası: " + error);
         Intent result = new Intent();
+        result.putStringArrayListExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_TRACE,
+            activity.getIntent().getStringArrayListExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_TRACE));
         if (success) {
             result.putExtra(ThemeManagerBridgeContract.EXTRA_RESULT, ThemeManagerBridgeContract.RESULT_OK);
+            if (localId != null) {
+                result.putExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID, localId);
+            }
             activity.setResult(Activity.RESULT_OK, result);
         } else {
             result.putExtra(ThemeManagerBridgeContract.EXTRA_ERROR, error == null ? "Unknown error" : error);
             activity.setResult(Activity.RESULT_CANCELED, result);
         }
         activity.finish();
+    }
+
+    private static void bridgeTrace(Activity activity, String message) {
+        // Bounded trace travels back through the existing authenticated result channel.
+        // Logcat retains intermediate steps if the host crashes before returning a result.
+        try {
+            String line = System.currentTimeMillis() + " · " + message;
+            ArrayList<String> trace = activity.getIntent().getStringArrayListExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_TRACE);
+            if (trace == null) trace = new ArrayList<>();
+            if (trace.size() < 40) trace.add(line);
+            activity.getIntent().putStringArrayListExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_TRACE, trace);
+            Log.i(TAG, line);
+            android.os.ResultReceiver receiver = activity.getIntent().getParcelableExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_RECEIVER);
+            if (receiver != null) {
+                Bundle data = new Bundle();
+                data.putString("step", line);
+                receiver.send(0, data);
+            }
+        } catch (Throwable ignored) {
+            // Diagnostic collection must not affect native theme operations.
+        }
     }
 
     private static String sha256(File file) throws Exception {

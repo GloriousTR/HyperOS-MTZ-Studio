@@ -16,77 +16,132 @@ data class PreparedThemeApply(
     val intent: Intent,
     val protocol: ThemeApplyProtocol = ThemeApplyProtocol.LEGACY_TESTER,
     val manualImportPath: String? = null,
+    val operation: ThemeManagerOperation = ThemeManagerOperation.APPLY,
+    val themeManagerLocalId: String? = null,
 )
+
+enum class ThemeManagerOperation { APPLY, IMPORT_ONLY, DELETE }
 
 enum class ThemeApplyProtocol {
     LEGACY_TESTER,
-    THEME_MANAGER_10_8_BRIDGE,
-    THEME_MANAGER_10_8_MANUAL_IMPORT,
+    MODERN_THEME_MANAGER_BRIDGE,
+    MODERN_THEME_MANAGER_MANUAL_IMPORT,
 }
 
 class ThemeApplyCoordinator(
     private val context: Context,
     private val commandRunner: PrivilegedCommandRunner,
 ) {
-    fun prepare(theme: LibraryTheme): PreparedThemeApply {
+    private val diagnostics get() = LiveDiagnosticsRecorder.get(context)
+
+    fun prepare(theme: LibraryTheme, themeManagerLocalId: String? = null): PreparedThemeApply {
+        diagnostics.record("apply_source_check", "Tema kaynağı ve sürüm kontrol ediliyor", mapOf(
+            "theme" to theme.displayName, "version" to installedThemeManagerVersion(), "localId" to themeManagerLocalId,
+        ))
         check(Hashing.sha256(theme.archive.source) == theme.archive.sha256) { "Tema kaynağı doğrulama sonrası değişmiş" }
+        diagnostics.record("apply_hash_verified", "Tema kaynak SHA-256 doğrulaması başarılı")
         return if (ThemeManagerContract.behavior(installedThemeManagerVersion()) ==
-            dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.MODDED_PERSISTENT_IMPORT
+            dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.MODERN_NATIVE_LIBRARY
         ) {
-            prepareThemeManager10_8(theme)
+            if (themeManagerLocalId != null) prepareModernExistingTheme(theme, themeManagerLocalId)
+            else prepareModernImport(theme, ThemeManagerOperation.APPLY)
         } else {
             prepareLegacyTester(theme)
         }
     }
 
-    private fun prepareThemeManager10_8(theme: LibraryTheme): PreparedThemeApply {
+    fun prepareModernImportOnly(theme: LibraryTheme): PreparedThemeApply =
+        prepareModernImport(theme, ThemeManagerOperation.IMPORT_ONLY)
+
+    private fun prepareModernImport(theme: LibraryTheme, operation: ThemeManagerOperation): PreparedThemeApply {
+        diagnostics.record("modern_import_prepare", "Yerleşik MTZ aktarımı hazırlanıyor", mapOf("operation" to operation, "theme" to theme.displayName))
         val themeName = theme.archive.metadata?.name ?: theme.displayName
         val manualImportFile = checkNotNull(
             MtzPublicExporter.exportToPublicDownloads(context, theme.archive.source, themeName),
-        ) { "Tema, 10.8.7.6 yerleşik içe aktarma akışı için İndirilenler/MTZ Studio klasörüne hazırlanamadı" }
-        val bridgeReady = ensureThemeManager10_8BridgeScope()
-        val stagedPath = "$THEME_MANAGER_10_8_DOWNLOAD_ROOT/${UUID.randomUUID()}.mtz"
+        ) { "Tema, Xiaomi Temalar içe aktarma akışı için İndirilenler/MTZ Studio klasörüne hazırlanamadı" }
+        val bridgeReady = ensureModernThemeManagerBridgeScope()
+        val stagedPath = "$THEME_MANAGER_MODERN_DOWNLOAD_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
-            append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_10_8_DOWNLOAD_ROOT))
+            append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_MODERN_DOWNLOAD_ROOT))
             append(" && /system/bin/cp ").append(shellQuote(theme.archive.source.toString()))
             append(' ').append(shellQuote(stagedPath))
             append(" && /system/bin/chmod 0644 ").append(shellQuote(stagedPath))
         }
-        val result = commandRunner.run(command, 120)
+        val result = runRecorded("modern_staging", command, 120)
         check(result.exitCode == 0) { "Tema, Temalar 10.8 içe aktarma alanına hazırlanamadı: ${result.output.takeLast(500)}" }
 
         val intent = Intent().apply {
-            component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_10_8_LOCAL_ACTIVITY)
+            component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
             putExtra("REQUEST_RESOURCE_CODE", "theme")
             if (bridgeReady) {
-                action = ThemeManagerBridgeContract.ACTION_APPLY_10_8
+                action = if (operation == ThemeManagerOperation.IMPORT_ONLY) {
+                    ThemeManagerBridgeContract.ACTION_IMPORT_MODERN
+                } else {
+                    ThemeManagerBridgeContract.ACTION_APPLY_MODERN
+                }
                 putExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH, stagedPath)
                 putExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256, theme.archive.sha256)
             }
         }
-        check(intent.resolveActivity(context.packageManager) != null) { "Temalar 10.8 yerel tema ekranı bulunamadı" }
+        check(intent.resolveActivity(context.packageManager) != null) { "Xiaomi Temalar yerel tema ekranı bulunamadı" }
         return PreparedThemeApply(
             themeId = theme.id.value,
             themeName = themeName,
             stagedPath = stagedPath,
             intent = intent,
             protocol = if (bridgeReady) {
-                ThemeApplyProtocol.THEME_MANAGER_10_8_BRIDGE
+                ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE
             } else {
-                ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT
+                ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT
             },
             manualImportPath = manualImportFile.absolutePath,
+            operation = operation,
         )
     }
 
-    fun prepareThemeManager10_8ManualFallback(prepared: PreparedThemeApply): PreparedThemeApply {
+    private fun prepareModernExistingTheme(theme: LibraryTheme, localId: String): PreparedThemeApply {
+        require(localId.matches(SAFE_LOCAL_ID)) { "Geçersiz Tema Mağazası yerel kimliği" }
+        check(ensureModernThemeManagerBridgeScope()) { "Tema Mağazası köprüsü etkin değil" }
+        val themeName = theme.archive.metadata?.name ?: theme.displayName
+        val intent = modernThemeManagerIntent(ThemeManagerBridgeContract.ACTION_APPLY_EXISTING).apply {
+            putExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID, localId)
+        }
+        return PreparedThemeApply(
+            themeId = theme.id.value,
+            themeName = themeName,
+            stagedPath = "",
+            intent = intent,
+            protocol = ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE,
+            operation = ThemeManagerOperation.APPLY,
+            themeManagerLocalId = localId,
+        )
+    }
+
+    fun prepareModernDelete(theme: LibraryTheme, localId: String): PreparedThemeApply {
+        diagnostics.record("native_delete_prepare", "Yerleşik tema silme hazırlanıyor", mapOf("theme" to theme.displayName, "localId" to localId))
+        require(localId.matches(SAFE_LOCAL_ID)) { "Geçersiz Tema Mağazası yerel kimliği" }
+        check(ensureModernThemeManagerBridgeScope()) { "Tema Mağazası köprüsü etkin değil" }
+        return PreparedThemeApply(
+            themeId = theme.id.value,
+            themeName = theme.archive.metadata?.name ?: theme.displayName,
+            stagedPath = "",
+            intent = modernThemeManagerIntent(ThemeManagerBridgeContract.ACTION_DELETE_EXISTING).apply {
+                putExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID, localId)
+            },
+            protocol = ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE,
+            operation = ThemeManagerOperation.DELETE,
+            themeManagerLocalId = localId,
+        )
+    }
+
+    fun prepareModernManualFallback(prepared: PreparedThemeApply): PreparedThemeApply {
         check(prepared.manualImportPath != null) { "Yerleşik içe aktarma için hazırlanmış MTZ bulunamadı" }
         return prepared.copy(
             intent = Intent().apply {
-                component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_10_8_LOCAL_ACTIVITY)
+                component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
                 putExtra("REQUEST_RESOURCE_CODE", "theme")
             },
-            protocol = ThemeApplyProtocol.THEME_MANAGER_10_8_MANUAL_IMPORT,
+            protocol = ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT,
         )
     }
 
@@ -101,7 +156,7 @@ class ThemeApplyCoordinator(
             append(" && /system/bin/cp ").append(shellQuote(theme.archive.source.toString()))
             append(" /sdcard/MIUI/theme/${UUID.randomUUID()}.mtz 2>/dev/null || true")
         }
-        val result = commandRunner.run(command, 120)
+        val result = runRecorded("legacy_staging", command, 120)
         check(result.exitCode == 0) { "Tema, Tema Yöneticisine hazırlanamadı: ${result.output.takeLast(500)}" }
 
         val request = ThemeManagerContract.legacyTesterRequest(
@@ -125,7 +180,9 @@ class ThemeApplyCoordinator(
 
     fun cleanup(prepared: PreparedThemeApply) {
         // Retain file temporarily or clean asynchronously so background services aren't starved during application
-        commandRunner.run("/system/bin/rm -f ${shellQuote(prepared.stagedPath)}", 30)
+        if (prepared.stagedPath.isNotBlank()) {
+            runRecorded("staging_cleanup", "/system/bin/rm -f ${shellQuote(prepared.stagedPath)}", 30)
+        }
     }
 
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
@@ -138,10 +195,10 @@ class ThemeApplyCoordinator(
         val command = BRIDGE_MARKER_FILES.joinToString(separator = " || ") { path ->
             "/system/bin/grep -q '^ready=true' ${shellQuote(path)} 2>/dev/null"
         }
-        return commandRunner.run(command, 30).exitCode == 0
+        return runRecorded("bridge_marker_check", command, 30).exitCode == 0
     }
 
-    private fun ensureThemeManager10_8BridgeScope(): Boolean {
+    private fun ensureModernThemeManagerBridgeScope(): Boolean {
         val vectorCommand = buildString {
             append("if [ -x ").append(shellQuote(VECTOR_CLI)).append(" ]; then ")
             append(shellQuote(VECTOR_CLI)).append(" modules enable ").append(shellQuote(context.packageName))
@@ -158,19 +215,55 @@ class ThemeApplyCoordinator(
             append("; /system/bin/am force-stop ").append(shellQuote(THEME_MANAGER_PACKAGE))
             append("; exit 0; else exit 127; fi")
         }
-        val vectorResult = commandRunner.run(vectorCommand, 30)
+        val vectorResult = runRecorded("vector_scope_prepare", vectorCommand, 30)
         if (vectorResult.exitCode == 0) return true
         return isImportBridgeReady()
+    }
+
+    private fun modernThemeManagerIntent(actionName: String): Intent = Intent(actionName).apply {
+        component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
+        putExtra("REQUEST_RESOURCE_CODE", "theme")
+        check(resolveActivity(context.packageManager) != null) { "Temalar yerel tema ekranı bulunamadı" }
+    }
+
+    private fun runRecorded(stage: String, command: String, timeoutSeconds: Long) = try {
+        diagnostics.record("privileged_step_started", "Yetkili işlem başladı", mapOf("stage" to stage))
+        commandRunner.run(command, timeoutSeconds).also { result ->
+            diagnostics.record("privileged_step_result", "Yetkili işlem sonucu", mapOf(
+                "stage" to stage, "exitCode" to result.exitCode,
+                "output" to result.output.takeLast(1500),
+            ))
+        }
+    } catch (error: Exception) {
+        diagnostics.record("privileged_step_failed", "Yetkili işlem tamamlanamadı", mapOf("stage" to stage), error)
+        throw error
+    }
+
+    /** Only inspect recent crash records for the two packages involved in this request. */
+    fun captureFailureDiagnostics(startedAt: Long) {
+        runCatching {
+            val since = java.time.Instant.ofEpochMilli(maxOf(startedAt, System.currentTimeMillis() - 300_000))
+                .atZone(java.time.ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS", java.util.Locale.US))
+            val result = commandRunner.run("logcat -b crash -d -v threadtime -T ${shellQuote(since)} | tail -n 200", 10)
+            val lines = result.output.lines()
+            val ownPids = lines.filter { it.contains("Process: $THEME_MANAGER_PACKAGE,") || it.contains("Process: ${context.packageName},") }
+                .mapNotNull { Regex("PID: (\\d+)").find(it)?.groupValues?.get(1) }.toSet()
+            val relevant = lines.filter { line -> line.trim().split(Regex("\\s+"), limit = 5).getOrNull(2) in ownPids }
+            diagnostics.record("host_crash_check", if (relevant.isEmpty()) "Bu işlem aralığında ilgili çökme kaydı bulunamadı; iptal veya yanıtsız dönüş olabilir" else "Temalar işlemine ait çökme ayrıntısı bulundu",
+                mapOf("crash" to relevant.joinToString("\n").takeLast(6000)))
+        }.onFailure { diagnostics.record("host_crash_check_unavailable", "Ek çökme kaydı okunamadı", error = it) }
     }
 
     private companion object {
         const val THEME_MANAGER_PACKAGE = "com.android.thememanager"
         const val THEME_MANAGER_STAGING_ROOT = "/sdcard/Android/data/com.android.thememanager/files/mtzstudio"
-        const val THEME_MANAGER_10_8_DOWNLOAD_ROOT =
+        const val THEME_MANAGER_MODERN_DOWNLOAD_ROOT =
             "/sdcard/Android/data/com.android.thememanager/files/MIUI/theme/.download"
-        const val THEME_MANAGER_10_8_LOCAL_ACTIVITY =
+        const val THEME_MANAGER_MODERN_LOCAL_ACTIVITY =
             "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity"
         const val VECTOR_CLI = "/data/adb/modules/zygisk_vector/cli"
+        val SAFE_LOCAL_ID = Regex("[A-Za-z0-9._-]{1,128}")
         val BRIDGE_MARKER_FILES = listOf(
             "/data/system/theme/${ThemeManagerBridgeContract.BRIDGE_MARKER}",
             "/data/data/com.android.thememanager/files/${ThemeManagerBridgeContract.BRIDGE_MARKER}",

@@ -57,7 +57,7 @@
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Change color mode and content style</string>
     <string name="overlay_backup_desc">Backup or restore theme library</string>
-    <string name="overlay_diagnostics_desc">Monitor import workflow and results</string>
+    <string name="overlay_diagnostics_desc">Follow theme operations and error details</string>
     <string name="overlay_theme_protection_desc">Prevent third-party themes from reverting to default</string>
     <string name="overlay_about_desc">View version details and the project link</string>
     <string name="about_version">Version %1$s</string>
@@ -249,14 +249,21 @@
     <string name="apply_dialog_desc">%1$s will be transferred to Theme Manager as a local theme and applied. Theme components may restart the system interface.</string>
     <string name="status_preparing_apply">Preparing theme for Theme Manager…</string>
     <string name="status_apply_success">%1$s transferred to Theme Manager and applied</string>
+    <string name="status_legacy_apply_unverified">The tester call returned for %1$s. This Theme Manager version does not report a definitive apply result.</string>
     <string name="status_apply_cancelled">Theme Manager could not complete the operation or was cancelled</string>
     <string name="status_apply_failed">Could not apply theme: %1$s</string>
+    <string name="status_modern_theme_imported">“%1$s” was added to Xiaomi Theme Manager</string>
+    <string name="error_modern_bridge_failed">The Xiaomi Theme Manager bridge did not complete the operation</string>
+    <string name="modern_catalog_title">Xiaomi Theme Manager library</string>
+    <string name="modern_catalog_desc">Themes, previews and actions are synchronized directly with Xiaomi Theme Manager.</string>
+    <string name="modern_catalog_refresh">Refresh catalog</string>
+    <string name="modern_catalog_sync_summary">%1$d themes synchronized · %2$d editor cache updates · %3$d failed</string>
     <string name="status_manual_import_ready">Automatic 10.8 import was unavailable. The MTZ is ready at %1$s. In Themes, tap Import, select this file, then apply it.</string>
     <string name="manual_import_toast">If the theme is not applied automatically, tap Import and select %1$s</string>
 
     <!-- Live Diagnostics Screen -->
     <string name="diag_title">Live Diagnostics</string>
-    <string name="diag_desc">Import checkpoints are written to private storage resilient to reboot. Raw file URIs are not recorded.</string>
+    <string name="diag_desc">Startup, sync, composition, import, apply and delete steps are recorded automatically. The latest 200 events appear newest first; detailed logs can be exported. Logs stay on this device; raw file URIs are not recorded.</string>
     <string name="diag_phase">Phase: %1$s</string>
     <string name="diag_copied">%1$s copied</string>
     <string name="diag_interrupted_session">Interrupted session: %1$s</string>

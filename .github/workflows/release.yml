@@ -39,7 +39,17 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Restore stable release signing key
+        env:
+          MTZ_RELEASE_KEYSTORE_BASE64: ${{ secrets.MTZ_RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$MTZ_RELEASE_KEYSTORE_BASE64" | base64 --decode > release-signing.jks
+
       - name: Build Release APK
+        env:
+          MTZ_RELEASE_STORE_FILE: ${{ github.workspace }}/release-signing.jks
+          MTZ_RELEASE_STORE_PASSWORD: ${{ secrets.MTZ_RELEASE_STORE_PASSWORD }}
+          MTZ_RELEASE_KEY_ALIAS: ${{ secrets.MTZ_RELEASE_KEY_ALIAS }}
+          MTZ_RELEASE_KEY_PASSWORD: ${{ secrets.MTZ_RELEASE_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Determine Tag and Title
@@ -69,6 +79,7 @@ jobs:
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
           name: ${{ steps.release_meta.outputs.title }}
+          body_path: docs/release-notes-v2.1.0.md
           draft: false
           prerelease: false
           generate_release_notes: true

@@ -154,6 +154,7 @@ internal fun HomeMenuScreen(
     onToggleImport: () -> Unit,
     onAddMtz: () -> Unit,
     onNavigate: (StudioDestination) -> Unit,
+    showThemeManagerVersionTool: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val rows = listOf(
@@ -192,11 +193,13 @@ internal fun HomeMenuScreen(
                         Button(enabled = !importing, onClick = onAddMtz) {
                             Text(if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.mtz_import_btn_select))
                         }
-                        ThemeManagerCompatibilityCard(
-                            inspector = themeManagerInspector,
-                            updater = themeManagerUpdater,
-                            openInput = openInput,
-                        )
+                        if (showThemeManagerVersionTool) {
+                            ThemeManagerCompatibilityCard(
+                                inspector = themeManagerInspector,
+                                updater = themeManagerUpdater,
+                                openInput = openInput,
+                            )
+                        }
                     }
                 }
             }
@@ -335,6 +338,7 @@ internal fun ThemesScreen(
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
+    showDeviceImport: Boolean = true,
     onApplyTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
     modifier: Modifier = Modifier,
@@ -349,17 +353,23 @@ internal fun ThemesScreen(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            DeviceImportCard(
-                title = stringResource(R.string.device_theme_import_title),
-                description = stringResource(R.string.device_theme_import_desc),
-                status = deviceImportStatus,
-                buttonText = stringResource(R.string.device_theme_import_button),
-                running = deviceImportRunning,
-                onImport = onOpenDeviceThemePicker,
-            )
+        if (showDeviceImport) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DeviceImportCard(
+                    title = stringResource(R.string.device_theme_import_title),
+                    description = stringResource(R.string.device_theme_import_desc),
+                    status = deviceImportStatus,
+                    buttonText = stringResource(R.string.device_theme_import_button),
+                    running = deviceImportRunning,
+                    onImport = onOpenDeviceThemePicker,
+                )
+            }
+        } else if (deviceImportRunning) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
         }
-        if (galleryThemes.isEmpty()) {
+        if (galleryThemes.isEmpty() && (showDeviceImport || !deviceImportRunning)) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     stringResource(R.string.empty_themes_title),

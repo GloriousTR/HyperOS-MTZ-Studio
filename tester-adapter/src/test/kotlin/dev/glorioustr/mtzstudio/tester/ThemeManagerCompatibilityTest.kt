@@ -15,7 +15,7 @@ class ThemeManagerCompatibilityTest {
     @Test
     fun `known global versions map to observed tester behavior`() {
         assertEquals(
-            ThemeManagerBehavior.MODDED_PERSISTENT_IMPORT,
+            ThemeManagerBehavior.MODERN_NATIVE_LIBRARY,
             ThemeManagerContract.behavior("10.8.7.6"),
         )
         assertEquals(
@@ -27,6 +27,16 @@ class ThemeManagerCompatibilityTest {
             ThemeManagerContract.behavior("3.0.6.8-global"),
         )
         assertEquals(ThemeManagerBehavior.UNKNOWN, ThemeManagerContract.behavior("4.0.0.0"))
+    }
+
+    @Test
+    fun `modern native library covers verified and later China Theme Manager family`() {
+        listOf("10.8.7.6", "10.9.2.0", "10.9.4.0", "10.9.5.2", "11.0.8.0", "11.1.5.0")
+            .forEach { version ->
+                assertEquals(ThemeManagerBehavior.MODERN_NATIVE_LIBRARY, ThemeManagerContract.behavior(version))
+            }
+        assertEquals(ThemeManagerBehavior.UNKNOWN, ThemeManagerContract.behavior("10.8.7.5"))
+        assertEquals(ThemeManagerBehavior.TESTER_ACTIVITY_REMOVED, ThemeManagerContract.behavior("3.0.6.8"))
     }
 
     @Test

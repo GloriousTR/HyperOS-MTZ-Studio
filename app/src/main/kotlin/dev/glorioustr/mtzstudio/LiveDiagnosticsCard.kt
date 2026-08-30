@@ -109,8 +109,10 @@ internal fun LiveDiagnosticsCard(
                 actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 if (state.recentEvents.isNotEmpty()) {
                     Text(stringResource(R.string.diag_recent_events), fontWeight = FontWeight.SemiBold)
-                    state.recentEvents.takeLast(6).forEach { event ->
-                        Text(event, style = MaterialTheme.typography.labelSmall)
+                    state.recentEvents.asReversed().forEach { event ->
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(event, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 8.dp))
+                        }
                     }
                 }
             }

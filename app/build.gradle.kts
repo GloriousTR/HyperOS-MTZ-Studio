@@ -12,8 +12,20 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.0.0"
+        versionCode = 9
+        versionName = "2.1.0"
+    }
+
+    signingConfigs {
+        create("releaseStable") {
+            val releaseStoreFile = providers.environmentVariable("MTZ_RELEASE_STORE_FILE").orNull
+            if (!releaseStoreFile.isNullOrBlank()) {
+                storeFile = file(releaseStoreFile)
+                storePassword = providers.environmentVariable("MTZ_RELEASE_STORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("MTZ_RELEASE_KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("MTZ_RELEASE_KEY_PASSWORD").orNull
+            }
+        }
     }
 
     buildFeatures {
@@ -30,7 +42,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("releaseStable")
         }
     }
 }

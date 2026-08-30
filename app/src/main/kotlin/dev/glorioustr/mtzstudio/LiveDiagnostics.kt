@@ -65,8 +65,36 @@ class LiveDiagnosticsRecorder(private val context: Context) {
         DiagnosticUiState(rootEnabled = preferences.getBoolean(KEY_ROOT_ENABLED, false)),
     )
     private var activeSession: ActiveSession? = null
+    private val nativeSteps = java.util.LinkedHashSet<String>()
 
     val state: StateFlow<DiagnosticUiState> = mutableState.asStateFlow()
+
+    /** Diagnostics must never turn a recoverable operation into an application crash. */
+    @Synchronized
+    fun record(event: String, message: String, details: Map<String, Any?> = emptyMap(), error: Throwable? = null) {
+        runCatching {
+            val bounded = details.mapValues { (_, value) -> value?.toString()?.let(::redactUris)?.take(6000) }.toMutableMap()
+            if (error != null) bounded["exception"] = redactUris(error.stackTraceToString()).take(6000)
+            appendEvent(null, event, redactUris(message), bounded, critical = true)
+            if (activeSession == null) mutableState.value = mutableState.value.copy(phase = redactUris(message).take(500))
+        }.onFailure { android.util.Log.e("MtzDiagnostics", "Unable to write diagnostic event", it) }
+    }
+
+    @Synchronized
+    fun recordNativeStep(step: String) {
+        val bounded = step.take(1500)
+        if (!nativeSteps.add(bounded)) return
+        if (nativeSteps.size > 200) nativeSteps.remove(nativeSteps.first())
+        val hostTime = bounded.substringBefore(" · ").toLongOrNull()
+        record("native_bridge_step", if (hostTime != null) bounded.substringAfter(" · ") else bounded,
+            if (hostTime != null) mapOf("hostTimestamp" to Instant.ofEpochMilli(hostTime).toString()) else emptyMap())
+    }
+
+    fun nativeStepReceiver(): android.os.ResultReceiver = object : android.os.ResultReceiver(android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onReceiveResult(resultCode: Int, resultData: android.os.Bundle?) {
+            resultData?.getString("step")?.let(::recordNativeStep)
+        }
+    }
 
     init {
         Files.createDirectories(diagnosticsRoot)
@@ -75,6 +103,21 @@ class LiveDiagnosticsRecorder(private val context: Context) {
         recoverInterruptedSession()
         inspectOrphanStaging()
         refreshRecentEvents()
+        record("app_process_started", "Uygulama kaydı başladı", mapOf(
+            "version" to BuildConfig.VERSION_NAME, "android" to Build.VERSION.RELEASE,
+        ))
+        val previousExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            record("app_uncaught_exception", "Uygulamada beklenmeyen hata", mapOf("thread" to thread.name), error)
+            previousExceptionHandler?.uncaughtException(thread, error)
+        }
+        val pending = context.getSharedPreferences("studio-ui-state", 0)
+        if (pending.contains("pending-operation")) {
+            record("previous_operation_unresolved", "Önceki işlem için tamamlanma sonucu kaydedilmemiş", mapOf(
+                "operation" to pending.getString("pending-operation", null),
+                "theme" to pending.getString("pending-theme-name", null),
+            ))
+        }
         if (mutableState.value.rootEnabled) {
             mutableState.value = mutableState.value.copy(rootStatus = "Root boot tanılaması etkin")
         }
@@ -413,7 +456,9 @@ class LiveDiagnosticsRecorder(private val context: Context) {
             output.write((json.toString() + "\n").toByteArray(StandardCharsets.UTF_8))
             if (critical) output.fd.sync()
         }
-        refreshRecentEvents()
+        mutableState.value = mutableState.value.copy(
+            recentEvents = (mutableState.value.recentEvents + renderEvent(json)).takeLast(200),
+        )
     }
 
     private fun rotateJournalIfNeeded() {
@@ -423,17 +468,24 @@ class LiveDiagnosticsRecorder(private val context: Context) {
 
     private fun refreshRecentEvents() {
         if (!Files.isRegularFile(journal)) return
-        val lines = Files.readAllLines(journal).takeLast(8).mapNotNull { line ->
+        val lines = listOf(previousJournal, journal).filter(Files::isRegularFile)
+            .flatMap { Files.readAllLines(it).takeLast(200) }.takeLast(200).mapNotNull { line ->
             runCatching {
-                val json = JSONObject(line)
-                val time = Instant.parse(json.getString("timestamp"))
-                    .atZone(ZoneId.systemDefault())
-                    .format(EVENT_TIME_FORMAT)
-                "$time · ${json.getString("message")}" 
+                renderEvent(JSONObject(line))
             }.getOrNull()
         }
         mutableState.value = mutableState.value.copy(recentEvents = lines)
     }
+
+    private fun renderEvent(json: JSONObject): String {
+        val time = Instant.parse(json.getString("timestamp")).atZone(ZoneId.systemDefault()).format(EVENT_TIME_FORMAT)
+        val details = json.optJSONObject("details")
+        val detailText = details?.keys()?.asSequence()?.joinToString("\n") { key -> "$key: ${details.optString(key)}" }.orEmpty()
+        return "$time · ${json.getString("message")}\n[${json.getString("event")}]" +
+            if (detailText.isBlank()) "" else "\n$detailText"
+    }
+
+    private fun redactUris(text: String): String = text.replace(Regex("(?:content|file)://[^\\s\"<>]+"), "[URI]")
 
     private fun runRootCommand(command: String, timeoutSeconds: Long): CommandResult {
         val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
@@ -470,6 +522,10 @@ class LiveDiagnosticsRecorder(private val context: Context) {
     }
 
     companion object {
+        @Volatile private var instance: LiveDiagnosticsRecorder? = null
+        fun get(context: Context): LiveDiagnosticsRecorder = instance ?: synchronized(this) {
+            instance ?: LiveDiagnosticsRecorder(context.applicationContext).also { instance = it }
+        }
         const val KEY_ROOT_ENABLED = "root-enabled"
         const val MAX_JOURNAL_BYTES = 2L * 1024 * 1024
         const val MAX_ROOT_OUTPUT_CHARS = 64 * 1024

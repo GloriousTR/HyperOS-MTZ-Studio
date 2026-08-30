@@ -96,7 +96,7 @@ internal class DeviceThemeImporter(
         val records = Files.list(metadataDirectory).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".mrm") }
                 .map(::parseThemeRecord)
-                .filter { it.localId in selectedLocalIds }
+                .filter { selectedLocalIds.isEmpty() || it.localId in selectedLocalIds }
                 .sorted(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
                 .toList()
         }
@@ -140,6 +140,39 @@ internal class DeviceThemeImporter(
     /** Reconstructs every local Theme Manager item from its .mrm metadata and .mrc components. */
     fun importAllThemes(): DeviceThemeBulkImportResult {
         return importSelectedThemes(emptySet())
+    }
+
+    /** Keeps the private editor cache aligned with Theme Manager, which remains the source of truth. */
+    fun synchronizeModernLibrary(): DeviceThemeBulkImportResult {
+        val availableIds = listAvailableDeviceThemes().mapTo(mutableSetOf(), DeviceThemeSummary::localId)
+        val staleOrigins = importOrigins.all.keys.filter { key ->
+            key.startsWith(ORIGIN_PREFIX) && key.removePrefix(ORIGIN_PREFIX) !in availableIds
+        }
+        staleOrigins.forEach { key ->
+            val themeId = importOrigins.getString(key, null)?.substringAfter('|', "").orEmpty()
+            if (themeId.isNotBlank()) runCatching { library.deleteTheme(dev.glorioustr.mtzstudio.core.ThemeId(themeId)) }
+            importOrigins.edit().remove(key).apply()
+        }
+        return if (availableIds.isEmpty()) {
+            DeviceThemeBulkImportResult(0, 0, 0, 0, emptyList())
+        } else {
+            importAllThemes()
+        }
+    }
+
+    fun localIdFor(theme: LibraryTheme): String? = importOrigins.all.entries.firstNotNullOfOrNull { (key, value) ->
+        if (!key.startsWith(ORIGIN_PREFIX)) return@firstNotNullOfOrNull null
+        val mappedThemeId = value?.toString()?.substringAfter('|', "").orEmpty()
+        key.removePrefix(ORIGIN_PREFIX).takeIf { mappedThemeId == theme.id.value }
+    }
+
+    fun rememberThemeManagerOrigin(localId: String, theme: LibraryTheme) {
+        val safeLocalId = localId.requireSafeIdentifier("theme local ID")
+        importOrigins.edit().putString(originKey(safeLocalId), "${theme.archive.sha256}|${theme.id.value}").apply()
+    }
+
+    fun forgetThemeManagerOrigin(localId: String) {
+        if (localId.matches(SAFE_IDENTIFIER)) importOrigins.edit().remove(originKey(localId)).apply()
     }
 
     fun importActiveFont(): DeviceThemeImportResult {
@@ -482,7 +515,7 @@ internal class DeviceThemeImporter(
         .replace("'", "&apos;")
 
     private fun deterministicEntry(path: String) = ZipEntry(path).apply { time = 0L }
-    private fun originKey(localId: String) = "theme:$localId"
+    private fun originKey(localId: String) = "$ORIGIN_PREFIX$localId"
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
     private data class ThemeManagerRecord(
@@ -505,6 +538,7 @@ internal class DeviceThemeImporter(
             "/data/media/0/Android/data/com.android.thememanager/files/MIUI/theme/.data"
         const val MAX_PREVIEWS_PER_THEME = 2
         const val MAX_PREVIEW_CANDIDATES = 16
+        const val ORIGIN_PREFIX = "theme:"
         val SAFE_IDENTIFIER = Regex("[A-Za-z0-9._-]{1,128}")
         val SAFE_RESOURCE_CODE = Regex("[A-Za-z0-9._-]{1,160}")
         val SAFE_PREVIEW_NAME = Regex("[A-Za-z0-9._-]{1,180}")

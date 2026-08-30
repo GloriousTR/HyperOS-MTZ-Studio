@@ -3,6 +3,9 @@
 .idea/
 **/build/
 local.properties
+release-signing.jks
+*.keystore
+*.jks
 *.iml
 captures/
 .externalNativeBuild/

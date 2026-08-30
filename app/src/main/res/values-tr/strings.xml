@@ -57,7 +57,7 @@
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Renk modunu ve içerik tasarımını değiştir</string>
     <string name="overlay_backup_desc">Tema kitaplığını yedekle veya geri yükle</string>
-    <string name="overlay_diagnostics_desc">İçe aktarma akışını ve sonuçlarını izle</string>
+    <string name="overlay_diagnostics_desc">Tüm tema işlemlerini ve hata ayrıntılarını izle</string>
     <string name="overlay_theme_protection_desc">Üçüncü taraf temaların varsayılana dönmesini engelle</string>
     <string name="overlay_about_desc">Sürüm bilgilerini ve proje bağlantısını görüntüle</string>
     <string name="about_version">Sürüm %1$s</string>
@@ -249,14 +249,21 @@
     <string name="apply_dialog_desc">%1$s Tema Yöneticisine yerel tema olarak aktarılacak ve uygulanacak. Tema bileşenleri sistem arayüzünü yeniden başlatabilir.</string>
     <string name="status_preparing_apply">Tema, Tema Yöneticisine hazırlanıyor…</string>
     <string name="status_apply_success">%1$s Tema Yöneticisine aktarıldı ve uygulandı</string>
+    <string name="status_legacy_apply_unverified">%1$s için tester çağrısı döndü. Bu Temalar sürümü kesin uygulama sonucu bildirmiyor.</string>
     <string name="status_apply_cancelled">Tema Yöneticisi işlemi tamamlamadı veya iptal edildi</string>
     <string name="status_apply_failed">Tema uygulanamadı: %1$s</string>
+    <string name="status_modern_theme_imported">“%1$s” Xiaomi Temalar uygulamasına eklendi</string>
+    <string name="error_modern_bridge_failed">Xiaomi Temalar köprüsü işlemi tamamlayamadı</string>
+    <string name="modern_catalog_title">Xiaomi Temalar kitaplığı</string>
+    <string name="modern_catalog_desc">Temalar, önizlemeler ve işlemler doğrudan Xiaomi Temalar ile eşitlenir.</string>
+    <string name="modern_catalog_refresh">Kataloğu yenile</string>
+    <string name="modern_catalog_sync_summary">%1$d tema eşitlendi · %2$d düzenleyici önbelleği güncellendi · %3$d başarısız</string>
     <string name="status_manual_import_ready">Otomatik 10.8 içe aktarımı kullanılamadı. MTZ, %1$s konumunda hazır. Temalar içinde İçe aktar’a dokunup bu dosyayı seçtikten sonra uygulayın.</string>
     <string name="manual_import_toast">Tema otomatik uygulanmazsa İçe aktar’a dokunup %1$s dosyasını seçin</string>
 
     <!-- Live Diagnostics Screen -->
     <string name="diag_title">Live Diagnostics</string>
-    <string name="diag_desc">Import kontrol noktaları reboot\'a dayanıklı olarak özel depoya yazılır. Ham dosya URI\'si kaydedilmez.</string>
+    <string name="diag_desc">Açılış, eşitleme, oluşturma, içe aktarma, uygulama ve silme adımları otomatik kaydedilir. Son 200 olay en yeniden eskiye gösterilir; ayrıntılı kayıt dışa aktarılabilir. Kayıtlar cihazda kalır; ham dosya URI’si kaydedilmez.</string>
     <string name="diag_phase">Durum: %1$s</string>
     <string name="diag_copied">%1$s kopyalandı</string>
     <string name="diag_interrupted_session">Kesilmiş oturum: %1$s</string>
