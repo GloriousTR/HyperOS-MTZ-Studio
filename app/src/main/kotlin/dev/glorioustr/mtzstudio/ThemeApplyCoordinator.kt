@@ -53,13 +53,26 @@ class ThemeApplyCoordinator(
     fun prepareModernImportOnly(theme: LibraryTheme): PreparedThemeApply =
         prepareModernImport(theme, ThemeManagerOperation.IMPORT_ONLY)
 
+    fun requireModernPrivilegedAccess() {
+        diagnostics.record("privileged_preflight_started", "Root veya Shizuku uyumlu yetki denetleniyor")
+        val result = runRecorded("privileged_preflight", "id -u", 10)
+        check(result.exitCode == 0 && result.output.lineSequence().firstOrNull()?.trim() == "0") {
+            context.getString(R.string.privileged_access_unavailable)
+        }
+        diagnostics.record(
+            "privileged_preflight_completed",
+            "Yetkili işlem kanalı hazır",
+            mapOf("source" to result.authorizationSource),
+        )
+    }
+
     private fun prepareModernImport(theme: LibraryTheme, operation: ThemeManagerOperation): PreparedThemeApply {
         diagnostics.record("modern_import_prepare", "Yerleşik MTZ aktarımı hazırlanıyor", mapOf("operation" to operation, "theme" to theme.displayName))
         val themeName = theme.archive.metadata?.name ?: theme.displayName
+        val bridgeReady = ensureModernThemeManagerBridgeScope()
         val manualImportFile = checkNotNull(
             MtzPublicExporter.exportToPublicDownloads(context, theme.archive.source, themeName),
         ) { "Tema, Xiaomi Temalar içe aktarma akışı için İndirilenler/MTZ Studio klasörüne hazırlanamadı" }
-        val bridgeReady = ensureModernThemeManagerBridgeScope()
         val stagedPath = "$THEME_MANAGER_MODERN_DOWNLOAD_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
             append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_MODERN_DOWNLOAD_ROOT))

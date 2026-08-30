@@ -2,6 +2,7 @@ package dev.glorioustr.mtzstudio.tester
 
 import android.content.Context
 import java.io.InputStream
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -36,7 +37,11 @@ fun interface PrivilegedCommandRunner {
 
 class SuPrivilegedCommandRunner : PrivilegedCommandRunner {
     override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
-        val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+        val process = try {
+            ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+        } catch (error: IOException) {
+            throw ThemeManagerUpdateException("Root command channel could not be started", error)
+        }
         if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
             process.destroyForcibly()
             throw ThemeManagerUpdateException("Root package installation timed out")

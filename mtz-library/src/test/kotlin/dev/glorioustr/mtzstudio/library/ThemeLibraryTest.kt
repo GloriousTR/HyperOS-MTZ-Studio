@@ -100,6 +100,28 @@ class ThemeLibraryTest {
         )
     }
 
+    @Test
+    fun `rolling back repeated new imports preserves existing source and public backup`() {
+        val root = Files.createTempDirectory("mtz-library-rollback-test")
+        val library = ThemeLibrary(root)
+        val bytes = zip("icons" to byteArrayOf(1))
+        val existing = library.importTheme(ByteArrayInputStream(bytes), "existing.mtz")
+        val userSource = root.resolve("user-source.mtz")
+        val publicBackup = root.resolve("public-backup.mtz")
+        Files.write(userSource, bytes)
+        Files.write(publicBackup, bytes)
+
+        repeat(3) {
+            val pending = Files.newInputStream(userSource).use { library.importTheme(it, "pending.mtz") }
+            assertTrue(library.deleteTheme(pending.id))
+        }
+
+        assertEquals(existing.id, library.load().themes.single().id)
+        assertTrue(Files.readAllBytes(userSource).contentEquals(bytes))
+        assertTrue(Files.readAllBytes(publicBackup).contentEquals(bytes))
+        assertTrue(Files.isRegularFile(existing.archive.source))
+    }
+
     private fun zip(vararg entries: Pair<String, ByteArray>): ByteArray {
         val bytes = ByteArrayOutputStream()
         ZipOutputStream(bytes).use { zip ->

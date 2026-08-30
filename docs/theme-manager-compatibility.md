@@ -55,6 +55,12 @@ Before modern-provider testing, verify the active package version and path, the 
 
 With the user's approval, the test device's module was backed up and relocated to `system/product/app/MIUIThemeManagerGlobal/`, retaining the supplied native libraries. After an explicit APK replacement and reboot, Package Manager reported `10.8.7.6` for both the active update and factory-system entry. The mounted system APK's SHA-256 matched the module APK, and Hybrid Mount reported `is_mounted=true` with no mount error. No Theme Manager data was cleared. This verifies reboot persistence on this device, not compatibility with every ROM or protection against future store updates.
 
+## Privileged access channels (post-v2.1.0 development)
+
+Shevery is not mandatory. The app uses the standard Shizuku API for a compatible root-mode service (including original Shizuku), or direct superuser access through the device root manager when that service is unavailable. ADB-mode Shizuku reports UID 2000 and is not sufficient for the private catalog operations. Xposed scope approval is separate from this command access: on modern Theme Manager versions, only the Themes scope is required; System Framework remains disabled intentionally.
+
+The command runner selects a channel using read-only UID probes and never retries a dispatched operation through another channel after an uncertain failure. Permission/binder changes are tracked beyond startup; an unavailable channel produces an authorization dialog with a retry action. Modern file imports check access before opening the picker and again before copying the selected document. A new private import record is removed if native preparation fails before launch; user source files and public backups are preserved. This does not roll back an already dispatched native import or discard a composed theme after an unconfirmed host result.
+
 ## Root downgrade boundary
 
 HyperOS MTZ Studio does not download or bundle Xiaomi APKs. The user must select an APK they are entitled to use. Before enabling the root action, the app checks:

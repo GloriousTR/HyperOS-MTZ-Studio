@@ -301,11 +301,18 @@
     <string name="tm_status_waiting_root">Root izni ve paket yöneticisi sonucu bekleniyor…</string>
     <string name="tm_status_root_failed">Root işlemi başarısız: %1$s</string>
 
-    <!-- Shevery Authorization Gate -->
-    <string name="shevery_dialog_title">Shevery yetkisi gerekli</string>
-    <string name="shevery_dialog_text">Tema Yöneticisi sürümünü değiştirme gibi root gerektiren işlemleri güvenli biçimde yapabilmek için HyperOS MTZ Studio\'ya Shevery erişimi verin.</string>
+    <!-- Shizuku uyumlu yetkilendirme kapısı -->
+    <string name="shevery_dialog_title">Shizuku / Shevery erişimi</string>
+    <string name="shevery_dialog_text">Algılanan Shizuku uyumlu servise buradan izin verebilirsiniz. Xiaomi\'nin özel tema kataloğu için root modu gereklidir; yalnızca ADB modu yeterli değildir. Doğrudan süper kullanıcı erişimini kullanıyorsanız bu servis iznini atlayabilirsiniz.</string>
     <string name="shevery_btn_grant">Yetki ver</string>
     <string name="shevery_btn_skip">Şimdilik geç</string>
+    <string name="privileged_access_permission_required">Shizuku/Shevery içinden MTZ Studio iznini veya root yöneticinizden uygulamanın süper kullanıcı iznini verin.</string>
+    <string name="privileged_access_adb_only">Shizuku/Shevery ADB modunda çalışıyor. Root modunda başlatın veya root yöneticinizden MTZ Studio\'ya süper kullanıcı izni verin.</string>
+    <string name="privileged_access_unavailable">Kullanılabilir root kanalı bulunamadı. Shizuku/Shevery\'yi root modunda başlatın veya root yöneticinizden MTZ Studio\'ya süper kullanıcı izni verin.</string>
+    <string name="status_privileged_access_required">Yetkilendirme gerekli: %1$s</string>
+    <string name="privileged_dialog_title">Root erişimi gerekli</string>
+    <string name="privileged_btn_retry">Yetkiyi tekrar kontrol et</string>
+    <string name="privileged_permission_request_failed">İzin isteği gönderilemedi. Shizuku/Shevery servisinin çalıştığını kontrol edip tekrar deneyin veya root yöneticinizden MTZ Studio iznini verin.</string>
 
     <!-- Cihazdan tema çıkarma -->
     <string name="device_theme_import_title">Tema Yöneticisinden tema al</string>

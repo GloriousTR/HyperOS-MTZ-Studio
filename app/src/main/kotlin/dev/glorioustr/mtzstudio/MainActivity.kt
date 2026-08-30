@@ -198,6 +198,7 @@ private fun StudioScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var themes by remember { mutableStateOf<List<LibraryTheme>>(emptyList()) }
+    var checkingImportAccess by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf(context.getString(R.string.status_loading_library)) }
     val defaultCompositionName = stringResource(R.string.default_composition_name)
     var compositionName by rememberSaveable { mutableStateOf(defaultCompositionName) }
@@ -465,8 +466,6 @@ private fun StudioScreen(
             }
         }
     }
-
-    SheveryAuthorizationGate()
 
     fun deleteTheme(theme: LibraryTheme) {
         diagnostics.record("delete_requested", "Tema kaldırma istendi", mapOf("theme" to theme.displayName, "themeId" to theme.id.value))
@@ -740,6 +739,8 @@ private fun StudioScreen(
                         val document = documentDiagnostics(uri)
                         val session = diagnostics.beginImport(document)
                         diagnosticSession = session
+                        // Permission may have changed while the document picker was open.
+                        if (modernThemeManagerMode) themeApplyCoordinator.requireModernPrivilegedAccess()
                         openInput(uri)?.use { input ->
                             library.importTheme(input, document.displayName, session.observer)
                         } ?: run {
@@ -757,6 +758,15 @@ private fun StudioScreen(
                             persistPreparedApply(prepared)
                             applyLauncher.launch(prepared.intent)
                         }.onFailure { error ->
+                            val removed = withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+                                runCatching { library.deleteTheme(importedTheme.id) }.getOrDefault(false)
+                            }
+                            diagnostics.record(
+                                "modern_import_rolled_back",
+                                if (removed) "Tema Yöneticisine hazırlanamayan özel kitaplık kaydı geri alındı"
+                                else "Özel kitaplık kaydı geri alınamadı; kaynak korundu",
+                                mapOf("themeId" to importedTheme.id.value, "removed" to removed),
+                            )
                             status = context.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
                         }
                     } else {
@@ -805,6 +815,10 @@ private fun StudioScreen(
                 }
             }
         }
+    }
+
+    SheveryAuthorizationGate(privilegedRunner) {
+        if (modernThemeManagerMode) refreshModernThemeManagerCatalog()
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -895,14 +909,43 @@ private fun StudioScreen(
         when {
             destination == StudioDestination.HOME -> HomeMenuScreen(
                 importExpanded = importExpanded,
-                importing = diagnosticState.activeSessionId != null,
+                importing = diagnosticState.activeSessionId != null || checkingImportAccess,
                 themeManagerInspector = themeManagerInspector,
                 themeManagerUpdater = themeManagerUpdater,
                 openInput = openInput,
                 onToggleImport = { importExpanded = !importExpanded },
                 onAddMtz = {
-                    diagnostics.recordPickerLaunched()
-                    picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                    if (modernThemeManagerMode && !checkingImportAccess) {
+                        checkingImportAccess = true
+                        scope.launch {
+                            try {
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    themeApplyCoordinator.requireModernPrivilegedAccess()
+                                }
+                            }.onSuccess {
+                                diagnostics.recordPickerLaunched()
+                                picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                            }.onFailure { error ->
+                                diagnostics.record(
+                                    "import_authorization_required",
+                                    "MTZ seçilmeden önce yetkili işlem kanalı hazır değildi",
+                                    error = error,
+                                )
+                                status = context.getString(
+                                    R.string.status_privileged_access_required,
+                                    error.message ?: context.getString(R.string.privileged_access_unavailable),
+                                )
+                                Toast.makeText(context, status, Toast.LENGTH_LONG).show()
+                            }
+                            } finally {
+                                checkingImportAccess = false
+                            }
+                        }
+                    } else if (!modernThemeManagerMode) {
+                        diagnostics.recordPickerLaunched()
+                        picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                    }
                 },
                 onNavigate = { navigateTo(it) },
                 showThemeManagerVersionTool = !modernThemeManagerMode,

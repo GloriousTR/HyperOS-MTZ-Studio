@@ -6,6 +6,11 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
 import dev.glorioustr.mtzstudio.BuildConfig
+import dev.glorioustr.mtzstudio.LiveDiagnosticsRecorder
+import dev.glorioustr.mtzstudio.tester.VerifiedRootCommandRunner
+import dev.glorioustr.mtzstudio.tester.RootAccessUnavailableException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import dev.glorioustr.mtzstudio.tester.PrivilegedCommandResult
 import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
 import dev.glorioustr.mtzstudio.tester.SuPrivilegedCommandRunner
@@ -46,7 +51,7 @@ class SheveryAccess(private val context: Context) {
 
     fun executeRoot(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
         if (status() != SheveryAuthorizationStatus.ROOT_READY) {
-            throw ThemeManagerUpdateException("Shevery root authorization is not ready")
+            throw ThemeManagerUpdateException("Shizuku-compatible root authorization is not ready")
         }
         val args = Shizuku.UserServiceArgs(ComponentName(context, SheveryRootCommandService::class.java))
             .processNameSuffix("shevery_root")
@@ -68,15 +73,15 @@ class SheveryAccess(private val context: Context) {
         Shizuku.bindUserService(args, connection)
         try {
             if (!latch.await(20, TimeUnit.SECONDS)) {
-                throw ThemeManagerUpdateException("Shevery root service connection timed out")
+                throw ThemeManagerUpdateException("Shizuku-compatible root service connection timed out")
             }
-            val remote = service.get() ?: throw ThemeManagerUpdateException("Shevery root service is unavailable")
-            if (remote.serviceUid() != 0) throw ThemeManagerUpdateException("Shevery service is not running as root")
+            val remote = service.get() ?: throw ThemeManagerUpdateException("Shizuku-compatible root service is unavailable")
+            if (remote.serviceUid() != 0) throw ThemeManagerUpdateException("Shizuku-compatible service is not running as root")
             val encoded = remote.execute(command, timeoutSeconds.coerceIn(1, 300).toInt())
             val separator = encoded.indexOf('\u0000')
             val exitCode = encoded.substring(0, separator.coerceAtLeast(0)).toIntOrNull() ?: -1
             val output = if (separator >= 0) encoded.substring(separator + 1) else encoded
-            return PrivilegedCommandResult(exitCode, output, "Shevery root")
+            return PrivilegedCommandResult(exitCode, output, "Shizuku-compatible root service")
         } finally {
             service.get()?.let { remote -> runCatching { remote.destroy() } }
             runCatching { Shizuku.unbindUserService(args, connection, true) }
@@ -85,13 +90,55 @@ class SheveryAccess(private val context: Context) {
 }
 
 class PreferredPrivilegedCommandRunner(context: Context) : PrivilegedCommandRunner {
-    private val shevery = SheveryAccess(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val shevery = SheveryAccess(appContext)
     private val su = SuPrivilegedCommandRunner()
+    private val accessFailure = MutableStateFlow<String?>(null)
+    val authorizationFailure = accessFailure.asStateFlow()
+    private val verifiedRunner = VerifiedRootCommandRunner(
+        service = {
+            if (shevery.status() == SheveryAuthorizationStatus.ROOT_READY) {
+                PrivilegedCommandRunner { command, timeout -> shevery.executeRoot(command, timeout) }
+            } else null
+        },
+        direct = su,
+    )
 
+    @Synchronized
     override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
-        if (shevery.status() == SheveryAuthorizationStatus.ROOT_READY) {
-            runCatching { shevery.executeRoot(command, timeoutSeconds) }.getOrNull()?.let { return it }
+        val serviceStatus = shevery.status()
+        return try {
+            verifiedRunner.run(command, timeoutSeconds)
+        } catch (error: RootAccessUnavailableException) {
+            val message = when (serviceStatus) {
+                SheveryAuthorizationStatus.PERMISSION_REQUIRED ->
+                    appContext.getString(dev.glorioustr.mtzstudio.R.string.privileged_access_permission_required)
+                SheveryAuthorizationStatus.ADB_ONLY ->
+                    appContext.getString(dev.glorioustr.mtzstudio.R.string.privileged_access_adb_only)
+                else -> appContext.getString(dev.glorioustr.mtzstudio.R.string.privileged_access_unavailable)
+            }
+            LiveDiagnosticsRecorder.get(appContext).record(
+                "root_access_unavailable", "Yetkili işlem kanalı kullanılamıyor",
+                mapOf("compatibleService" to serviceStatus), error,
+            )
+            accessFailure.value = message
+            throw ThemeManagerUpdateException(message, error)
         }
-        return su.run(command, timeoutSeconds)
+    }
+
+    fun dismissAuthorizationFailure() { accessFailure.value = null }
+
+    fun requireRootReady() {
+        run("id -u", ROOT_PROBE_TIMEOUT_SECONDS).also { result ->
+            if (result.exitCode != 0 || result.output.lineSequence().firstOrNull()?.trim() != "0") {
+                throw ThemeManagerUpdateException(
+                    appContext.getString(dev.glorioustr.mtzstudio.R.string.privileged_access_unavailable),
+                )
+            }
+        }
+    }
+
+    private companion object {
+        const val ROOT_PROBE_TIMEOUT_SECONDS = 10L
     }
 }

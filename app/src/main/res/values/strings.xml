@@ -301,11 +301,18 @@
     <string name="tm_status_waiting_root">Waiting for root permission and package manager result…</string>
     <string name="tm_status_root_failed">Root operation failed: %1$s</string>
 
-    <!-- Shevery Authorization Gate -->
-    <string name="shevery_dialog_title">Shevery permission required</string>
-    <string name="shevery_dialog_text">Grant Shevery access to HyperOS MTZ Studio to securely perform operations that require root, such as modifying Theme Manager version.</string>
+    <!-- Shizuku-compatible Authorization Gate -->
+    <string name="shevery_dialog_title">Shizuku / Shevery access</string>
+    <string name="shevery_dialog_text">You can authorize the detected Shizuku-compatible service here. Root mode is required for Xiaomi\'s private theme catalog; ADB mode alone is not sufficient. If you use direct superuser access, you can skip this service permission.</string>
     <string name="shevery_btn_grant">Grant permission</string>
     <string name="shevery_btn_skip">Skip for now</string>
+    <string name="privileged_access_permission_required">Grant MTZ Studio permission in Shizuku/Shevery, or grant it superuser access in your root manager.</string>
+    <string name="privileged_access_adb_only">Shizuku/Shevery is running in ADB mode. Start it in root mode or grant MTZ Studio superuser access in your root manager.</string>
+    <string name="privileged_access_unavailable">No usable root channel is available. Start Shizuku/Shevery in root mode or grant MTZ Studio superuser access in your root manager.</string>
+    <string name="status_privileged_access_required">Authorization required: %1$s</string>
+    <string name="privileged_dialog_title">Root access required</string>
+    <string name="privileged_btn_retry">Check access again</string>
+    <string name="privileged_permission_request_failed">The permission request could not be sent. Check that Shizuku/Shevery is running, then retry or authorize MTZ Studio in your root manager.</string>
 
     <!-- Device theme extraction -->
     <string name="device_theme_import_title">Import themes from Theme Manager</string>
