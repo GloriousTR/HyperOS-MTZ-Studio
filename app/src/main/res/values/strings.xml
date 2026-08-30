@@ -44,7 +44,7 @@
     <string name="menu_title">Settings</string>
     <string name="menu_subtitle">Application settings and tools</string>
     <string name="menu_close">Close</string>
-    <string name="nav_back">‹ Back</string>
+    <string name="nav_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_apply">Apply</string>
     <string name="action_share">Share</string>
@@ -53,6 +53,10 @@
     <string name="delete_theme_dialog_desc">\"%1$s\" will be removed from your private library. This action cannot be undone.</string>
     <string name="status_theme_removed">\"%1$s\" removed from library</string>
     <string name="not_selected">Not selected</string>
+    <string name="personalize_choose_theme">Choose a theme</string>
+    <string name="component_use_default">System default will be used</string>
+    <string name="component_use_default_desc">This category uses the system default. The selected theme name and previews are preserved; the image may not match the default screen exactly.</string>
+    <string name="component_view_previews">Previews (%1$d)</string>
 
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Change color mode and content style</string>
@@ -136,7 +140,16 @@
     <string name="empty_themes_title">No verified themes yet</string>
     <string name="empty_themes_desc">You can add a theme by opening the MTZ Import section in the main menu.</string>
     <string name="empty_category_title">No content in this category</string>
-    <string name="empty_category_desc">You can import another MTZ or browse the Themes section.</string>
+    <string name="empty_category_desc">No theme in this library contains this component. Import a theme that includes it. A missing screenshot does not hide components.</string>
+    <string name="catalog_error_title">Theme library could not be refreshed</string>
+    <string name="catalog_retry">Try again</string>
+    <string name="catalog_empty_title">No imported local themes yet</string>
+    <string name="catalog_empty_desc">Add an MTZ to begin. Built-in ROM themes may be stored separately; open Xiaomi Themes below to use them.</string>
+    <string name="catalog_open_native">Open built-in themes in Xiaomi Themes</string>
+    <string name="catalog_native_open_failed">Xiaomi Themes could not be opened.</string>
+    <string name="catalog_location_unavailable">The local theme folder is not available. Open Xiaomi Themes and try again. Existing Studio files have been preserved.</string>
+    <string name="catalog_read_failed">Theme records could not be read completely. Check access and retry; existing Studio files have been preserved.</string>
+    <string name="catalog_partial_failure">Some themes could not be read. Available themes are shown; existing sources have been preserved.</string>
     <string name="category_select_hint">Selecting a source will update this component on the Personalize Theme screen.</string>
 
     <!-- Personalize / Create Theme Screen -->

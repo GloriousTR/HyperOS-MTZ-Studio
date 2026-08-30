@@ -163,6 +163,7 @@ class ThemeLibrary internal constructor(
                 setProperty("source.$index.sha256", entry.sourceSha256)
                 setProperty("source.$index.category", entry.category.name)
                 setProperty("source.$index.root", entry.rootPath)
+                setProperty("source.$index.useDefault", entry.useDefault.toString())
             }
         }
         val target = historyRoot.resolve("${Instant.now().toEpochMilli()}-${UUID.randomUUID()}.properties")

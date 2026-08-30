@@ -158,6 +158,12 @@ class ThemeApplyCoordinator(
         )
     }
 
+    fun nativeLibraryIntent(): Intent = Intent().apply {
+        component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
+        putExtra("REQUEST_RESOURCE_CODE", "theme")
+        check(resolveActivity(context.packageManager) != null) { "Theme Manager local library is unavailable" }
+    }
+
     private fun prepareLegacyTester(theme: LibraryTheme): PreparedThemeApply {
         val stagedPath = "$THEME_MANAGER_STAGING_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {

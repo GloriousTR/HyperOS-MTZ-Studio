@@ -15,7 +15,7 @@ Suffixes such as `-global` are ignored only for matrix matching. Unknown version
 
 ## Modern Theme Manager matrix
 
-| Canonical version | v2.1.0 behavior |
+| Canonical version | v2.2.0 behavior |
 | --- | --- |
 | `10.8.7.6` and later | Uses Xiaomi Theme Manager's local catalog as the source of truth when the verified native import surface is available. Global Theme Protection and the manual Theme Manager import card are hidden. |
 
@@ -25,7 +25,7 @@ The native surface was inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9.5.
 
 The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46` and `3.0.5.6` use the exported legacy tester contract. The request is intentionally frozen to the `support3.0` action, the `ApplyThemeForScreenshot` alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
 
-When Theme Manager `10.8.7.6` or a later modern build is detected, v2.1.0 switches to the native-library provider. MTZ Studio mirrors verified resources into a private editor cache so personalization can read MTZ components, while Xiaomi Theme Manager remains the visible and authoritative catalog. The “import from Theme Manager” step is removed. A theme added or composed in MTZ Studio is retained in `Downloads/MTZ Studio`, imported through Theme Manager's native importer, associated with the returned local resource ID, and then shown in the shared catalog.
+When Theme Manager `10.8.7.6` or a later modern build is detected, v2.2.0 switches to the native-library provider. MTZ Studio mirrors verified resources into a private editor cache so personalization can read MTZ components, while Xiaomi Theme Manager remains the visible and authoritative catalog. The “import from Theme Manager” step is removed. A theme added or composed in MTZ Studio is retained in `Downloads/MTZ Studio`, imported through Theme Manager's native importer, associated with the returned local resource ID, and then shown in the shared catalog.
 
 Apply and remove actions use the corresponding native Theme Manager resource. Removing an item deletes the Theme Manager record and its private editor mirror; the public MTZ backup is deliberately retained. Requests are accepted only when the activity was started for result by the MTZ Studio package, and imported files are authenticated by canonical path and SHA-256.
 
@@ -41,7 +41,7 @@ Modern bridge requests carry a `ResultReceiver` capability to return intermediat
 
 Device validation covered startup, composing/importing/deleting a disposable theme, trace display, exporting the diagnostic file, and retaining those events after process restart. No active-theme change was needed for this diagnostic test.
 
-This path was initially validated on a physical device with Theme Manager `10.8.7.6` and Vector API 102. It requires root plus an enabled modern Xposed environment. Only the `com.android.thememanager` scope is needed: v2.1.0 removes the redundant `system` scope and hides the Global Theme Protection menu for modern versions. Vector scope preparation can be completed by the app through its privileged runner; compatible LSPosed forks can use their normal scope approval flow.
+This path was initially validated on a physical device with Theme Manager `10.8.7.6` and Vector API 102. It requires root plus an enabled modern Xposed environment. Only the `com.android.thememanager` scope is needed: v2.2.0 removes the redundant `system` scope and hides the Global Theme Protection menu for modern versions. Vector scope preparation can be completed by the app through its privileged runner; compatible LSPosed forks can use their normal scope approval flow.
 
 The legacy 2.15/3.0 Global protocol remains frozen to its v1.2.0 behavior and is not routed through the modern bridge. The MTZ library and composer remain usable when the installed Theme Manager version is unknown.
 
@@ -55,7 +55,7 @@ Before modern-provider testing, verify the active package version and path, the 
 
 With the user's approval, the test device's module was backed up and relocated to `system/product/app/MIUIThemeManagerGlobal/`, retaining the supplied native libraries. After an explicit APK replacement and reboot, Package Manager reported `10.8.7.6` for both the active update and factory-system entry. The mounted system APK's SHA-256 matched the module APK, and Hybrid Mount reported `is_mounted=true` with no mount error. No Theme Manager data was cleared. This verifies reboot persistence on this device, not compatibility with every ROM or protection against future store updates.
 
-## Privileged access channels (post-v2.1.0 development)
+## Privileged access channels
 
 Shevery is not mandatory. The app uses the standard Shizuku API for a compatible root-mode service (including original Shizuku), or direct superuser access through the device root manager when that service is unavailable. ADB-mode Shizuku reports UID 2000 and is not sufficient for the private catalog operations. Xposed scope approval is separate from this command access: on modern Theme Manager versions, only the Themes scope is required; System Framework remains disabled intentionally.
 

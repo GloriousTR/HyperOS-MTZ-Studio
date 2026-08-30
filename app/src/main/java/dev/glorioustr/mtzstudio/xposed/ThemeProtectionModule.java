@@ -255,6 +255,9 @@ public final class ThemeProtectionModule extends XposedModule {
             this.applyAfterImport = applyAfterImport;
         }
 
+        // The legacy two-argument registration below is confined to Android < 13;
+        // modern hosts use the explicit exported flag and request authentication.
+        @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
         void start() throws Exception {
             IntentFilter filter = new IntentFilter();
             filter.addAction(IMPORT_COMPLETE);

@@ -1,0 +1,76 @@
+import javax.xml.XMLConstants
+import javax.xml.parsers.DocumentBuilderFactory
+import org.w3c.dom.Element
+import java.util.regex.Pattern
+
+// Isolated task action: no script/project references are captured in configuration cache.
+abstract class VerifyTranslations extends DefaultTask {
+    @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getResourcesDirectory()
+
+    static Map<String, String> readStrings(File resources, String folder, def factory) {
+        File file = new File(resources, folder + '/strings.xml')
+        if (!file.isFile()) throw new GradleException('Missing locale file: ' + file)
+        def nodes = factory.newDocumentBuilder().parse(file).getElementsByTagName('string')
+        Map<String, String> entries = [:]
+        for (int i = 0; i < nodes.length; i++) {
+            Element node = (Element) nodes.item(i)
+            String key = node.getAttribute('name')
+            if (entries.containsKey(key)) throw new GradleException("Duplicate key: $folder/$key")
+            entries[key] = node.textContent
+        }
+        return entries
+    }
+
+    @TaskAction
+    void verify() {
+        File resources = resourcesDirectory.get().asFile
+        def factory = DocumentBuilderFactory.newInstance()
+        factory.setFeature('http://apache.org/xml/features/disallow-doctype-decl', true)
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, '')
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, '')
+        def folders = [
+            'en':'values', 'tr':'values-tr', 'pt-BR':'values-pt', 'es':'values-es',
+            'zh-Hans':'values-zh', 'zh-Hant':'values-b+zh+Hant', 'ru':'values-ru',
+            'id':'values-in', 'ar':'values-ar', 'de':'values-de', 'fr':'values-fr',
+            'hi':'values-hi', 'bn':'values-bn', 'ur':'values-ur', 'ja':'values-ja',
+            'vi':'values-vi', 'mr':'values-mr', 'te':'values-te', 'ta':'values-ta',
+            'fa':'values-fa', 'ko':'values-ko'
+        ]
+        def nodes = factory.newDocumentBuilder().parse(new File(resources, 'xml/locales_config.xml'))
+            .getElementsByTagName('locale')
+        def declared = (0..<nodes.length).collect { ((Element) nodes.item(it)).getAttribute('android:name') }
+        if (declared.size() != declared.toSet().size() || declared.toSet() != folders.keySet()) {
+            throw new GradleException('Locale declaration does not match bundled translations')
+        }
+        def baseline = VerifyTranslations.readStrings(resources, 'values', factory)
+        def argument = Pattern.compile('%(?:[0-9]+\\$)?[-#+ 0,(]*[0-9]*(?:\\.[0-9]+)?[a-zA-Z%]')
+        def arguments = { String value ->
+            def matches = []
+            def matcher = argument.matcher(value)
+            while (matcher.find()) matches.add(matcher.group())
+            matches.sort()
+        }
+        folders.values().each { folder ->
+            def translated = VerifyTranslations.readStrings(resources, folder, factory)
+            if (translated.keySet() != baseline.keySet()) {
+                throw new GradleException("$folder missing: ${baseline.keySet() - translated.keySet()}; extra: ${translated.keySet() - baseline.keySet()}")
+            }
+            baseline.each { key, source ->
+                String value = translated[key]
+                if (value.isBlank()) throw new GradleException("Empty translation: $folder/$key")
+                if (arguments(source) != arguments(value)) throw new GradleException("Changed format arguments: $folder/$key")
+                if (value =~ /987654[0-9]{3}|ZXQ[0-9]+ZXQ|⁇/) throw new GradleException("Draft marker: $folder/$key")
+            }
+        }
+        logger.lifecycle("Verified ${baseline.size()} strings in ${folders.size()} locale variants (20 languages).")
+    }
+}
+
+def verifyTranslations = tasks.register('verifyTranslations', VerifyTranslations) {
+    group = 'verification'
+    description = 'Checks locale coverage, duplicate keys and Android format arguments.'
+    resourcesDirectory.set(layout.projectDirectory.dir('src/main/res'))
+}
+tasks.named('preBuild') { dependsOn(verifyTranslations) }

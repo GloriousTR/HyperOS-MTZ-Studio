@@ -44,7 +44,7 @@
     <string name="menu_title">Ayarlar</string>
     <string name="menu_subtitle">Uygulama ayarları ve araçları</string>
     <string name="menu_close">Kapat</string>
-    <string name="nav_back">‹ Geri</string>
+    <string name="nav_back">Geri</string>
     <string name="action_cancel">İptal</string>
     <string name="action_apply">Uygula</string>
     <string name="action_share">Paylaş</string>
@@ -53,6 +53,10 @@
     <string name="delete_theme_dialog_desc">\"%1$s\" özel kitaplığınızdan kaldırılacak. Bu işlem geri alınamaz.</string>
     <string name="status_theme_removed">\"%1$s\" kitaplıktan kaldırıldı</string>
     <string name="not_selected">Seçilmedi</string>
+    <string name="personalize_choose_theme">Bir tema seçin</string>
+    <string name="component_use_default">Varsayılan kullanılacak</string>
+    <string name="component_use_default_desc">Bu bölüm sistem varsayılanını kullanır. Seçtiğin temanın adı ve önizlemeleri korunur; görsel, varsayılan ekranın birebir görünümü olmayabilir.</string>
+    <string name="component_view_previews">Önizlemeler (%1$d)</string>
  
     <!-- Overlay Menu -->
     <string name="overlay_appearance_desc">Renk modunu ve içerik tasarımını değiştir</string>
@@ -136,7 +140,16 @@
     <string name="empty_themes_title">Henüz doğrulanmış tema yok</string>
     <string name="empty_themes_desc">Ana menüde MTZ Import bölümünü açarak tema ekleyebilirsin.</string>
     <string name="empty_category_title">Bu kategoride içerik yok</string>
-    <string name="empty_category_desc">Başka bir MTZ içe aktarabilir veya Temalar bölümünü inceleyebilirsin.</string>
+    <string name="empty_category_desc">Kitaplıktaki temalarda bu bileşen bulunmuyor. Bileşeni içeren bir tema ekleyebilirsin. Önizleme eksikliği bileşenleri gizlemez.</string>
+    <string name="catalog_error_title">Tema kitaplığı yenilenemedi</string>
+    <string name="catalog_retry">Tekrar dene</string>
+    <string name="catalog_empty_title">Henüz içe aktarılmış yerel tema yok</string>
+    <string name="catalog_empty_desc">Başlamak için MTZ ekleyebilirsin. ROM ile gelen temalar ayrı yerde tutulabilir; bunları kullanmak için aşağıdan Xiaomi Temalar’ı açabilirsin.</string>
+    <string name="catalog_open_native">Xiaomi Temalar’daki yerleşik temaları aç</string>
+    <string name="catalog_native_open_failed">Xiaomi Temalar açılamadı.</string>
+    <string name="catalog_location_unavailable">Yerel tema klasörü şu anda kullanılamıyor. Xiaomi Temalar’ı açıp tekrar deneyin. Studio’daki mevcut dosyalar korundu.</string>
+    <string name="catalog_read_failed">Tema kayıtları eksiksiz okunamadı. Yetkiyi kontrol edip tekrar deneyin; Studio’daki mevcut dosyalar korundu.</string>
+    <string name="catalog_partial_failure">Bazı temalar okunamadı. Okunabilen temalar gösteriliyor; mevcut kaynak dosyalar korundu.</string>
     <string name="category_select_hint">Bir kaynağı seçtiğinde Temanı Oluştur ekranındaki bu bileşen güncellenir.</string>
  
     <!-- Personalize / Temanı Oluştur Screen -->

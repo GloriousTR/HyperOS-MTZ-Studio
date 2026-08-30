@@ -16,9 +16,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v2.1.0"><strong>Download v2.1.0</strong></a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v2.2.0"><strong>Download v2.2.0</strong></a>
   ·
-  <a href="docs/release-notes-v2.1.0.md">Release notes</a>
+  <a href="docs/release-notes-v2.2.0.md">Release notes</a>
   ·
   <a href="docs/theme-manager-compatibility.md">Compatibility details</a>
   ·
@@ -29,7 +29,7 @@
 
 ## One studio, two Theme Manager providers
 
-HyperOS MTZ Studio is an independent, open-source Android application for Xiaomi HyperOS and MIUI devices. Version 2.1.0 detects the active `com.android.thememanager` version and selects the appropriate provider automatically—there is no separate Global or modern APK.
+HyperOS MTZ Studio is an independent, open-source Android application for Xiaomi HyperOS and MIUI devices. Version 2.2.0 detects the active `com.android.thememanager` version and selects the appropriate provider automatically—there is no separate Global or modern APK.
 
 | Provider | Theme Manager family | Library behavior | Apply and remove behavior |
 | --- | --- | --- | --- |
@@ -38,14 +38,20 @@ HyperOS MTZ Studio is an independent, open-source Android application for Xiaomi
 
 The provider decision follows the **active installed Theme Manager APK**, not the presence of a root-module directory. Unknown versions are reported as unverified instead of being guessed.
 
-## v2.1.0 highlights
+## v2.2.0 highlights
+
+- **20 interface languages:** the app follows the system language and offers Android 13+ per-app language selection. Simplified and Traditional Chinese are separate options, and Arabic, Persian and Urdu use RTL layout.
+- **Complete personalization:** all eight supported sections remain visible. Category-specific screenshots take priority over generic covers, and every matching category preview can be viewed without cropping.
+- **System-default sources:** a theme with a category preview but no actual component can retain its name and preview while the generated MTZ uses the system default for that component.
+- **Safer root and catalog handling:** root channels are verified before privileged reads, stale records never delete private sources, and loading, empty and error states are reported separately.
+- **Automatic translation checks:** every build verifies all 317 strings across all bundled locale variants, including their formatting parameters.
 
 - **Automatic modern catalog:** opening or returning to Themes refreshes the Xiaomi Theme Manager catalog. The old manual import card and refresh button are hidden on modern builds.
 - **Native modern operations:** themes added or composed in Studio are retained in `Downloads/MTZ Studio`, imported into Xiaomi Themes and associated with the returned local resource.
 - **Safer removal:** deleting a modern catalog item removes its native Theme Manager record and editor mirror without deleting the public MTZ backup.
 - **Global behavior preserved:** the tested `2.15.5.46` and `3.0.5.6` workflows remain isolated from the modern bridge.
 - **Detailed Live Diagnostics:** startup, provider selection, synchronization, composition, import, apply and delete operations are recorded from app launch—not only while the diagnostics screen is open.
-- **Stable release signing:** v2.1.0 establishes the signing key that future releases will reuse.
+- **Stable release signing:** v2.2.0 reuses the v2.1.0 stable signing key for normal in-place upgrades.
 
 Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9.5.2`, `11.0.8.0` and `11.1.5.0`. A future numeric version is accepted only if the required runtime classes are also available.
 
@@ -63,7 +69,7 @@ Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9
 
 - Material You and Liquid Glass presentation styles.
 - System, Light, Dark and AMOLED color modes.
-- System-language integration with Turkish and English resources.
+- **20 interface languages:** English, Turkish, Brazilian Portuguese, Spanish, Chinese, Russian, Indonesian, Arabic, German, French, Hindi, Bengali, Urdu, Japanese, Vietnamese, Marathi, Telugu, Tamil, Persian and Korean. Simplified and Traditional Chinese are separate Android locale choices. The app follows the system language, supports RTL navigation and declares per-app languages on Android 13+. New translations are machine-assisted and community language review is welcome; see [language coverage and review notes](docs/localization.md).
 - Contrast-aware text and surfaces across every appearance combination.
 - Settings, backup, diagnostics and About collected in a large card-based overlay menu.
 
@@ -92,13 +98,17 @@ Choose a complete base theme, then replace only the parts you want:
 
 Home-screen and lock-screen wallpapers can be selected independently. Unchanged components remain inherited from the base theme. Generated themes preserve a reusable preview, and the creator field can either inherit the original author or use a custom name.
 
+Category-specific images (including language-prefixed filenames) take priority over generic covers. A source with previews but no component can be selected as **System default will be used**. Composition excludes the base theme's custom component for that category while retaining the selected source name and all category previews in the MTZ. Studio restores that source label when the generated theme is used as a base again. This label does not override Xiaomi's own component labels; the preview is not a rendering of the system default. The preview viewer shows every category image without cropping. If neither a component nor a specific preview exists, the category stays empty with **Choose a theme**.
+
+On modern builds, the synchronized catalog covers readable local theme records. ROM-bundled themes can live outside that catalog; the bottom **Open built-in themes in Xiaomi Themes** action opens their native library. These built-in items are not advertised as editable Studio sources. A refresh never deletes private MTZ files just because a native record disappeared; explicit theme deletion remains separate.
+
 ### Diagnose every step
 
 Live Diagnostics keeps a bounded private journal and displays the latest 200 events. Modern bridge requests return intermediate steps over an authenticated callback channel, while available host failures are attached to the relevant operation. Exported logs redact URI values. A Global legacy activity return is explicitly marked **unverified** because returning from that activity alone does not prove that Xiaomi applied the theme.
 
 ## Compatibility and requirements
 
-| Xiaomi Themes version | v2.1.0 status | Notes |
+| Xiaomi Themes version | v2.2.0 status | Notes |
 | --- | --- | --- |
 | `2.15.5.46` | Supported legacy path | Imports an MTZ as an independent local theme; this is the recommended legacy version. |
 | `3.0.5.6` | Supported Global path | Uses the device-verified legacy tester contract. |
@@ -119,13 +129,13 @@ For the complete decision flow, tested surfaces and downgrade safety boundary, s
 
 ## Install or upgrade
 
-1. Download `MTZ_Studio_v2.1.0.apk` and its `.sha256` file from the [v2.1.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v2.1.0).
+1. Download `MTZ_Studio_v2.2.0.apk` and its `.sha256` file from the [v2.2.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v2.2.0).
 2. Back up the Studio library before replacing an older installation.
 3. Install the APK, then allow the app to detect the active Xiaomi Themes provider.
 4. On modern builds, approve the `com.android.thememanager` Xposed scope and reboot if your framework requires it.
 
 > [!IMPORTANT]
-> Releases up to v2.0.0 were produced with an ephemeral CI debug certificate. Android may therefore reject an in-place update to v2.1.0. If you see a signature conflict, back up the Studio library, uninstall the old APK, install v2.1.0 and restore the backup. v2.1.0 and later releases use the same stable signing key.
+> Releases up to v2.0.0 were produced with an ephemeral CI debug certificate. Android may therefore reject an in-place update to v2.2.0. If you see a signature conflict, back up the Studio library, uninstall the old APK, install v2.2.0 and restore the backup. v2.1.0 and later releases use the same stable signing key, so v2.1.0 can update normally.
 
 > [!NOTE]
 > HyperOS MTZ Studio does not bundle or download Xiaomi APKs. The optional root downgrade action accepts only a user-selected, correctly signed `2.15.5.46` APK after package, version, certificate and SHA-256 verification.
@@ -145,7 +155,8 @@ Additional technical documentation:
 - [Architecture](docs/architecture.md)
 - [Theme Manager compatibility](docs/theme-manager-compatibility.md)
 - [Threat model](docs/threat-model.md)
-- [v2.1.0 release notes](docs/release-notes-v2.1.0.md)
+- [Localization and language review](docs/localization.md)
+- [v2.2.0 release notes](docs/release-notes-v2.2.0.md)
 
 ## Build from source
 

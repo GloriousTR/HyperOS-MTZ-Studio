@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import dev.glorioustr.mtzstudio.core.ComponentCategory
+import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,9 +35,15 @@ internal fun ThemePreview(
     category: ComponentCategory? = null,
     purpose: ThemePreviewPurpose = ThemePreviewPurpose.PERSONALIZATION,
     modifier: Modifier = Modifier,
+    previewPath: String? = null,
 ) {
-    val bitmap by produceState<Bitmap?>(null, theme.id, category, purpose) {
-        value = withContext(Dispatchers.IO) { decodePreview(theme, category, purpose) }
+    val bitmap by produceState<Bitmap?>(null, theme.id, category, purpose, previewPath) {
+        value = withContext(Dispatchers.IO) {
+            if (previewPath == null) decodePreview(theme, category, purpose) else runCatching {
+                if (previewPath !in ThemeVisualPolicy.imagePaths(theme.archive.entries)) return@runCatching null
+                ZipFile(theme.archive.source.toFile()).use { decodeZipBitmap(it, previewPath) }
+            }.getOrNull()
+        }
     }
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
@@ -47,7 +54,7 @@ internal fun ThemePreview(
                 bitmap = it.asImageBitmap(),
                 contentDescription = theme.archive.metadata?.name ?: theme.displayName,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = if (previewPath == null) ContentScale.Crop else ContentScale.Fit,
             )
         } ?: Text(
             text = if (
@@ -164,8 +171,9 @@ private fun decodePreview(
     purpose: ThemePreviewPurpose,
 ): Bitmap? = runCatching {
     ZipFile(theme.archive.source.toFile()).use { zip ->
-        val path = previewEntryPath(theme, category, purpose) ?: return@use null
-        decodeZipBitmap(zip, path)
+        previewEntryPaths(theme, category, purpose).firstNotNullOfOrNull { path ->
+            runCatching { decodeZipBitmap(zip, path) }.getOrNull()
+        }
     }
 }.getOrNull()
 
@@ -204,136 +212,31 @@ private fun decodeZipBitmap(zip: ZipFile, path: String): Bitmap? {
     return zip.getInputStream(entry).use { BitmapFactory.decodeStream(it, null, options) }
 }
 
-/** True only when the selected component has a real image that can be shown in its picker. */
+/** A category-specific image or the theme's default cover can be shown. */
 internal fun hasThemePreview(theme: LibraryTheme, category: ComponentCategory): Boolean =
-    previewEntryPath(theme, category, ThemePreviewPurpose.PERSONALIZATION) != null
+    previewEntryPaths(theme, category, ThemePreviewPurpose.PERSONALIZATION).isNotEmpty()
 
-private fun previewEntryPath(
+private fun previewEntryPaths(
     theme: LibraryTheme,
     category: ComponentCategory?,
     purpose: ThemePreviewPurpose,
-): String? {
-    val images = theme.archive.entries.asSequence()
-        .filter { entry ->
-            !entry.directory && entry.expandedBytes in 1..MAX_PREVIEW_BYTES && isImagePath(entry.path)
-        }
-        .map { it.path }
-        .toList()
-    val byLowerPath = images.associateBy(String::lowercase)
-    val candidates = if (category == null && purpose == ThemePreviewPurpose.GALLERY) {
-        if (theme.includeInThemeGallery) {
+): List<String> {
+    if (category != null) return ThemeVisualPolicy.categoryWithFallback(theme.archive.entries, category)
+    val candidates = when {
+        purpose == ThemePreviewPurpose.GALLERY && theme.includeInThemeGallery ->
             listOf("preview/mtz_studio_generated.jpg", "wallpaper/default_wallpaper.jpg")
-        } else {
-            listOf(
-                "wallpaper/default_wallpaper.jpg",
-                "preview/preview_launcher_0.jpg",
-                "preview/preview_launcher_1.jpg",
-                "preview/preview_wallpaper_0.jpg",
-            )
-        }
-    } else {
-        previewCandidates(category)
+        purpose == ThemePreviewPurpose.GALLERY -> listOf(
+            "wallpaper/default_wallpaper.jpg", "preview/preview_launcher_0.jpg",
+            "preview/preview_launcher_1.jpg", "preview/preview_wallpaper_0.jpg",
+        )
+        else -> listOf(
+            "preview/preview_lockscreen_0.jpg", "preview/preview_launcher_0.jpg",
+            "wallpaper/default_lock_wallpaper.jpg", "wallpaper/default_wallpaper.jpg",
+            "preview/preview_icons_0.jpg",
+        )
     }
-    candidates.forEach { candidate ->
-        byLowerPath[candidate.lowercase()]?.let { return it }
-    }
-    val keywords = previewKeywords(category)
-    if (keywords.isNotEmpty()) {
-        images.firstOrNull { path ->
-            path.startsWith("preview/", ignoreCase = true) &&
-                keywords.any { keyword -> path.contains(keyword, ignoreCase = true) }
-        }?.let { return it }
-    }
-    return null
+    return ThemeVisualPolicy.previewPaths(theme.archive.entries, candidates, emptyList())
 }
 
-private fun isImagePath(path: String): Boolean =
-    path.endsWith(".jpg", true) || path.endsWith(".jpeg", true) ||
-        path.endsWith(".png", true) || path.endsWith(".webp", true)
-
-private fun previewCandidates(category: ComponentCategory?): List<String> = when (category) {
-    ComponentCategory.LOCKSCREEN -> listOf(
-        "preview/preview_lockscreen_0.jpg",
-        "preview/preview_lockscreen_1.jpg",
-        "wallpaper/default_lock_wallpaper.jpg",
-    )
-    ComponentCategory.WALLPAPER -> listOf(
-        "wallpaper/default_wallpaper.jpg",
-        "preview/preview_launcher_0.jpg",
-    )
-    ComponentCategory.ICONS -> listOf(
-        "preview/preview_icons_0.jpg",
-        "preview/preview_icons_1.jpg",
-        "preview/preview_launcher_0.jpg",
-    )
-    ComponentCategory.SYSTEM_UI -> listOf(
-        "preview/preview_statusbar_0.jpg",
-        "preview/preview_statusbar_0.png",
-        "preview/preview_statusbar_1.jpg",
-        "preview/preview_notification_0.jpg",
-        "preview/preview_launcher_0.jpg",
-    )
-    ComponentCategory.CONTACTS -> listOf(
-        "preview/preview_contact_0.jpg",
-        "preview/preview_contact_0.png",
-        "preview/preview_contact_1.jpg",
-        "preview/preview_dialer_0.jpg",
-        "preview/preview_dialer_0.png",
-        "preview/preview_call_0.jpg",
-        "preview/preview_launcher_2.jpg",
-        "preview/preview_launcher_1.jpg",
-        "preview/preview_launcher_0.jpg",
-    )
-    ComponentCategory.MMS -> listOf(
-        "preview/preview_mms_0.jpg",
-        "preview/preview_mms_0.png",
-        "preview/preview_mms_1.jpg",
-        "preview/preview_sms_0.jpg",
-        "preview/preview_sms_0.png",
-        "preview/preview_message_0.jpg",
-        "preview/preview_launcher_1.jpg",
-        "preview/preview_launcher_2.jpg",
-        "preview/preview_launcher_0.jpg",
-    )
-    ComponentCategory.LAUNCHER -> listOf("preview/preview_launcher_0.jpg", "preview/preview_launcher_1.jpg")
-    ComponentCategory.AOD -> listOf(
-        "preview/preview_miwallpaper_0.jpg",
-        "preview/preview_lockscreen_0.jpg",
-    )
-    ComponentCategory.FONT -> listOf(
-        "preview/preview_fonts_0.jpg",
-        "preview/preview_fonts_0.png",
-    )
-    ComponentCategory.FRAMEWORK,
-    ComponentCategory.SYSTEM_UI_PLUGIN,
-    ComponentCategory.RINGTONE,
-    ComponentCategory.OTHER -> emptyList()
-    null -> listOf(
-        "preview/preview_lockscreen_0.jpg",
-        "preview/preview_launcher_0.jpg",
-        "wallpaper/default_lock_wallpaper.jpg",
-        "wallpaper/default_wallpaper.jpg",
-        "preview/preview_icons_0.jpg",
-    )
-}
-
-private fun previewKeywords(category: ComponentCategory?): List<String> = when (category) {
-    ComponentCategory.ICONS -> listOf("icon", "launcher")
-    ComponentCategory.LOCKSCREEN -> listOf("lockscreen", "lock_style")
-    ComponentCategory.WALLPAPER -> listOf("wallpaper", "launcher")
-    ComponentCategory.SYSTEM_UI -> listOf("statusbar", "notification", "controlcenter", "systemui", "launcher")
-    ComponentCategory.CONTACTS -> listOf("contact", "dialer", "call", "phone", "launcher")
-    ComponentCategory.MMS -> listOf("mms", "sms", "message", "launcher")
-    ComponentCategory.LAUNCHER -> listOf("launcher", "home")
-    ComponentCategory.AOD -> listOf("aod", "miwallpaper", "lockscreen")
-    ComponentCategory.FONT -> listOf("font")
-    ComponentCategory.FRAMEWORK,
-    ComponentCategory.SYSTEM_UI_PLUGIN,
-    ComponentCategory.RINGTONE,
-    ComponentCategory.OTHER -> emptyList()
-    null -> emptyList()
-}
-
-private const val MAX_PREVIEW_BYTES = 16L * 1024 * 1024
 private const val MAX_DIMENSION = 16_384
 private const val TARGET_DIMENSION = 1_200

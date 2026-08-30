@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ internal fun LiveDiagnosticsCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val state by recorder.state.collectAsState()
     val scope = rememberCoroutineScope()
     var actionStatus by remember { mutableStateOf<String?>(null) }
@@ -101,7 +103,7 @@ internal fun LiveDiagnosticsCard(
                         scope.launch {
                             runCatching { withContext(Dispatchers.IO) { recorder.createExport() } }
                                 .onSuccess(shareDiagnostics)
-                                .onFailure { actionStatus = context.getString(R.string.diag_export_failed, it.message ?: "") }
+                                .onFailure { actionStatus = resources.getString(R.string.diag_export_failed, it.message ?: "") }
                         }
                     },
                 ) { Text(stringResource(R.string.btn_export_diagnostics)) }

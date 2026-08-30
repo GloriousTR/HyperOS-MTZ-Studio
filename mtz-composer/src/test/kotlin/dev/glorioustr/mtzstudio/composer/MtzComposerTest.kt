@@ -12,8 +12,56 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
 
 class MtzComposerTest {
+    @Test fun `default SMS drops base component and stale preview while retaining chosen name and image`() {
+        val parser = MtzParser()
+        val base = parser.parse(zip("icons" to byteArrayOf(1), "com.android.mms" to byteArrayOf(2),
+            "preview/preview_mms_0.jpg" to byteArrayOf(3)))
+        val preview = parser.parse(zip("description.xml" to "<theme><title>Jiyan &amp; Minimal</title></theme>".encodeToByteArray(),
+            "preview/en_US_mms_0.jpg" to byteArrayOf(4)))
+        val request = CompositionRequest(CompositionMetadata("My mix"), listOf(
+            ComponentSelection(CompositionSource(ThemeId("preview"), "Jiyan", preview), ComponentCategory.MMS, "", useDefault = true)),
+            baseSource = CompositionSource(ThemeId("base"), "Base", base))
+        val output = Files.createTempDirectory("mtz-default-test").resolve("mixed.mtz")
+        val result = MtzComposer().compose(request, output)
+        assertFalse(result.verifiedArchive.components.any { it.category == ComponentCategory.MMS })
+        assertTrue(result.verifiedArchive.components.any { it.category == ComponentCategory.ICONS })
+        assertEquals("Jiyan & Minimal", ThemeVisualPolicy.defaultSourceName(result.verifiedArchive, ComponentCategory.MMS))
+        assertTrue(result.provenance.last().useDefault)
+        ZipFile(output.toFile()).use { zip ->
+            assertEquals(null, zip.getEntry("com.android.mms"))
+            assertEquals(null, zip.getEntry("preview/preview_mms_0.jpg"))
+            assertTrue(zip.getInputStream(zip.getEntry("preview/en_US_mms_0.jpg")).readBytes().contentEquals(byteArrayOf(4)))
+        }
+        val second = MtzComposer().compose(CompositionRequest(CompositionMetadata("Second mix"), emptyList(),
+            baseSource = CompositionSource(ThemeId("mixed"), "My mix", result.verifiedArchive)), output.resolveSibling("second.mtz"))
+        assertEquals("Jiyan & Minimal", ThemeVisualPolicy.defaultSourceName(second.verifiedArchive, ComponentCategory.MMS))
+    }
+
+    @Test fun `default statusbar removes companion plugin but preserves other components`() {
+        val parser = MtzParser()
+        val base = parser.parse(zip("icons" to byteArrayOf(1), "com.android.systemui" to byteArrayOf(2),
+            "miui.systemui.plugin" to byteArrayOf(3)))
+        val preview = parser.parse(zip("preview/en_US_statusbar_0.jpg" to byteArrayOf(4)))
+        val result = MtzComposer().compose(CompositionRequest(CompositionMetadata("Default bar"), listOf(
+            ComponentSelection(CompositionSource(ThemeId("p"), "Preview source", preview), ComponentCategory.SYSTEM_UI, "", true)),
+            baseSource = CompositionSource(ThemeId("b"), "Base", base)), Files.createTempDirectory("mtz-default-bar").resolve("bar.mtz"))
+        assertEquals(setOf(ComponentCategory.ICONS), result.verifiedArchive.components.map { it.category }.toSet())
+    }
+
+    @Test fun `default mode cannot silently discard a real source component`() {
+        val archive = MtzParser().parse(zip("com.android.mms" to byteArrayOf(1), "preview/en_US_mms_0.jpg" to byteArrayOf(2)))
+        val source = CompositionSource(ThemeId("s"), "Source", archive)
+        assertFailsWith<CompositionException> {
+            MtzComposer().compose(CompositionRequest(CompositionMetadata("Invalid"), listOf(
+                ComponentSelection(source, ComponentCategory.MMS, "", true)), baseSource = source),
+                Files.createTempDirectory("mtz-default-invalid").resolve("invalid.mtz"))
+        }
+    }
+
     @Test
     fun `packages an active font as a verified font MTZ`() {
         val directory = Files.createTempDirectory("mtz-font-export-test")

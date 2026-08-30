@@ -56,18 +56,9 @@ internal class DeviceThemeImporter(
     private val importOrigins = appContext.getSharedPreferences("theme-manager-imports", Context.MODE_PRIVATE)
 
     /** Scans Theme Manager and returns list of available themes with metadata. */
+    @Synchronized
     fun listAvailableDeviceThemes(): List<DeviceThemeSummary> {
-        resetDirectory(stagingRoot)
-        val metadataDirectory = stagingRoot.resolve("metadata")
-        Files.createDirectories(metadataDirectory)
-        copyThemeMetadata(metadataDirectory)
-
-        val records = Files.list(metadataDirectory).use { paths ->
-            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".mrm") }
-                .map(::parseThemeRecord)
-                .sorted(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
-                .toList()
-        }
+        val records = readRecords()
         val previewDirectory = stagingRoot.resolve("scan-previews")
         Files.createDirectories(previewDirectory)
         copyThemePreviewFiles(records, previewDirectory)
@@ -87,21 +78,28 @@ internal class DeviceThemeImporter(
     }
 
     /** Reconstructs selected Theme Manager items by localId. */
+    @Synchronized
     fun importSelectedThemes(selectedLocalIds: Set<String>): DeviceThemeBulkImportResult {
+        val records = readRecords().filter { selectedLocalIds.isEmpty() || it.localId in selectedLocalIds }
+        if (records.isEmpty()) return DeviceThemeBulkImportResult(0, 0, 0, 0, emptyList())
+        return importRecords(records)
+    }
+
+    private fun readRecords(): List<ThemeManagerRecord> {
         resetDirectory(stagingRoot)
         val metadataDirectory = stagingRoot.resolve("metadata")
         Files.createDirectories(metadataDirectory)
         copyThemeMetadata(metadataDirectory)
 
-        val records = Files.list(metadataDirectory).use { paths ->
+        return Files.list(metadataDirectory).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".mrm") }
                 .map(::parseThemeRecord)
-                .filter { selectedLocalIds.isEmpty() || it.localId in selectedLocalIds }
                 .sorted(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
-                .toList()
+                .collect(java.util.stream.Collectors.toList())
         }
-        if (records.isEmpty()) error("No matching themes were found to import")
+    }
 
+    private fun importRecords(records: List<ThemeManagerRecord>): DeviceThemeBulkImportResult {
         val knownThemes = library.load().themes.toMutableList()
         var added = 0
         var duplicates = 0
@@ -143,21 +141,22 @@ internal class DeviceThemeImporter(
     }
 
     /** Keeps the private editor cache aligned with Theme Manager, which remains the source of truth. */
+    @Synchronized
     fun synchronizeModernLibrary(): DeviceThemeBulkImportResult {
-        val availableIds = listAvailableDeviceThemes().mapTo(mutableSetOf(), DeviceThemeSummary::localId)
+        // One metadata snapshot, not two scans that may disagree during a native operation.
+        val records = readRecords()
+        val availableIds = records.mapTo(mutableSetOf(), ThemeManagerRecord::localId)
+        val result = importRecords(records)
+        if (result.failed > 0) return result
         val staleOrigins = importOrigins.all.keys.filter { key ->
             key.startsWith(ORIGIN_PREFIX) && key.removePrefix(ORIGIN_PREFIX) !in availableIds
         }
         staleOrigins.forEach { key ->
-            val themeId = importOrigins.getString(key, null)?.substringAfter('|', "").orEmpty()
-            if (themeId.isNotBlank()) runCatching { library.deleteTheme(dev.glorioustr.mtzstudio.core.ThemeId(themeId)) }
+            // A catalog refresh must never delete the user's private MTZ source.
+            // Detach stale entries; explicit native deletion handles its own mirror cleanup.
             importOrigins.edit().remove(key).apply()
         }
-        return if (availableIds.isEmpty()) {
-            DeviceThemeBulkImportResult(0, 0, 0, 0, emptyList())
-        } else {
-            importAllThemes()
-        }
+        return result
     }
 
     fun localIdFor(theme: LibraryTheme): String? = importOrigins.all.entries.firstNotNullOfOrNull { (key, value) ->
@@ -252,16 +251,20 @@ internal class DeviceThemeImporter(
     }
 
     private fun copyThemeMetadata(target: Path) {
-        val targetPath = shellQuote(target.toAbsolutePath().toString())
-        val uid = Process.myUid()
-        val command = """
-            source_dir=${shellQuote("$THEME_DATA_ROOT/meta/theme")}
-            if [ ! -d "${'$'}source_dir" ]; then echo 'Theme Manager local library was not found'; exit 4; fi
-            cp "${'$'}source_dir"/*.mrm $targetPath/ || exit 5
-            chown -R $uid:$uid $targetPath || exit 6
-            chmod -R u+rwX,go-rwx $targetPath || exit 7
-        """.trimIndent()
-        runPrivileged(command, 120, "Theme Manager metadata could not be read")
+        val command = dev.glorioustr.mtzstudio.tester.ThemeCatalogCommands.copyMetadata(
+            "$THEME_DATA_ROOT/meta/theme", target.toAbsolutePath().toString(), Process.myUid(),
+        )
+        val result = commandRunner.run(command, 120)
+        LiveDiagnosticsRecorder.get(appContext).record(
+            "catalog_metadata_snapshot", "Tema kayıtları okundu",
+            mapOf("exitCode" to result.exitCode, "output" to result.output),
+        )
+        check(result.exitCode == 0) {
+            appContext.getString(if (result.exitCode == 4) R.string.catalog_location_unavailable else R.string.catalog_read_failed)
+        }
+        check(Regex("MTZ_METADATA_COUNT=[0-9]+").containsMatchIn(result.output)) {
+            appContext.getString(R.string.catalog_read_failed)
+        }
     }
 
     private fun copyThemeFiles(record: ThemeManagerRecord, target: Path) {
@@ -536,7 +539,7 @@ internal class DeviceThemeImporter(
     private companion object {
         const val THEME_DATA_ROOT =
             "/data/media/0/Android/data/com.android.thememanager/files/MIUI/theme/.data"
-        const val MAX_PREVIEWS_PER_THEME = 2
+        const val MAX_PREVIEWS_PER_THEME = 16
         const val MAX_PREVIEW_CANDIDATES = 16
         const val ORIGIN_PREFIX = "theme:"
         val SAFE_IDENTIFIER = Regex("[A-Za-z0-9._-]{1,128}")

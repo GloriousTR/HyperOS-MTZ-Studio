@@ -25,7 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,11 +45,11 @@ internal fun ThemeManagerCompatibilityCard(
     updater: RootThemeManagerUpdater,
     openInput: (Uri) -> InputStream?,
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var installed by remember { mutableStateOf<InstalledThemeManager?>(null) }
     var verifiedApk by remember { mutableStateOf<VerifiedThemeManagerApk?>(null) }
-    var status by remember { mutableStateOf(context.getString(R.string.tm_checking_version)) }
+    var status by remember { mutableStateOf(resources.getString(R.string.tm_checking_version)) }
     var riskAccepted by remember { mutableStateOf(false) }
     var showConfirmation by remember { mutableStateOf(false) }
 
@@ -58,9 +58,9 @@ internal fun ThemeManagerCompatibilityCard(
             val detected = withContext(Dispatchers.IO) { inspector.inspect() }
             installed = detected
             status = if (detected.isRecommended) {
-                context.getString(R.string.tm_recommended_active)
+                resources.getString(R.string.tm_recommended_active)
             } else {
-                context.getString(R.string.tm_recommendation_notice, ThemeManagerContract.RECOMMENDED_VERSION)
+                resources.getString(R.string.tm_recommendation_notice, ThemeManagerContract.RECOMMENDED_VERSION)
             }
         }
     }
@@ -69,19 +69,19 @@ internal fun ThemeManagerCompatibilityCard(
         if (uri != null) {
             scope.launch {
                 val current = installed ?: withContext(Dispatchers.IO) { inspector.inspect() }.also { installed = it }
-                status = context.getString(R.string.tm_verifying_apk)
+                status = resources.getString(R.string.tm_verifying_apk)
                 runCatching {
                     withContext(Dispatchers.IO) {
                         openInput(uri)?.use { updater.stageAndVerify(it, current) }
-                            ?: error(context.getString(R.string.tm_error_apk_open))
+                            ?: error(resources.getString(R.string.tm_error_apk_open))
                     }
                 }.onSuccess { apk ->
                     verifiedApk?.let { previous -> withContext(Dispatchers.IO) { updater.discard(previous) } }
                     verifiedApk = apk
                     riskAccepted = false
-                    status = context.getString(R.string.tm_apk_verified, apk.versionName, apk.sha256)
+                    status = resources.getString(R.string.tm_apk_verified, apk.versionName, apk.sha256)
                 }.onFailure { error ->
-                    status = context.getString(R.string.tm_apk_rejected, error.message ?: error::class.simpleName)
+                    status = resources.getString(R.string.tm_apk_rejected, error.message ?: error::class.simpleName)
                 }
             }
         }
@@ -178,7 +178,7 @@ internal fun ThemeManagerCompatibilityCard(
                         showConfirmation = false
                         val apk = verifiedApk ?: return@TextButton
                         scope.launch {
-                            status = context.getString(R.string.tm_status_waiting_root)
+                            status = resources.getString(R.string.tm_status_waiting_root)
                             runCatching {
                                 withContext(Dispatchers.IO) { updater.installVerifiedDowngrade(apk) }
                             }.onSuccess { result ->
@@ -193,7 +193,7 @@ internal fun ThemeManagerCompatibilityCard(
                                     riskAccepted = false
                                 }
                             }.onFailure { error ->
-                                status = context.getString(R.string.tm_status_root_failed, error.message ?: error::class.simpleName)
+                                status = resources.getString(R.string.tm_status_root_failed, error.message ?: error::class.simpleName)
                             }
                         }
                     },

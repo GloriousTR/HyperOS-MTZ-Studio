@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 20 languages; Chinese is offered in both writing systems. English is fallback. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="tr" />
+    <locale android:name="pt-BR" />
+    <locale android:name="es" />
+    <locale android:name="zh-Hans" />
+    <locale android:name="zh-Hant" />
+    <locale android:name="ru" />
+    <locale android:name="id" />
+    <locale android:name="ar" />
+    <locale android:name="de" />
+    <locale android:name="fr" />
+    <locale android:name="hi" />
+    <locale android:name="bn" />
+    <locale android:name="ur" />
+    <locale android:name="ja" />
+    <locale android:name="vi" />
+    <locale android:name="mr" />
+    <locale android:name="te" />
+    <locale android:name="ta" />
+    <locale android:name="fa" />
+    <locale android:name="ko" />
+</locale-config>

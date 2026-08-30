@@ -43,7 +43,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
@@ -65,7 +65,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Clear
@@ -302,10 +302,10 @@ internal fun StudioOverlayMenu(
 @Composable
 private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
     StudioCard(
-        modifier = Modifier.fillMaxWidth().height(80.dp).clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -323,7 +323,7 @@ private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
                 )
             }
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -338,6 +338,9 @@ internal fun ThemesScreen(
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
+    catalogError: String? = null,
+    onRetryCatalog: () -> Unit = {},
+    onOpenNativeThemes: () -> Unit = {},
     showDeviceImport: Boolean = true,
     onApplyTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
@@ -369,11 +372,19 @@ internal fun ThemesScreen(
                 androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
-        if (galleryThemes.isEmpty() && (showDeviceImport || !deviceImportRunning)) {
+        if (!showDeviceImport && catalogError != null && !deviceImportRunning) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column {
+                    EmptyState(stringResource(R.string.catalog_error_title), catalogError)
+                    TextButton(onClick = onRetryCatalog) { Text(stringResource(R.string.catalog_retry)) }
+                }
+            }
+        }
+        if (galleryThemes.isEmpty() && (showDeviceImport || (!deviceImportRunning && catalogError == null))) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
-                    stringResource(R.string.empty_themes_title),
-                    stringResource(R.string.empty_themes_desc),
+                    stringResource(if (showDeviceImport) R.string.empty_themes_title else R.string.catalog_empty_title),
+                    stringResource(if (showDeviceImport) R.string.empty_themes_desc else R.string.catalog_empty_desc),
                 )
             }
         }
@@ -385,6 +396,13 @@ internal fun ThemesScreen(
                 onApplyTheme = onApplyTheme,
                 onDeleteTheme = { pendingDeleteTheme = it },
             )
+        }
+        if (!showDeviceImport) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TextButton(onClick = onOpenNativeThemes, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.catalog_open_native))
+                }
+            }
         }
         item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(20.dp)) }
     }
@@ -457,8 +475,11 @@ internal fun CategoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val category = requireNotNull(destination.category)
-    val sources = themes.filter { theme -> hasThemePreview(theme, category) }.flatMap { theme ->
+    val sources = themes.flatMap { theme ->
         theme.archive.components.filter { it.category == category }.map { theme to it }
+    }
+    val previewOnlyThemes = themes.filter {
+        dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.isPreviewOnly(it.archive.components, it.archive.entries, category)
     }
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -646,7 +667,27 @@ internal fun CategoryScreen(
             }
         }
 
-        if (sources.isEmpty()) {
+        gridItems(previewOnlyThemes, key = { "preview-only:${it.id.value}" }) { theme ->
+            val selected = selections[category]
+            val checked = selected?.themeId == theme.id && selected.useDefault
+            StudioCard(Modifier.fillMaxWidth().clickable {
+                if (checked) selections.remove(category)
+                else selections[category] = UiSelection(theme.id, category, "", useDefault = true)
+            }) {
+                Column {
+                    ThemePreview(theme = theme, category = category, modifier = Modifier.fillMaxWidth().aspectRatio(0.68f))
+                    Text(theme.archive.metadata?.name ?: theme.displayName, modifier = Modifier.padding(10.dp),
+                        fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Checkbox(checked = checked, onCheckedChange = { enabled ->
+                        if (enabled) selections[category] = UiSelection(theme.id, category, "", useDefault = true)
+                        else if (checked) selections.remove(category)
+                    })
+                    Text(stringResource(R.string.component_use_default), modifier = Modifier.padding(10.dp),
+                        style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+        if (sources.isEmpty() && previewOnlyThemes.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     stringResource(R.string.empty_category_title),
@@ -725,13 +766,7 @@ internal fun PersonalizeScreen(
             ?: metadata.author?.takeIf(String::isNotBlank)
     }
 
-    val availableCategories = ComponentCategory.entries.filter { category ->
-        category != ComponentCategory.WALLPAPER &&
-            category.isPersonalizationOption() &&
-            themes.any { theme ->
-                theme.archive.components.any { it.category == category } && hasThemePreview(theme, category)
-            }
-    }
+    val availableCategories = dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.personalizationCategories
     val visibleSelections = selections.values.filter { it.category.isPersonalizationOption() }
 
     LazyColumn(
@@ -820,25 +855,24 @@ internal fun PersonalizeScreen(
             }
         }
 
-        if (availableCategories.isEmpty()) {
-            item {
-                Box(Modifier.padding(16.dp)) {
-                    EmptyState(
-                        stringResource(R.string.empty_personalize_title),
-                        stringResource(R.string.empty_personalize_desc),
-                    )
-                }
-            }
-        }
         items(availableCategories.chunked(2)) { rowCategories ->
             Row(Modifier.fillMaxWidth()) {
                 rowCategories.forEach { category ->
                     val selected = selections[category]
-                    val selectedTheme = selected?.let { sel -> themes.firstOrNull { it.id == sel.themeId } }
+                    val selectedTheme = selected?.let { sel ->
+                        themes.firstOrNull { theme ->
+                            theme.id == sel.themeId && if (sel.useDefault) {
+                                dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.isPreviewOnly(theme.archive.components, theme.archive.entries, category)
+                            } else theme.archive.components.any { it.category == category && it.rootPath == sel.rootPath }
+                        }
+                    }
                     PersonalizeTile(
                         icon = categoryIcon(category),
                         title = stringResource(categoryLabelRes(category)),
                         selectedTheme = selectedTheme,
+                        sourceName = if (selected?.useDefault == true) selectedTheme?.let {
+                            dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.defaultSourceName(it.archive, category)
+                        } else null,
                         category = category,
                         onClick = { quickPickCategory = category },
                         modifier = Modifier.weight(1f),
@@ -931,7 +965,7 @@ internal fun PersonalizeScreen(
                             Text(status, style = MaterialTheme.typography.bodySmall)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val canCompose = compositionName.isNotBlank() && (visibleSelections.isNotEmpty() || customHomeWallpaperUri != null || customLockWallpaperUri != null)
+                            val canCompose = compositionName.isNotBlank() && (baseTheme != null || visibleSelections.any { !it.useDefault } || customHomeWallpaperUri != null || customLockWallpaperUri != null)
                             Button(
                                 enabled = canCompose,
                                 onClick = onCompose,
@@ -980,18 +1014,21 @@ internal fun PersonalizeScreen(
     quickPickCategory?.let { category ->
         val current = selections[category]
         val choices = themes.mapNotNull { theme ->
-            if (!hasThemePreview(theme, category)) return@mapNotNull null
             val component = theme.archive.components.firstOrNull { it.category == category }
-                ?: return@mapNotNull null
-            ThemeChoice(theme = theme, category = category, rootPath = component.rootPath)
+            val specificPreviews = dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
+                .categoryPreviewPaths(theme.archive.entries, category)
+            if (component == null && specificPreviews.isEmpty()) return@mapNotNull null
+            ThemeChoice(theme = theme, category = category, rootPath = component?.rootPath)
         }
         HorizontalThemePickerDialog(
             title = stringResource(R.string.category_quick_picker_title, stringResource(categoryLabelRes(category))),
             description = stringResource(R.string.category_quick_picker_desc),
             choices = choices,
-            selectedKey = current?.let { "${it.themeId.value}:${it.rootPath}" },
+            selectedKey = current?.let {
+                if (it.useDefault) "${it.themeId.value}:default:${category.name}" else "${it.themeId.value}:${it.rootPath}"
+            },
             onSelect = { choice ->
-                selections[category] = UiSelection(choice.theme.id, category, requireNotNull(choice.rootPath))
+                selections[category] = UiSelection(choice.theme.id, category, choice.rootPath.orEmpty(), useDefault = choice.useDefault)
                 quickPickCategory = null
             },
             onClear = if (current != null) {
@@ -1010,7 +1047,15 @@ private data class ThemeChoice(
     val category: ComponentCategory? = null,
     val rootPath: String? = null,
 ) {
-    val key: String get() = rootPath?.let { "${theme.id.value}:$it" } ?: theme.id.value
+    val key: String get() = rootPath?.let { "${theme.id.value}:$it" }
+        ?: category?.let { "${theme.id.value}:default:${it.name}" } ?: theme.id.value
+    val useDefault: Boolean get() = category != null && rootPath == null
+    val displayName: String get() = category?.takeIf { useDefault }?.let {
+        dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.defaultSourceName(theme.archive, it)
+    } ?: theme.archive.metadata?.name ?: theme.displayName
+    val specificPreviews: List<String> get() = category?.let {
+        dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.categoryPreviewPaths(theme.archive.entries, it)
+    }.orEmpty()
 }
 
 @Composable
@@ -1023,6 +1068,28 @@ private fun HorizontalThemePickerDialog(
     onClear: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
+    var inspecting by remember { mutableStateOf<ThemeChoice?>(null) }
+    inspecting?.let { choice ->
+        Dialog(onDismissRequest = { inspecting = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            Surface(modifier = Modifier.fillMaxWidth(0.96f), shape = RoundedCornerShape(24.dp)) {
+                Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(choice.displayName,
+                        modifier = Modifier.padding(horizontal = 16.dp), fontWeight = FontWeight.Bold)
+                    if (choice.useDefault) Text(stringResource(R.string.component_use_default_desc),
+                        modifier = Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall)
+                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(choice.specificPreviews, key = { it }) { path ->
+                            ThemePreview(theme = choice.theme, category = choice.category, previewPath = path,
+                                modifier = Modifier.width(260.dp).heightIn(max = 480.dp).aspectRatio(0.5f))
+                        }
+                    }
+                    TextButton(onClick = { inspecting = null }, modifier = Modifier.align(Alignment.End)) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            }
+        }
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -1087,7 +1154,7 @@ private fun HorizontalThemePickerDialog(
                                         )
                                     }
                                     Text(
-                                        choice.theme.archive.metadata?.name ?: choice.theme.displayName,
+                                        choice.displayName,
                                         modifier = Modifier.padding(12.dp),
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleSmall,
@@ -1095,6 +1162,16 @@ private fun HorizontalThemePickerDialog(
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                     )
+                                    if (choice.useDefault) Text(
+                                        stringResource(R.string.component_use_default),
+                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    if (choice.specificPreviews.isNotEmpty()) TextButton(
+                                        onClick = { inspecting = choice },
+                                        modifier = Modifier.padding(horizontal = 4.dp),
+                                    ) { Text(stringResource(R.string.component_view_previews, choice.specificPreviews.size)) }
                                 }
                             }
                         }
@@ -1487,7 +1564,7 @@ private fun CloudConnectDialog(
                                     )
                                 }
                                 Icon(
-                                    Icons.Filled.KeyboardArrowRight,
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -1534,7 +1611,7 @@ private fun CloudConnectDialog(
                                     )
                                 }
                                 Icon(
-                                    Icons.Filled.KeyboardArrowRight,
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -2275,7 +2352,7 @@ internal fun AboutScreen(modifier: Modifier = Modifier) {
                         onClick = { uriHandler.openUri(PROJECT_REPOSITORY_URL) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Icon(Icons.Filled.OpenInNew, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.about_open_github))
                     }
@@ -2393,7 +2470,7 @@ private fun MenuRow(spec: MenuSpec, onClick: () -> Unit) {
             )
         }
         Icon(
-            Icons.Filled.KeyboardArrowRight,
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -2416,12 +2493,13 @@ private fun PersonalizeTile(
     icon: ImageVector,
     title: String,
     selectedTheme: LibraryTheme?,
+    sourceName: String? = null,
     category: ComponentCategory,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val notSelectedText = stringResource(R.string.not_selected)
-    val subtitle = selectedTheme?.archive?.metadata?.name ?: selectedTheme?.displayName ?: notSelectedText
+    val notSelectedText = stringResource(R.string.personalize_choose_theme)
+    val subtitle = sourceName ?: selectedTheme?.archive?.metadata?.name ?: selectedTheme?.displayName ?: notSelectedText
     val hasPreview = selectedTheme != null && hasThemePreview(selectedTheme, category)
     StudioCard(
         modifier = modifier.padding(4.dp).height(80.dp).clickable(onClick = onClick),
@@ -2471,7 +2549,7 @@ private fun PersonalizeTile(
                 )
             }
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
@@ -2569,7 +2647,7 @@ private fun CustomWallpaperTile(
                 }
             } else {
                 Icon(
-                    Icons.Filled.KeyboardArrowRight,
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),

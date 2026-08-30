@@ -3,6 +3,8 @@ package dev.glorioustr.mtzstudio.composer
 import dev.glorioustr.mtzstudio.core.Hashing
 import dev.glorioustr.mtzstudio.core.MtzMetadata
 import dev.glorioustr.mtzstudio.core.MtzParser
+import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
+import dev.glorioustr.mtzstudio.core.ComponentCategory
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.file.AtomicMoveNotSupportedException
@@ -54,6 +56,7 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
                                 sourceSha256 = selection.source.archive.sha256,
                                 category = selection.category,
                                 rootPath = selection.rootPath,
+                                useDefault = selection.useDefault,
                             ),
                         )
                     }
@@ -138,7 +141,7 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
                 throw CompositionException("Generated theme preview is empty or too large")
             }
         }
-        if (request.baseSource == null && request.selections.isEmpty() &&
+        if (request.baseSource == null && request.selections.none { !it.useDefault } &&
             request.customHomeWallpaperBytes == null && request.customLockWallpaperBytes == null
         ) {
             throw CompositionException("Select at least one component or custom wallpaper")
@@ -152,6 +155,9 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
     private fun resolveEntries(request: CompositionRequest): List<SelectedEntry> {
         val result = linkedMapOf<String, SelectedEntry>()
         val overriddenCategories = request.selections.mapTo(hashSetOf()) { it.category }
+        if (request.selections.any { it.useDefault && it.category == ComponentCategory.SYSTEM_UI }) {
+            overriddenCategories += ComponentCategory.SYSTEM_UI_PLUGIN
+        }
         request.baseSource?.let { base ->
             val archive = base.archive
             if (Hashing.sha256(archive.source) != archive.sha256) {
@@ -161,6 +167,8 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
                 .filter { it.category in overriddenCategories }
                 .flatMap { it.entryPaths.asSequence() }
                 .mapTo(hashSetOf()) { it.lowercase(Locale.ROOT) }
+            overriddenCategories.flatMap { ThemeVisualPolicy.categoryPreviewPaths(archive.entries, it) }
+                .forEach { overriddenBaseEntries += it.lowercase(Locale.ROOT) }
             archive.entries.asSequence()
                 .filterNot { it.directory || it.rightsRelated }
                 .filterNot { it.path.equals("description.xml", ignoreCase = true) }
@@ -174,19 +182,21 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
             if (Hashing.sha256(archive.source) != archive.sha256) {
                 throw CompositionException("Source changed after import: ${selection.source.displayName}")
             }
-            val component = archive.components.singleOrNull {
+            if (selection.useDefault && !ThemeVisualPolicy.isPreviewOnly(archive.components, archive.entries, selection.category)) {
+                throw CompositionException("Default selection requires a preview and no component: ${selection.category}")
+            }
+            val component = if (selection.useDefault) null else (archive.components.singleOrNull {
                 it.category == selection.category && it.rootPath == selection.rootPath
-            } ?: throw CompositionException("Selected component no longer exists: ${selection.rootPath}")
+            } ?: throw CompositionException("Selected component no longer exists: ${selection.rootPath}"))
             val allowed = archive.entries.associateBy { it.path }
-            component.entryPaths.forEach { path ->
+            component?.entryPaths.orEmpty().forEach { path ->
                 val entry = allowed[path] ?: throw CompositionException("Missing selected entry: $path")
                 if (entry.rightsRelated) throw CompositionException("Rights entries cannot be composed: $path")
                 val identity = path.lowercase(Locale.ROOT)
                 result[identity] = SelectedEntry(archive.source, path)
             }
-            previewCandidates(selection.category)
-                .firstOrNull(allowed::containsKey)
-                ?.let { path ->
+            ThemeVisualPolicy.categoryPreviewPaths(archive.entries, selection.category)
+                .forEach { path ->
                     val entry = allowed.getValue(path)
                     val identity = path.lowercase(Locale.ROOT)
                     if (!entry.rightsRelated) {
@@ -204,7 +214,17 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
             output.putNextEntry(deterministicEntry("description.xml"))
             val compatibilityMetadata = request.baseSource?.archive?.metadata
                 ?: request.selections.asSequence().mapNotNull { it.source.archive.metadata }.firstOrNull()
-            output.write(descriptionXml(request.metadata, compatibilityMetadata).encodeToByteArray())
+            val defaultNames = ThemeVisualPolicy.personalizationCategories.mapNotNull { category ->
+                val selected = request.selections.firstOrNull { it.category == category }
+                val name = when {
+                    selected?.useDefault == true -> ThemeVisualPolicy.defaultSourceName(selected.source.archive, category)
+                        ?: selected.source.archive.metadata?.name ?: selected.source.displayName
+                    selected != null -> null
+                    else -> request.baseSource?.archive?.let { ThemeVisualPolicy.defaultSourceName(it, category) }
+                }
+                name?.let { category to it }
+            }.toMap()
+            output.write(descriptionXml(request.metadata, compatibilityMetadata, defaultNames).encodeToByteArray())
             output.closeEntry()
             writtenEntries += "description.xml"
 
@@ -342,7 +362,7 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
         extra = null
     }
 
-    private fun descriptionXml(metadata: CompositionMetadata, compatibility: MtzMetadata?): String = buildString {
+    private fun descriptionXml(metadata: CompositionMetadata, compatibility: MtzMetadata?, defaultNames: Map<ComponentCategory, String>): String = buildString {
         val author = metadata.author ?: compatibility?.author
         val designer = metadata.designer ?: compatibility?.designer
         val uiVersion = compatibility?.fields?.get("uiversion")?.takeIf(::isSafeVersionValue)
@@ -356,6 +376,10 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
         append("  <description>").append(xml(metadata.description)).append("</description>\n")
         adapterVersion?.let {
             append("  <miuiAdapterVersion>").append(xml(it)).append("</miuiAdapterVersion>\n")
+        }
+        defaultNames.forEach { (category, name) ->
+            val tag = ThemeVisualPolicy.defaultSourceKey(category)
+            append("  <").append(tag).append(">").append(xml(name)).append("</").append(tag).append(">\n")
         }
         append("</theme>\n")
     }
@@ -390,24 +414,6 @@ class MtzComposer(private val parser: MtzParser = MtzParser()) {
         }
     }
 
-    private fun previewCandidates(category: dev.glorioustr.mtzstudio.core.ComponentCategory): List<String> = when (category) {
-        dev.glorioustr.mtzstudio.core.ComponentCategory.LOCKSCREEN -> listOf(
-            "preview/preview_lockscreen_0.jpg",
-            "wallpaper/default_lock_wallpaper.jpg",
-        )
-        dev.glorioustr.mtzstudio.core.ComponentCategory.WALLPAPER -> listOf(
-            "wallpaper/default_wallpaper.jpg",
-            "preview/preview_launcher_0.jpg",
-        )
-        dev.glorioustr.mtzstudio.core.ComponentCategory.ICONS -> listOf("preview/preview_icons_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI -> listOf("preview/preview_statusbar_0.jpg", "preview/preview_launcher_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.SYSTEM_UI_PLUGIN -> listOf("preview/preview_statusbar_1.jpg", "preview/preview_statusbar_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.CONTACTS -> listOf("preview/preview_contact_0.jpg", "preview/preview_dialer_0.jpg", "preview/preview_launcher_2.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.MMS -> listOf("preview/preview_mms_0.jpg", "preview/preview_sms_0.jpg", "preview/preview_launcher_1.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.LAUNCHER -> listOf("preview/preview_launcher_0.jpg")
-        dev.glorioustr.mtzstudio.core.ComponentCategory.AOD -> listOf("preview/preview_miwallpaper_0.jpg")
-        else -> listOf("preview/preview_lockscreen_0.jpg", "preview/preview_launcher_0.jpg")
-    }
 
     private data class SelectedEntry(val source: Path, val entryPath: String)
 

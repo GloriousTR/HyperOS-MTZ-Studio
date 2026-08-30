@@ -15,6 +15,7 @@ data class ComponentSelection(
     val source: CompositionSource,
     val category: ComponentCategory,
     val rootPath: String,
+    val useDefault: Boolean = false,
 )
 
 data class CompositionMetadata(
@@ -47,6 +48,7 @@ data class ProvenanceEntry(
     val sourceSha256: String,
     val category: ComponentCategory,
     val rootPath: String,
+    val useDefault: Boolean = false,
 )
 
 data class CompositionResult(
