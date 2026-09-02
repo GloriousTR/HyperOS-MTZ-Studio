@@ -16,6 +16,7 @@
         </intent>
         <package android:name="org.lsposed.manager" />
         <package android:name="org.matrix.vector.manager" />
+        <package android:name="com.android.thememanager" />
     </queries>
 
     <application

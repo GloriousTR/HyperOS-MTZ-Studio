@@ -318,4 +318,19 @@
     <string name="device_import_failed">No pude leer desde el Administrador de Temas: %1$s</string>
     <string name="action_export_mtz">Exportar MTZ</string>
     <string name="status_export_failed">MTZ no pudo exportarse: %1$s</string>
+    <string name="action_open_in_themes">Abrir en Temas</string>
+    <string name="rootless_mode_title">Modo sin root</string>
+    <string name="rootless_mode_desc">Están disponibles la importación MTZ local, vista previa, personalización, creación, exportación y copia de seguridad. La aplicación se transfiere a Xiaomi Temas y puede requerir importación manual.</string>
+    <string name="rootless_apply_dialog_title">Importar con Xiaomi Temas</string>
+    <string name="rootless_apply_dialog_desc">\"%1$s\" se guardará en Downloads/MTZ Studio. Xiaomi Temas se abrirá para importarlo y aplicarlo manualmente. La protección permanente de temas Global requiere root.</string>
+    <string name="diag_themes_apk_desc">Exporta el APK base instalado de Xiaomi Themes con acceso root; el paquete, la versión y el SHA-256 se verifican antes de compartir. El archivo no se envía ni se carga automáticamente.</string>
+    <string name="btn_export_themes_apk">Exportar APK de Xiaomi Themes</string>
+    <string name="diag_themes_apk_export_failed">No se pudo exportar el APK de Xiaomi Themes: %1$s</string>
+    <string name="catalog_sync_all_complete">La biblioteca Xiaomi Themes se sincronizó con la carpeta Temas</string>
+    <string name="catalog_full_library_title">Mostrar todos los temas del Administrador de temas</string>
+    <string name="catalog_full_library_desc">Copia todos los temas del Administrador de temas a la biblioteca privada de Studio. Los catálogos grandes pueden usar muchos recursos del sistema.</string>
+    <string name="catalog_full_library_button">Mostrar todos los temas</string>
+    <string name="catalog_large_warning_title">Biblioteca de temas grande</string>
+    <string name="catalog_large_warning_desc">El Administrador de temas contiene %1$d temas. Las bibliotecas con más de %2$d temas pueden causar errores o lentitud en algunos sistemas. ¿Continuar de todos modos?</string>
+    <string name="catalog_large_warning_confirm">Continuar</string>
 </resources>

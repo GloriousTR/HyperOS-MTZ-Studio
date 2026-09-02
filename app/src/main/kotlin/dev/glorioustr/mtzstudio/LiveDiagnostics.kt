@@ -2,8 +2,12 @@ package dev.glorioustr.mtzstudio
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.SystemClock
+import dev.glorioustr.mtzstudio.shevery.PreferredPrivilegedCommandRunner
+import dev.glorioustr.mtzstudio.tester.ThemeManagerContract
+import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
 import dev.glorioustr.mtzstudio.library.ImportEvent
 import dev.glorioustr.mtzstudio.library.ImportObserver
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +20,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -340,6 +345,84 @@ class LiveDiagnosticsRecorder(private val context: Context) {
         }
         return target
     }
+
+    /**
+     * Copies only the installed Themes base APK after an explicit user request.  The output stays
+     * in this app's private export directory until the user chooses a share target.  It is never
+     * uploaded, installed, or sent automatically.
+     */
+    fun exportInstalledThemeManagerApk(): Path {
+        val packageName = ThemeManagerContract.PACKAGE_NAME
+        val applicationInfo = installedApplicationInfo(packageName)
+            ?: throw IllegalStateException("Xiaomi Temalar paketi bulunamadı")
+        val sourcePath = applicationInfo.sourceDir?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Xiaomi Temalar temel APK yolu bulunamadı")
+        val installed = ThemeManagerInspector(context).inspect()
+        if (!installed.installed) throw IllegalStateException("Xiaomi Temalar paketi bulunamadı")
+
+        Files.createDirectories(exportsRoot)
+        val version = safeFilePart(installed.versionName ?: "unknown")
+        val target = exportsRoot.resolve("xiaomi-themes-$version-base.apk")
+        val temporary = exportsRoot.resolve(".${target.fileName}.${UUID.randomUUID()}.part")
+        record("themes_apk_export_started", "Xiaomi Temalar APK dışa aktarımı başlatıldı", mapOf(
+            "package" to packageName,
+            "version" to installed.versionName,
+            "splitCount" to (applicationInfo.splitSourceDirs?.size ?: 0),
+        ))
+        try {
+            val command = """
+                set -eu
+                cp ${shellQuote(sourcePath)} ${shellQuote(temporary.toString())}
+                chmod 0644 ${shellQuote(temporary.toString())}
+                mv ${shellQuote(temporary.toString())} ${shellQuote(target.toString())}
+            """.trimIndent()
+            val result = PreferredPrivilegedCommandRunner(context).run(command, 90)
+            check(result.exitCode == 0) { "APK kopyalanamadı: ${result.output.take(240)}" }
+            check(Files.isRegularFile(target) && Files.size(target) > 0) { "Dışa aktarılan APK okunamadı" }
+            val archive = ThemeManagerInspector(context).inspectArchive(target.toString())
+            check(archive.packageName == packageName) { "Dışa aktarılan dosya Xiaomi Temalar paketi değil" }
+            check(archive.versionName == installed.versionName && archive.versionCode == installed.versionCode) {
+                "Dışa aktarılan APK sürümü kurulu paketle eşleşmiyor"
+            }
+            val sha256 = sha256(target)
+            record("themes_apk_export_completed", "Xiaomi Temalar temel APK’sı doğrulanarak hazırlandı", mapOf(
+                "version" to archive.versionName,
+                "versionCode" to archive.versionCode,
+                "sha256" to sha256,
+                "bytes" to Files.size(target),
+                "splitCount" to (applicationInfo.splitSourceDirs?.size ?: 0),
+            ))
+            return target
+        } catch (error: Throwable) {
+            Files.deleteIfExists(temporary)
+            Files.deleteIfExists(target)
+            record("themes_apk_export_failed", "Xiaomi Temalar APK dışa aktarılamadı", error = error)
+            throw error
+        }
+    }
+
+    private fun installedApplicationInfo(packageName: String): ApplicationInfo? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.ApplicationInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getApplicationInfo(packageName, 0)
+        }
+    }.getOrNull()
+
+    private fun sha256(path: Path): String = MessageDigest.getInstance("SHA-256").let { digest ->
+        Files.newInputStream(path).use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun shellQuote(value: String): String = "'" + value.replace("'", "'\\\"'\\\"'") + "'"
 
     @Synchronized
     private fun recoverInterruptedSession() {

@@ -318,4 +318,19 @@
     <string name="device_import_failed">테마 매니저에서 읽을 수 없습니다: %1$s</string>
     <string name="action_export_mtz">MTZ 내보내기</string>
     <string name="status_export_failed">MTZ을 수출할 수 없었다: %1$s</string>
+    <string name="action_open_in_themes">테마에서 열기</string>
+    <string name="rootless_mode_title">루트 없는 모드</string>
+    <string name="rootless_mode_desc">로컬 MTZ 가져오기, 미리보기, 개인 설정, 만들기, 내보내기 및 백업을 사용할 수 있습니다. 적용은 Xiaomi 테마로 넘겨지며 수동 가져오기가 필요할 수 있습니다.</string>
+    <string name="rootless_apply_dialog_title">Xiaomi 테마로 가져오기</string>
+    <string name="rootless_apply_dialog_desc">“%1$s”이 Downloads/MTZ Studio에 저장됩니다. 수동으로 가져와 적용할 수 있도록 Xiaomi 테마가 열립니다. 영구적인 Global 테마 보호에는 루트가 필요합니다.</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

@@ -318,4 +318,19 @@
     <string name="device_import_failed">Je n\' ai pas pu lire le gérant de thèmes: %1$s</string>
     <string name="action_export_mtz">Exporter le MTZ</string>
     <string name="status_export_failed">MTZ ne peut être exporté: %1$s</string>
+    <string name="action_open_in_themes">Ouvrir dans Thèmes</string>
+    <string name="rootless_mode_title">Mode sans root</string>
+    <string name="rootless_mode_desc">Import MTZ local, aperçu, personnalisation, création, exportation et sauvegarde sont disponibles. L’application est transmise à Xiaomi Thèmes et peut nécessiter un import manuel.</string>
+    <string name="rootless_apply_dialog_title">Importer avec Xiaomi Thèmes</string>
+    <string name="rootless_apply_dialog_desc">« %1$s » sera enregistré dans Downloads/MTZ Studio. Xiaomi Thèmes s’ouvrira pour permettre son import et son application manuels. La protection permanente des thèmes Global nécessite le root.</string>
+    <string name="diag_themes_apk_desc">Exporte l’APK de base installé de Xiaomi Themes avec un accès root ; le paquet, la version et le SHA-256 sont vérifiés avant le partage. Le fichier n’est ni envoyé ni téléversé automatiquement.</string>
+    <string name="btn_export_themes_apk">Exporter l’APK Xiaomi Themes</string>
+    <string name="diag_themes_apk_export_failed">Impossible d’exporter l’APK Xiaomi Themes : %1$s</string>
+    <string name="catalog_sync_all_complete">La bibliothèque Xiaomi Themes a été synchronisée avec le dossier Thèmes</string>
+    <string name="catalog_full_library_title">Afficher tous les thèmes du Gestionnaire de thèmes</string>
+    <string name="catalog_full_library_desc">Copie tous les thèmes du Gestionnaire de thèmes dans la bibliothèque privée de Studio. Les grands catalogues peuvent utiliser beaucoup de ressources système.</string>
+    <string name="catalog_full_library_button">Afficher tous les thèmes</string>
+    <string name="catalog_large_warning_title">Grande bibliothèque de thèmes</string>
+    <string name="catalog_large_warning_desc">Le Gestionnaire de thèmes contient %1$d thèmes. Les bibliothèques de plus de %2$d thèmes peuvent provoquer des erreurs ou des ralentissements. Continuer quand même ?</string>
+    <string name="catalog_large_warning_confirm">Continuer</string>
 </resources>

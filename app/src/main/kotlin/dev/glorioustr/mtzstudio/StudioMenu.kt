@@ -148,6 +148,7 @@ internal enum class StudioDestination(
 internal fun HomeMenuScreen(
     importExpanded: Boolean,
     importing: Boolean,
+    rootlessMode: Boolean = false,
     themeManagerInspector: ThemeManagerInspector,
     themeManagerUpdater: RootThemeManagerUpdater,
     openInput: (Uri) -> InputStream?,
@@ -170,6 +171,31 @@ internal fun HomeMenuScreen(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (rootlessMode) {
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        MenuIconBox(Icons.Filled.Lock, Color(0xFF2E7D32))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                stringResource(R.string.rootless_mode_title),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.rootless_mode_desc),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         item {
             StudioCard(Modifier.fillMaxWidth()) {
                 MenuHeader(
@@ -338,10 +364,12 @@ internal fun ThemesScreen(
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
+    onShowAllDeviceThemes: () -> Unit,
     catalogError: String? = null,
     onRetryCatalog: () -> Unit = {},
-    onOpenNativeThemes: () -> Unit = {},
     showDeviceImport: Boolean = true,
+    nativeCatalogMode: Boolean = false,
+    rootlessMode: Boolean = false,
     onApplyTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
     modifier: Modifier = Modifier,
@@ -356,6 +384,18 @@ internal fun ThemesScreen(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (rootlessMode) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Text(
+                        stringResource(R.string.rootless_mode_desc),
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
         if (showDeviceImport) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 DeviceImportCard(
@@ -367,12 +407,20 @@ internal fun ThemesScreen(
                     onImport = onOpenDeviceThemePicker,
                 )
             }
-        } else if (deviceImportRunning) {
+        }
+        if (nativeCatalogMode) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                DeviceImportCard(
+                    title = stringResource(R.string.catalog_full_library_title),
+                    description = stringResource(R.string.catalog_full_library_desc),
+                    status = deviceImportStatus,
+                    buttonText = stringResource(R.string.catalog_full_library_button),
+                    running = deviceImportRunning,
+                    onImport = onShowAllDeviceThemes,
+                )
             }
         }
-        if (!showDeviceImport && catalogError != null && !deviceImportRunning) {
+        if (nativeCatalogMode && catalogError != null && !deviceImportRunning) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     EmptyState(stringResource(R.string.catalog_error_title), catalogError)
@@ -380,11 +428,11 @@ internal fun ThemesScreen(
                 }
             }
         }
-        if (galleryThemes.isEmpty() && (showDeviceImport || (!deviceImportRunning && catalogError == null))) {
+        if (galleryThemes.isEmpty() && (!nativeCatalogMode || (!deviceImportRunning && catalogError == null))) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
-                    stringResource(if (showDeviceImport) R.string.empty_themes_title else R.string.catalog_empty_title),
-                    stringResource(if (showDeviceImport) R.string.empty_themes_desc else R.string.catalog_empty_desc),
+                    stringResource(if (!nativeCatalogMode) R.string.empty_themes_title else R.string.catalog_empty_title),
+                    stringResource(if (!nativeCatalogMode) R.string.empty_themes_desc else R.string.catalog_empty_desc),
                 )
             }
         }
@@ -396,13 +444,6 @@ internal fun ThemesScreen(
                 onApplyTheme = onApplyTheme,
                 onDeleteTheme = { pendingDeleteTheme = it },
             )
-        }
-        if (!showDeviceImport) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TextButton(onClick = onOpenNativeThemes, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.catalog_open_native))
-                }
-            }
         }
         item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(20.dp)) }
     }
@@ -472,6 +513,7 @@ internal fun CategoryScreen(
     deviceImportStatus: String = "",
     deviceImportRunning: Boolean = false,
     onImportActiveFont: () -> Unit = {},
+    showDeviceFontImport: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val category = requireNotNull(destination.category)
@@ -494,7 +536,7 @@ internal fun CategoryScreen(
             )
         }
 
-        if (category == ComponentCategory.FONT) {
+        if (category == ComponentCategory.FONT && showDeviceFontImport) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 DeviceImportCard(
                     title = stringResource(R.string.device_font_import_title),
@@ -742,6 +784,7 @@ internal fun PersonalizeScreen(
     selections: MutableMap<ComponentCategory, UiSelection>,
     compositionName: String,
     compositionMakerName: String,
+    operationRunning: Boolean,
     lastResult: CompositionResult?,
     status: String,
     baseThemeId: String? = null,
@@ -965,7 +1008,7 @@ internal fun PersonalizeScreen(
                             Text(status, style = MaterialTheme.typography.bodySmall)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val canCompose = compositionName.isNotBlank() && (baseTheme != null || visibleSelections.any { !it.useDefault } || customHomeWallpaperUri != null || customLockWallpaperUri != null)
+                            val canCompose = !operationRunning && compositionName.isNotBlank() && (baseTheme != null || visibleSelections.any { !it.useDefault } || customHomeWallpaperUri != null || customLockWallpaperUri != null)
                             Button(
                                 enabled = canCompose,
                                 onClick = onCompose,

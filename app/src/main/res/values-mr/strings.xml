@@ -318,4 +318,19 @@
     <string name="device_import_failed">थीम मॅनेजर वरून वाचू शकले नाही: %1$s</string>
     <string name="action_export_mtz">MTZ निर्यात करा</string>
     <string name="status_export_failed">MTZ निर्यात होऊ शकली नाही: %1$s</string>
+    <string name="action_open_in_themes">थीम्समध्ये उघडा</string>
+    <string name="rootless_mode_title">रूट नसलेला मोड</string>
+    <string name="rootless_mode_desc">स्थानिक MTZ आयात, पूर्वावलोकन, वैयक्तिकरण, निर्मिती, निर्यात आणि बॅकअप उपलब्ध आहेत. लागू करण्याची प्रक्रिया Xiaomi Themes कडे दिली जाते आणि स्वहस्ते आयात करावी लागू शकते.</string>
+    <string name="rootless_apply_dialog_title">Xiaomi Themes सह आयात करा</string>
+    <string name="rootless_apply_dialog_desc">“%1$s” Downloads/MTZ Studio मध्ये जतन होईल. स्वहस्ते आयात व लागू करण्यासाठी Xiaomi Themes उघडेल. कायम Global थीम संरक्षणासाठी रूट आवश्यक आहे.</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

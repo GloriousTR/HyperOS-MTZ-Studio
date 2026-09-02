@@ -318,4 +318,19 @@
     <string name="device_import_failed">Ich konnte den Themenmanager nicht lesen: %1$s</string>
     <string name="action_export_mtz">MTZ exportieren</string>
     <string name="status_export_failed">MTZ konnte nicht exportiert werden: %1$s</string>
+    <string name="action_open_in_themes">In Themes öffnen</string>
+    <string name="rootless_mode_title">Modus ohne Root</string>
+    <string name="rootless_mode_desc">Lokaler MTZ-Import, Vorschau, Personalisierung, Erstellung, Export und Sicherung sind verfügbar. Das Anwenden wird an Xiaomi Themes übergeben und kann einen manuellen Import erfordern.</string>
+    <string name="rootless_apply_dialog_title">Mit Xiaomi Themes importieren</string>
+    <string name="rootless_apply_dialog_desc">„%1$s“ wird unter Downloads/MTZ Studio gespeichert. Xiaomi Themes wird geöffnet, damit du es manuell importieren und anwenden kannst. Dauerhafter Global-Themenschutz erfordert Root.</string>
+    <string name="diag_themes_apk_desc">Exportiert die installierte Xiaomi-Themes-Basis-APK mit Root-Zugriff; Paket, Version und SHA-256 werden vor dem Teilen geprüft. Die Datei wird nicht automatisch gesendet oder hochgeladen.</string>
+    <string name="btn_export_themes_apk">Xiaomi-Themes-APK exportieren</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi-Themes-APK konnte nicht exportiert werden: %1$s</string>
+    <string name="catalog_sync_all_complete">Die Xiaomi-Themes-Bibliothek wurde mit dem Themenordner synchronisiert</string>
+    <string name="catalog_full_library_title">Alle Themes des Theme-Managers anzeigen</string>
+    <string name="catalog_full_library_desc">Kopiert alle Themes des Theme-Managers in die private Studio-Bibliothek. Große Kataloge können viele Systemressourcen beanspruchen.</string>
+    <string name="catalog_full_library_button">Alle Themes anzeigen</string>
+    <string name="catalog_large_warning_title">Große Theme-Bibliothek</string>
+    <string name="catalog_large_warning_desc">Der Theme-Manager enthält %1$d Themes. Bibliotheken mit mehr als %2$d Themes können auf manchen Systemen Fehler oder Verlangsamungen verursachen. Trotzdem fortfahren?</string>
+    <string name="catalog_large_warning_confirm">Fortfahren</string>
 </resources>

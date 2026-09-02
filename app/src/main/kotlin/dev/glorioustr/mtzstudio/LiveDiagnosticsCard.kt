@@ -33,6 +33,7 @@ import java.nio.file.Path
 internal fun LiveDiagnosticsCard(
     recorder: LiveDiagnosticsRecorder,
     shareDiagnostics: (Path) -> Unit,
+    shareThemeManagerApk: (Path) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -107,6 +108,20 @@ internal fun LiveDiagnosticsCard(
                         }
                     },
                 ) { Text(stringResource(R.string.btn_export_diagnostics)) }
+
+                Text(
+                    stringResource(R.string.diag_themes_apk_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            runCatching { withContext(Dispatchers.IO) { recorder.exportInstalledThemeManagerApk() } }
+                                .onSuccess(shareThemeManagerApk)
+                                .onFailure { actionStatus = resources.getString(R.string.diag_themes_apk_export_failed, it.message ?: "") }
+                        }
+                    },
+                ) { Text(stringResource(R.string.btn_export_themes_apk)) }
 
                 actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 if (state.recentEvents.isNotEmpty()) {

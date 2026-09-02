@@ -318,4 +318,19 @@
     <string name="device_import_failed">Não foi possível ler os dados do Gerenciador de Temas: %1$s</string>
     <string name="action_export_mtz">Exportar MTZ</string>
     <string name="status_export_failed">MTZ não pôde ser exportado: %1$s</string>
+    <string name="action_open_in_themes">Abrir em Temas</string>
+    <string name="rootless_mode_title">Modo sem root</string>
+    <string name="rootless_mode_desc">Importação local de MTZ, prévia, personalização, criação, exportação e backup estão disponíveis. A aplicação é encaminhada ao Xiaomi Temas e pode exigir importação manual.</string>
+    <string name="rootless_apply_dialog_title">Importar com Xiaomi Temas</string>
+    <string name="rootless_apply_dialog_desc">\"%1$s\" será salvo em Downloads/MTZ Studio. O Xiaomi Temas será aberto para você importar e aplicar manualmente. A proteção permanente de temas Global exige root.</string>
+    <string name="diag_themes_apk_desc">Exporta o APK base instalado do Xiaomi Themes com acesso root; o pacote, a versão e o SHA-256 são verificados antes do compartilhamento. O arquivo não é enviado nem carregado automaticamente.</string>
+    <string name="btn_export_themes_apk">Exportar APK do Xiaomi Themes</string>
+    <string name="diag_themes_apk_export_failed">Não foi possível exportar o APK do Xiaomi Themes: %1$s</string>
+    <string name="catalog_sync_all_complete">A biblioteca Xiaomi Themes foi sincronizada com a pasta Temas</string>
+    <string name="catalog_full_library_title">Mostrar todos os temas do Gerenciador de temas</string>
+    <string name="catalog_full_library_desc">Copia todos os temas do Gerenciador de temas para a biblioteca privada do Studio. Catálogos grandes podem usar muitos recursos do sistema.</string>
+    <string name="catalog_full_library_button">Mostrar todos os temas</string>
+    <string name="catalog_large_warning_title">Biblioteca de temas grande</string>
+    <string name="catalog_large_warning_desc">O Gerenciador de temas contém %1$d temas. Bibliotecas com mais de %2$d temas podem causar erros ou lentidão em alguns sistemas. Continuar mesmo assim?</string>
+    <string name="catalog_large_warning_confirm">Continuar</string>
 </resources>

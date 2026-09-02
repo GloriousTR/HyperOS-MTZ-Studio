@@ -318,4 +318,19 @@
     <string name="device_import_failed">थीम प्रबंधक से नहीं पढ़ सका: %1$s</string>
     <string name="action_export_mtz">MTZ निर्यात करें</string>
     <string name="status_export_failed">MTZ निर्यात नहीं किया जा सकाः %1$s</string>
+    <string name="action_open_in_themes">थीम्स में खोलें</string>
+    <string name="rootless_mode_title">बिना रूट मोड</string>
+    <string name="rootless_mode_desc">स्थानीय MTZ आयात, पूर्वावलोकन, वैयक्तिकरण, निर्माण, निर्यात और बैकअप उपलब्ध हैं। लागू करने की प्रक्रिया Xiaomi Themes को दी जाती है और मैन्युअल आयात आवश्यक हो सकता है।</string>
+    <string name="rootless_apply_dialog_title">Xiaomi Themes से आयात करें</string>
+    <string name="rootless_apply_dialog_desc">“%1$s” को Downloads/MTZ Studio में सहेजा जाएगा। मैन्युअल आयात और लागू करने के लिए Xiaomi Themes खुलेगा। स्थायी Global थीम सुरक्षा के लिए रूट आवश्यक है।</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

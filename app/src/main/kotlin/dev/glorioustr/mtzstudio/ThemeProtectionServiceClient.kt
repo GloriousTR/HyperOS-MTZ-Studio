@@ -62,11 +62,17 @@ internal object ThemeProtectionServiceClient {
                 if (!ThemeProtectionServiceClient.protectionRequired) {
                     // Theme Manager 10.8 only needs its process scope for the apply bridge.
                     // The system-server scope belongs to Global theme protection and is redundant here.
-                    runCatching { boundService.removeScope(listOf("system")) }
-                    runCatching { boundService.getRemotePreferences(PREFS_GROUP).edit().clear().apply() }
+                    // Do not undo a user's scope selection at every application start.
+                    // Modern mode requests only Themes; it does not need System Framework.
                     remotePreferences = null
                     mutableState.value = ThemeProtectionState()
-                    requestThemeManagerBridgeScopeIfNeeded(boundService)
+                    clientScope.launch {
+                        runCatching {
+                            dev.glorioustr.mtzstudio.tester.BoundedRemoteCall.await(2_000) {
+                                requestThemeManagerBridgeScopeIfNeeded(boundService)
+                            }
+                        }
+                    }
                     return
                 }
                 runCatching {
@@ -93,6 +99,13 @@ internal object ThemeProtectionServiceClient {
     }
 
     private var commandRunner: ((String) -> String?)? = null
+
+    fun isModernBridgeScopeApproved(): Boolean = runCatching {
+        val activeService = service ?: return@runCatching false
+        dev.glorioustr.mtzstudio.tester.BoundedRemoteCall.await(2_000) {
+            themeManagerBridgeScope.all(activeService.scope.toSet()::contains)
+        }
+    }.getOrDefault(false)
 
     fun setCommandRunner(runner: (String) -> String?) {
         commandRunner = runner

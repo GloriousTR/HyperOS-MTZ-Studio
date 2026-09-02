@@ -318,4 +318,19 @@
     <string name="device_import_failed">Tidak bisa membaca dari Theme Manager: %1$s</string>
     <string name="action_export_mtz">Ekspor MTZ</string>
     <string name="status_export_failed">MTZ tidak dapat diekspor: %1$s</string>
+    <string name="action_open_in_themes">Buka di Tema</string>
+    <string name="rootless_mode_title">Mode tanpa root</string>
+    <string name="rootless_mode_desc">Impor MTZ lokal, pratinjau, personalisasi, pembuatan, ekspor, dan pencadangan tersedia. Penerapan dialihkan ke Xiaomi Themes dan mungkin memerlukan impor manual.</string>
+    <string name="rootless_apply_dialog_title">Impor dengan Xiaomi Themes</string>
+    <string name="rootless_apply_dialog_desc">\"%1$s\" akan disimpan ke Downloads/MTZ Studio. Xiaomi Themes akan dibuka agar Anda dapat mengimpor dan menerapkannya secara manual. Perlindungan tema Global permanen memerlukan root.</string>
+    <string name="diag_themes_apk_desc">Mengekspor APK dasar Xiaomi Themes yang terpasang dengan akses root; paket, versi, dan SHA-256 diverifikasi sebelum dibagikan. File tidak dikirim atau diunggah otomatis.</string>
+    <string name="btn_export_themes_apk">Ekspor APK Xiaomi Themes</string>
+    <string name="diag_themes_apk_export_failed">APK Xiaomi Themes tidak dapat diekspor: %1$s</string>
+    <string name="catalog_sync_all_complete">Pustaka Xiaomi Themes telah disinkronkan ke folder Tema</string>
+    <string name="catalog_full_library_title">Tampilkan semua tema Pengelola Tema</string>
+    <string name="catalog_full_library_desc">Menyalin semua tema Pengelola Tema ke pustaka Studio pribadi. Katalog besar dapat menggunakan sumber daya sistem yang besar.</string>
+    <string name="catalog_full_library_button">Tampilkan semua tema</string>
+    <string name="catalog_large_warning_title">Pustaka tema besar</string>
+    <string name="catalog_large_warning_desc">Pengelola Tema berisi %1$d tema. Pustaka dengan lebih dari %2$d tema dapat menyebabkan kesalahan atau kelambatan pada beberapa sistem. Tetap lanjutkan?</string>
+    <string name="catalog_large_warning_confirm">Lanjutkan</string>
 </resources>

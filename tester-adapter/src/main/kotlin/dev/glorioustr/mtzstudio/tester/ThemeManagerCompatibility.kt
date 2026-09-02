@@ -6,7 +6,9 @@ object ThemeManagerContract {
     const val LEGACY_TESTER_ACTION = "com.android.thememanager.support3.0"
     const val LEGACY_TESTER_COMPONENT = "com.android.thememanager.ApplyThemeForScreenshot"
 
-    val SUPPORTED_GLOBAL_VERSIONS = setOf("2.15.5.46", "3.0.5.6")
+    // The exported legacy alias and support3.0 contract were inspected in the 3.0.2.34
+    // Global branch and device-verified in 3.0.5.6. 3.0.4.32 stays on that same branch.
+    val SUPPORTED_GLOBAL_VERSIONS = setOf("2.15.5.46", "3.0.4.32", "3.0.5.6")
     const val MODERN_NATIVE_LIBRARY_MIN_VERSION = "10.8.7.6"
 
     fun canonicalVersion(versionName: String?): String? = versionName
@@ -40,7 +42,7 @@ object ThemeManagerContract {
         return 0
     }
 
-    /** The exact tester request verified on 2.15.5.46 and 3.0.5.6-global devices. */
+    /** The exact tester request used by the verified legacy Global contract. */
     fun legacyTesterRequest(themePath: String, callerPackage: String): LegacyTesterRequest =
         LegacyTesterRequest(
             action = LEGACY_TESTER_ACTION,

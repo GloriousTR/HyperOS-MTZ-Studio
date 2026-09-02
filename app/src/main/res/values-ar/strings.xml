@@ -318,4 +318,19 @@
     <string name="device_import_failed">لم أستطع القراءة من مدير الموضوع: %1$s</string>
     <string name="action_export_mtz">تصدير MTZ</string>
     <string name="status_export_failed">MTZ لا يمكن تصديرها: %1$s</string>
+    <string name="action_open_in_themes">فتح في السمات</string>
+    <string name="rootless_mode_title">وضع بدون روت</string>
+    <string name="rootless_mode_desc">يتوفر استيراد MTZ المحلي والمعاينة والتخصيص والإنشاء والتصدير والنسخ الاحتياطي. يتم تحويل التطبيق إلى سمات Xiaomi وقد يتطلب استيرادًا يدويًا.</string>
+    <string name="rootless_apply_dialog_title">الاستيراد باستخدام سمات Xiaomi</string>
+    <string name="rootless_apply_dialog_desc">سيتم حفظ «%1$s» في Downloads/MTZ Studio. ستفتح سمات Xiaomi لتتمكن من استيراده وتطبيقه يدويًا. تتطلب حماية السمات Global الدائمة روت.</string>
+    <string name="diag_themes_apk_desc">يُصدّر ملف APK الأساسي المثبّت لتطبيق سمات Xiaomi بصلاحية الروت؛ يتم التحقق من الحزمة والإصدار وSHA-256 قبل المشاركة. لا يُرسل الملف أو يُرفع تلقائيًا.</string>
+    <string name="btn_export_themes_apk">تصدير APK لسمات Xiaomi</string>
+    <string name="diag_themes_apk_export_failed">تعذر تصدير APK لسمات Xiaomi: %1$s</string>
+    <string name="catalog_sync_all_complete">تمت مزامنة مكتبة سمات Xiaomi مع مجلد السمات</string>
+    <string name="catalog_full_library_title">عرض جميع سمات مدير السمات</string>
+    <string name="catalog_full_library_desc">ينسخ كل سمات مدير السمات إلى مكتبة Studio الخاصة. قد تستخدم المكتبات الكبيرة موارد نظام كبيرة.</string>
+    <string name="catalog_full_library_button">عرض كل السمات</string>
+    <string name="catalog_large_warning_title">مكتبة سمات كبيرة</string>
+    <string name="catalog_large_warning_desc">يحتوي مدير السمات على %1$d سمة. قد تتسبب المكتبات التي تزيد على %2$d سمة في أخطاء أو بطء على بعض الأنظمة. هل تريد المتابعة؟</string>
+    <string name="catalog_large_warning_confirm">متابعة</string>
 </resources>

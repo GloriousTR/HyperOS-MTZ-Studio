@@ -318,4 +318,19 @@
     <string name="device_import_failed">Не удалось прочесть из тематического менеджера: %1$s</string>
     <string name="action_export_mtz">Экспорт MTZ</string>
     <string name="status_export_failed">MTZ не может быть экспортировано: %1$s</string>
+    <string name="action_open_in_themes">Открыть в Темах</string>
+    <string name="rootless_mode_title">Режим без root</string>
+    <string name="rootless_mode_desc">Доступны локальный импорт MTZ, просмотр, персонализация, создание, экспорт и резервное копирование. Применение передаётся Xiaomi Темам и может потребовать ручного импорта.</string>
+    <string name="rootless_apply_dialog_title">Импортировать через Xiaomi Темы</string>
+    <string name="rootless_apply_dialog_desc">«%1$s» будет сохранена в Downloads/MTZ Studio. Xiaomi Темы откроются для ручного импорта и применения. Постоянная защита тем Global требует root.</string>
+    <string name="diag_themes_apk_desc">Экспортирует базовый APK установленного Xiaomi Themes с root-доступом; перед передачей проверяются пакет, версия и SHA-256. Файл не отправляется и не загружается автоматически.</string>
+    <string name="btn_export_themes_apk">Экспорт APK Xiaomi Themes</string>
+    <string name="diag_themes_apk_export_failed">Не удалось экспортировать APK Xiaomi Themes: %1$s</string>
+    <string name="catalog_sync_all_complete">Библиотека Xiaomi Themes синхронизирована с папкой Темы</string>
+    <string name="catalog_full_library_title">Показать все темы Менеджера тем</string>
+    <string name="catalog_full_library_desc">Копирует все темы Менеджера тем в личную библиотеку Studio. Большие каталоги могут заметно использовать системные ресурсы.</string>
+    <string name="catalog_full_library_button">Показать все темы</string>
+    <string name="catalog_large_warning_title">Большая библиотека тем</string>
+    <string name="catalog_large_warning_desc">В Менеджере тем %1$d тем. Библиотеки с более чем %2$d темами могут вызывать ошибки или замедления. Всё равно продолжить?</string>
+    <string name="catalog_large_warning_confirm">Продолжить</string>
 </resources>

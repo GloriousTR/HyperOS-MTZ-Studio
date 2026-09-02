@@ -21,7 +21,11 @@ class ThemeManagerInspector(private val context: Context) {
         )
     }
 
-    internal fun inspectArchive(path: String): ArchivePackageInfo {
+    /**
+     * Reads a locally staged APK without installing it.  This is also used by Live Diagnostics
+     * after a user explicitly exports the installed Themes base APK for compatibility analysis.
+     */
+    fun inspectArchive(path: String): ArchivePackageInfo {
         val flags = signingFlags()
         val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.packageManager.getPackageArchiveInfo(path, PackageManager.PackageInfoFlags.of(flags.toLong()))
@@ -86,7 +90,7 @@ class ThemeManagerInspector(private val context: Context) {
     }
 }
 
-internal data class ArchivePackageInfo(
+data class ArchivePackageInfo(
     val packageName: String,
     val versionName: String?,
     val versionCode: Long,

@@ -318,4 +318,19 @@
     <string name="device_import_failed">نتونستم از Theme Manager بخونم: %1$s</string>
     <string name="action_export_mtz">صدور MTZ</string>
     <string name="status_export_failed">MTZ نمی تواند صادر شود: %1$s</string>
+    <string name="action_open_in_themes">باز کردن در تم‌ها</string>
+    <string name="rootless_mode_title">حالت بدون روت</string>
+    <string name="rootless_mode_desc">ورود محلی MTZ، پیش‌نمایش، شخصی‌سازی، ساخت، خروجی و پشتیبان‌گیری در دسترس است. اعمال به Xiaomi Themes سپرده می‌شود و ممکن است ورود دستی لازم باشد.</string>
+    <string name="rootless_apply_dialog_title">ورود با Xiaomi Themes</string>
+    <string name="rootless_apply_dialog_desc">«%1$s» در Downloads/MTZ Studio ذخیره می‌شود. Xiaomi Themes برای ورود و اعمال دستی باز خواهد شد. محافظت دائمی تم Global به روت نیاز دارد.</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

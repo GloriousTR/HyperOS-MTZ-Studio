@@ -31,14 +31,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
 
 import dev.glorioustr.mtzstudio.BuildConfig;
 import dev.glorioustr.mtzstudio.ThemeManagerBridgeContract;
+import dev.glorioustr.mtzstudio.core.VerifiedMtzExtraction;
 import io.github.libxposed.api.XposedModule;
 
 /**
  * Narrow Xposed integration that keeps locally imported themes from being rejected later.
- * The module deliberately scopes itself only to system_server and Xiaomi Theme Manager.
+ * Scope is requested at runtime: modern Theme Manager builds need only their own process,
+ * while legacy Global builds additionally request system_server for persistence protection.
  */
 public final class ThemeProtectionModule extends XposedModule {
     private static final String TAG = "MTZStudioProtection";
@@ -54,6 +57,8 @@ public final class ThemeProtectionModule extends XposedModule {
     private static final String IMPORT_FAILED = "action_resource_import_fail";
     private static final String EXTRA_IMPORTED_RESOURCE = "extra_resource";
     private static final long IMPORT_APPLY_TIMEOUT_MS = 180_000L;
+    private final ConcurrentHashMap<String, BridgeSession> importSessions = new ConcurrentHashMap<>();
+    private final ThreadLocal<BridgeSession> currentImport = new ThreadLocal<>();
 
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
@@ -118,6 +123,7 @@ public final class ThemeProtectionModule extends XposedModule {
 
     /** Modern Theme Manager bridge: native catalog import, apply and delete operations. */
     private void installThemeManagerImportBridge(ClassLoader classLoader) throws Exception {
+        installImportDiagnostics(classLoader);
         Class<?> localThemeActivity = Class.forName(
             "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity",
             false,
@@ -146,6 +152,61 @@ public final class ThemeProtectionModule extends XposedModule {
             || ThemeManagerBridgeContract.ACTION_DELETE_EXISTING.equals(action);
     }
 
+    /** Observe only our authenticated import requests; never override host checks or retry a mutation. */
+    private void installImportDiagnostics(ClassLoader classLoader) {
+        try {
+            Class<?> resourceClass = Class.forName(
+                "com.android.thememanager.basemodule.resource.model.Resource", false, classLoader);
+            Class<?> serviceClass = Class.forName(
+                "com.android.thememanager.controller.local.ThemeImportService", false, classLoader);
+            Method importer = serviceClass.getDeclaredMethod("fti", resourceClass);
+            hook(importer).setExceptionMode(ExceptionMode.PROTECTIVE).intercept(chain -> {
+                BridgeSession session = null;
+                try {
+                    String path = (String) resourceClass.getMethod("getDownloadPath").invoke(chain.getArg(0));
+                    if (path != null) session = importSessions.get(new File(path).getCanonicalPath());
+                } catch (Throwable ignored) { }
+                if (session == null) return chain.proceed();
+                currentImport.set(session);
+                try {
+                    bridgeTrace(session.activity, "Yerleşik arşiv işleyicisine girildi");
+                    return chain.proceed();
+                } catch (Throwable error) {
+                    session.recordImportFailure("import", error);
+                    throw error;
+                } finally {
+                    currentImport.remove();
+                    session.closeFallbackExtraction();
+                }
+            });
+            Method resolveImportDirectory = serviceClass.getDeclaredMethod("l", resourceClass);
+            // l() is the host's narrow "unzip then return the working directory" boundary.
+            // ResourceHelper.nmn5() returns void, so it cannot reliably report a failed extraction.
+            hook(resolveImportDirectory).setExceptionMode(ExceptionMode.PASSTHROUGH).intercept(chain -> {
+                BridgeSession session = currentImport.get();
+                try {
+                    Object result = chain.proceed();
+                    if (session != null && (!(result instanceof File) || !((File) result).isDirectory())) {
+                        bridgeTrace(session.activity, "Temalar kullanılabilir bir arşiv klasörü üretmedi; doğrulanmış çıkarma kullanılacak");
+                        return session.extractVerifiedMtz(chain.getThisObject(), serviceClass, classLoader);
+                    }
+                    if (session != null) bridgeTrace(session.activity, "Temalar kullanılabilir arşiv klasörü üretti");
+                    return result;
+                } catch (Throwable error) {
+                    if (session != null) {
+                        session.recordImportFailure("archive_directory", error);
+                        bridgeTrace(session.activity, "Temalar arşiv açma hatası sonrası doğrulanmış çıkarma deneniyor");
+                        return session.extractVerifiedMtz(chain.getThisObject(), serviceClass, classLoader);
+                    }
+                    throw error;
+                }
+            });
+        } catch (Throwable error) {
+            // Internal method names may change. Optional diagnostics must not disable the bridge.
+            log(Log.WARN, TAG, "Detailed import diagnostics unavailable: " + concise(error));
+        }
+    }
+
     private void beginModernThemeManagerRequest(Activity activity, ClassLoader classLoader, Intent request) {
         try {
             if (!BuildConfig.APPLICATION_ID.equals(activity.getCallingPackage())) {
@@ -170,10 +231,13 @@ public final class ThemeProtectionModule extends XposedModule {
             }
             String path = request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH);
             String expectedHash = request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256);
+            String themeName = validateThemeName(
+                request.getStringExtra(ThemeManagerBridgeContract.EXTRA_THEME_NAME)
+            );
             File themeFile = validateBridgeThemeFile(activity, path, expectedHash);
             bridgeTrace(activity, "MTZ yolu ve SHA-256 doğrulandı");
             boolean applyAfterImport = ThemeManagerBridgeContract.ACTION_APPLY_MODERN.equals(action);
-            new BridgeSession(activity, classLoader, themeFile, expectedHash, applyAfterImport).start();
+            new BridgeSession(activity, classLoader, themeFile, expectedHash, themeName, applyAfterImport).start();
         } catch (Throwable error) {
             finishBridgeActivity(activity, false, concise(error), null);
             log(Log.ERROR, TAG, "Modern Theme Manager request rejected", error);
@@ -205,11 +269,14 @@ public final class ThemeProtectionModule extends XposedModule {
         private final ClassLoader classLoader;
         private final File themeFile;
         private final String expectedHash;
+        private final String themeName;
         private final boolean applyAfterImport;
         private final AtomicBoolean finished = new AtomicBoolean(false);
         private final Handler mainHandler = new Handler(Looper.getMainLooper());
         private final Runnable timeout = () -> finish(false, "Theme Manager import/apply timed out");
         private boolean receiverRegistered;
+        private volatile String importFailure;
+        private volatile VerifiedMtzExtraction fallbackExtraction;
 
         private final BroadcastReceiver importReceiver = new BroadcastReceiver() {
             @Override
@@ -222,6 +289,7 @@ public final class ThemeProtectionModule extends XposedModule {
                     Log.INFO,
                     TAG,
                     "Modern Theme Manager import callback: action=" + intent.getAction()
+                        + ", title=" + resourceValue(resource, "getTitle")
                         + ", path=" + resourceValue(resource, "getDownloadPath")
                         + ", localId=" + resourceValue(resource, "getLocalId")
                 );
@@ -241,17 +309,25 @@ public final class ThemeProtectionModule extends XposedModule {
                         }
                     });
                 } else if (IMPORT_FAILED.equals(intent.getAction())) {
-                    finish(false, "Theme Manager rejected the MTZ during import");
+                    bridgeTrace(
+                        activity,
+                        "İçe aktarma reddedildi: title=" + resourceValue(resource, "getTitle")
+                            + ", localId=" + resourceValue(resource, "getLocalId")
+                            + ", path=" + resourceValue(resource, "getDownloadPath")
+                    );
+                    finish(false, "Theme Manager rejected " + themeName + " during import"
+                        + (importFailure == null ? "" : ": " + importFailure));
                 }
             }
         };
 
         BridgeSession(Activity activity, ClassLoader classLoader, File themeFile, String expectedHash,
-                boolean applyAfterImport) {
+                String themeName, boolean applyAfterImport) {
             this.activity = activity;
             this.classLoader = classLoader;
             this.themeFile = themeFile;
             this.expectedHash = expectedHash;
+            this.themeName = themeName;
             this.applyAfterImport = applyAfterImport;
         }
 
@@ -273,7 +349,59 @@ public final class ThemeProtectionModule extends XposedModule {
             receiverRegistered = true;
             mainHandler.postDelayed(timeout, IMPORT_APPLY_TIMEOUT_MS);
             bridgeTrace(activity, "Yerleşik MTZ içe aktarma başlatılıyor");
-            invokeThemeManagerImporter(activity, classLoader, themeFile);
+            importSessions.put(themeFile.getCanonicalPath(), this);
+            try {
+                invokeThemeManagerImporter(activity, classLoader, themeFile);
+            } catch (Throwable error) {
+                finish(false, "Unable to start Theme Manager import: " + concise(error));
+            }
+        }
+
+        private void recordImportFailure(String stage, Throwable error) {
+            String detail = stage + ": " + concise(error);
+            try {
+                Object type = error.getClass().getMethod("getErrorType").invoke(error);
+                detail += " [" + type + "]";
+            } catch (Throwable ignored) { }
+            if (importFailure == null) importFailure = detail;
+            bridgeTrace(activity, "Yerleşik içe aktarma ayrıntısı: " + detail);
+            log(Log.ERROR, TAG, "Native import failed at " + stage, error);
+        }
+
+        private File extractVerifiedMtz(Object service, Class<?> serviceClass, ClassLoader loader) throws Exception {
+            if (finished.get()) throw new IllegalStateException("Import session is already closed");
+            File cache = activity.getCacheDir();
+            if (cache == null || (!cache.isDirectory() && !cache.mkdirs())) {
+                throw new IllegalStateException("Theme Manager cache is unavailable");
+            }
+            VerifiedMtzExtraction extraction = VerifiedMtzExtraction.extract(themeFile, cache, expectedHash);
+            try {
+                Class<?> helper = Class.forName("com.android.thememanager.util.ResourceHelper", false, loader);
+                Method cacheHash = helper.getMethod("yz", String.class, String.class);
+                for (java.util.Map.Entry<String, String> entry : extraction.getFileSha1().entrySet()) {
+                    cacheHash.invoke(null, entry.getKey(), entry.getValue());
+                }
+                Method normalize = serviceClass.getDeclaredMethod("ld6", File.class);
+                normalize.setAccessible(true);
+                normalize.invoke(service, extraction.getDirectory());
+                fallbackExtraction = extraction;
+                bridgeTrace(activity, "Doğrulanmış MTZ çıkarma tamamlandı; Temalar normal kayıt akışına devam ediyor");
+                return extraction.getDirectory();
+            } catch (Throwable error) {
+                try { extraction.close(); } catch (Throwable cleanup) { error.addSuppressed(cleanup); }
+                throw error;
+            }
+        }
+
+        private void closeFallbackExtraction() {
+            VerifiedMtzExtraction extraction = fallbackExtraction;
+            fallbackExtraction = null;
+            if (extraction == null) return;
+            try {
+                extraction.close();
+            } catch (Throwable error) {
+                log(Log.WARN, TAG, "Unable to clean verified MTZ workspace: " + concise(error));
+            }
         }
 
         private boolean matchesRequestedResource(Object resource) {
@@ -316,6 +444,7 @@ public final class ThemeProtectionModule extends XposedModule {
 
         private void finish(boolean success, String error, String localId) {
             if (!finished.compareAndSet(false, true)) return;
+            importSessions.values().remove(this);
             mainHandler.removeCallbacks(timeout);
             unregisterReceiver();
             activity.runOnUiThread(() -> finishBridgeActivity(activity, success, error, localId));
@@ -477,6 +606,15 @@ public final class ThemeProtectionModule extends XposedModule {
         return value;
     }
 
+    private static String validateThemeName(String value) {
+        if (value == null) return "MTZ theme";
+        String bounded = value.trim();
+        if (bounded.isEmpty() || bounded.length() > 180 || bounded.indexOf('\u0000') >= 0) {
+            return "MTZ theme";
+        }
+        return bounded;
+    }
+
     private static String resolvedLocalId(Object resource) throws Exception {
         Object value = resource.getClass().getMethod("getLocalId").invoke(resource);
         return validateLocalId(value == null ? null : value.toString());
@@ -489,6 +627,8 @@ public final class ThemeProtectionModule extends XposedModule {
         );
         Object resource = resourceClass.getConstructor().newInstance();
         resourceClass.getMethod("setDownloadPath", String.class).invoke(resource, themeFile.getPath());
+        // Match Xiaomi's ImportResourceTask: a new Resource with only a download path.
+        // Titles/local IDs are populated by the importer, not fabricated by the bridge.
 
         Class<?> newContextClass = Class.forName(
             "com.android.thememanager.basemodule.resource.NewResourceContext", false, classLoader
@@ -527,7 +667,7 @@ public final class ThemeProtectionModule extends XposedModule {
         activity.finish();
     }
 
-    private static void bridgeTrace(Activity activity, String message) {
+    private static synchronized void bridgeTrace(Activity activity, String message) {
         // Bounded trace travels back through the existing authenticated result channel.
         // Logcat retains intermediate steps if the host crashes before returning a result.
         try {

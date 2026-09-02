@@ -318,4 +318,19 @@
     <string name="device_import_failed">థీమ్ మేనేజర్ నుండి చదవలేకపోయాము: %1$s</string>
     <string name="action_export_mtz">MTZ ఎగుమతి చేయండి</string>
     <string name="status_export_failed">MTZ ఎగుమతి చేయబడలేదుః %1$s</string>
+    <string name="action_open_in_themes">థీమ్స్‌లో తెరవండి</string>
+    <string name="rootless_mode_title">రూట్ లేని మోడ్</string>
+    <string name="rootless_mode_desc">స్థానిక MTZ దిగుమతి, ప్రివ్యూ, వ్యక్తిగతీకరణ, సృష్టి, ఎగుమతి మరియు బ్యాకప్ అందుబాటులో ఉంటాయి. వర్తింపు Xiaomi Themesకు అప్పగించబడుతుంది మరియు మాన్యువల్ దిగుమతి అవసరం కావచ్చు.</string>
+    <string name="rootless_apply_dialog_title">Xiaomi Themesతో దిగుమతి చేయండి</string>
+    <string name="rootless_apply_dialog_desc">“%1$s” Downloads/MTZ Studioలో సేవ్ అవుతుంది. మాన్యువల్‌గా దిగుమతి చేసి వర్తింపజేయడానికి Xiaomi Themes తెరుచుకుంటుంది. శాశ్వత Global థీమ్ రక్షణకు రూట్ అవసరం.</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

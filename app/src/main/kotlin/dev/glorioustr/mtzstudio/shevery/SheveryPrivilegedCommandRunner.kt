@@ -8,6 +8,8 @@ import android.os.IBinder
 import dev.glorioustr.mtzstudio.BuildConfig
 import dev.glorioustr.mtzstudio.LiveDiagnosticsRecorder
 import dev.glorioustr.mtzstudio.tester.VerifiedRootCommandRunner
+import dev.glorioustr.mtzstudio.tester.CommandQueueGate
+import dev.glorioustr.mtzstudio.tester.BoundedRemoteCall
 import dev.glorioustr.mtzstudio.tester.RootAccessUnavailableException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,10 +33,18 @@ class SheveryAccess(private val context: Context) {
     fun status(): SheveryAuthorizationStatus {
         return try {
             if (!Shizuku.pingBinder()) return SheveryAuthorizationStatus.SERVICE_NOT_RUNNING
+            // Binder UID is available without granting API access. Do not ask a rootless user to
+            // authorize an ADB-mode service that cannot unlock Theme Manager's private catalog.
+            val serviceUid = runCatching { Shizuku.getUid() }.getOrNull()
+            if (serviceUid != null && serviceUid != 0) return SheveryAuthorizationStatus.ADB_ONLY
             if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
                 return SheveryAuthorizationStatus.PERMISSION_REQUIRED
             }
-            if (Shizuku.getUid() == 0) SheveryAuthorizationStatus.ROOT_READY else SheveryAuthorizationStatus.ADB_ONLY
+            if (serviceUid == 0 || Shizuku.getUid() == 0) {
+                SheveryAuthorizationStatus.ROOT_READY
+            } else {
+                SheveryAuthorizationStatus.ADB_ONLY
+            }
         } catch (_: Exception) {
             SheveryAuthorizationStatus.SERVICE_NOT_RUNNING
         }
@@ -49,14 +59,14 @@ class SheveryAccess(private val context: Context) {
         result.exitCode == 0 && result.output.lineSequence().firstOrNull()?.trim() == "0"
     }.getOrDefault(false)
 
-    fun executeRoot(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
+    fun executeRoot(command: String, timeoutSeconds: Long): PrivilegedCommandResult = serviceGate.run {
         if (status() != SheveryAuthorizationStatus.ROOT_READY) {
             throw ThemeManagerUpdateException("Shizuku-compatible root authorization is not ready")
         }
         val args = Shizuku.UserServiceArgs(ComponentName(context, SheveryRootCommandService::class.java))
             .processNameSuffix("shevery_root")
             .debuggable(BuildConfig.DEBUG)
-            .version(1)
+            .version(BuildConfig.VERSION_CODE)
             .daemon(false)
         val latch = CountDownLatch(1)
         val service = AtomicReference<IRootCommandService?>()
@@ -72,24 +82,32 @@ class SheveryAccess(private val context: Context) {
         }
         Shizuku.bindUserService(args, connection)
         try {
-            if (!latch.await(20, TimeUnit.SECONDS)) {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
                 throw ThemeManagerUpdateException("Shizuku-compatible root service connection timed out")
             }
             val remote = service.get() ?: throw ThemeManagerUpdateException("Shizuku-compatible root service is unavailable")
-            if (remote.serviceUid() != 0) throw ThemeManagerUpdateException("Shizuku-compatible service is not running as root")
-            val encoded = remote.execute(command, timeoutSeconds.coerceIn(1, 300).toInt())
+            val encoded = BoundedRemoteCall.await((timeoutSeconds.coerceIn(1, 300) + 2) * 1_000) {
+                if (remote.serviceUid() != 0) throw ThemeManagerUpdateException("Shizuku-compatible service is not running as root")
+                remote.execute(command, timeoutSeconds.coerceIn(1, 300).toInt())
+            }
             val separator = encoded.indexOf('\u0000')
             val exitCode = encoded.substring(0, separator.coerceAtLeast(0)).toIntOrNull() ?: -1
             val output = if (separator >= 0) encoded.substring(separator + 1) else encoded
-            return PrivilegedCommandResult(exitCode, output, "Shizuku-compatible root service")
+            PrivilegedCommandResult(exitCode, output, "Shizuku-compatible root service")
         } finally {
-            service.get()?.let { remote -> runCatching { remote.destroy() } }
-            runCatching { Shizuku.unbindUserService(args, connection, true) }
+            // Removing the service already terminates it; do not wait on another remote call to destroy().
+            runCatching { BoundedRemoteCall.await(2_000) { Shizuku.unbindUserService(args, connection, true) } }
         }
+    }
+
+    private companion object {
+        // All instances use the same Shizuku user service. One request must not destroy another's binder.
+        val serviceGate = CommandQueueGate()
     }
 }
 
 class PreferredPrivilegedCommandRunner(context: Context) : PrivilegedCommandRunner {
+    private val commandGate = CommandQueueGate()
     private val appContext = context.applicationContext
     private val shevery = SheveryAccess(appContext)
     private val su = SuPrivilegedCommandRunner()
@@ -104,10 +122,9 @@ class PreferredPrivilegedCommandRunner(context: Context) : PrivilegedCommandRunn
         direct = su,
     )
 
-    @Synchronized
-    override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
+    override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult = commandGate.run {
         val serviceStatus = shevery.status()
-        return try {
+        try {
             verifiedRunner.run(command, timeoutSeconds)
         } catch (error: RootAccessUnavailableException) {
             val message = when (serviceStatus) {
@@ -127,6 +144,12 @@ class PreferredPrivilegedCommandRunner(context: Context) : PrivilegedCommandRunn
     }
 
     fun dismissAuthorizationFailure() { accessFailure.value = null }
+
+    /** Capability probe that never opens the authorization-error dialog on a rootless device. */
+    fun isRootReadySilently(): Boolean = runCatching { commandGate.run {
+        val result = verifiedRunner.run("id -u", ROOT_PROBE_TIMEOUT_SECONDS)
+        result.exitCode == 0 && result.output.lineSequence().firstOrNull()?.trim() == "0"
+    } }.getOrDefault(false)
 
     fun requireRootReady() {
         run("id -u", ROOT_PROBE_TIMEOUT_SECONDS).also { result ->

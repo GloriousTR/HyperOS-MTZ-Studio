@@ -63,13 +63,19 @@ import dev.glorioustr.mtzstudio.library.StudioBackupManager
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
 import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
 import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
+import dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior
+import dev.glorioustr.mtzstudio.tester.ThemeManagerCapabilityProbe
+import dev.glorioustr.mtzstudio.tester.StudioCapabilityPolicy
 import dev.glorioustr.mtzstudio.shevery.PreferredPrivilegedCommandRunner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Path
+
+private const val MAX_SAFE_FULL_CATALOG_THEMES = 24
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,14 +100,17 @@ class MainActivity : ComponentActivity() {
         val diagnostics = LiveDiagnosticsRecorder.get(applicationContext)
         val appearanceStore = AppearanceStore(applicationContext)
         val installedThemeManager = themeManagerInspector.inspect()
+        val capabilityProfile = ThemeManagerCapabilityProbe(applicationContext).probe(installedThemeManager)
         val globalThemeProtectionRequired = installedThemeManager.requiresGlobalThemeProtection
         val modernThemeManagerMode = installedThemeManager.usesModernNativeLibrary
         diagnostics.record("activity_started", "Uygulama ekranı açıldı", mapOf(
             "themeManagerVersion" to installedThemeManager.versionName,
             "provider" to if (modernThemeManagerMode) "modern" else "global",
             "restored" to (savedInstanceState != null),
+            "knownBehavior" to capabilityProfile.knownBehavior,
+            "legacyTesterResolvable" to capabilityProfile.legacyTesterResolvable,
+            "splitApkCount" to capabilityProfile.splitApkCount,
         ))
-        ThemeProtectionServiceClient.initialize(applicationContext, globalThemeProtectionRequired)
         setContent {
             var appearance by remember { mutableStateOf(appearanceStore.load()) }
             var contentStyle by remember { mutableStateOf(appearanceStore.loadContentStyle()) }
@@ -121,6 +130,7 @@ class MainActivity : ComponentActivity() {
                     openOutput = { uri -> contentResolver.openOutputStream(uri) },
                     shareMtz = { share(it, "application/zip", "Export MTZ") },
                     shareDiagnostics = { share(it, "text/plain", "Export diagnostics") },
+                    shareThemeManagerApk = { share(it, "application/vnd.android.package-archive", "Export Xiaomi Themes APK") },
                     appearance = appearance,
                     onAppearanceChange = { selected ->
                         appearanceStore.save(selected)
@@ -133,6 +143,7 @@ class MainActivity : ComponentActivity() {
                     },
                     globalThemeProtectionRequired = globalThemeProtectionRequired,
                     modernThemeManagerMode = modernThemeManagerMode,
+                    themeManagerBehavior = installedThemeManager.behavior,
                 )
             }
         }
@@ -190,12 +201,14 @@ private fun StudioScreen(
     openOutput: (Uri) -> OutputStream?,
     shareMtz: (Path) -> Unit,
     shareDiagnostics: (Path) -> Unit,
+    shareThemeManagerApk: (Path) -> Unit,
     appearance: AppAppearance,
     onAppearanceChange: (AppAppearance) -> Unit,
     contentStyle: AppContentStyle,
     onContentStyleChange: (AppContentStyle) -> Unit,
     globalThemeProtectionRequired: Boolean,
     modernThemeManagerMode: Boolean,
+    themeManagerBehavior: ThemeManagerBehavior,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -216,6 +229,8 @@ private fun StudioScreen(
     var importExpanded by rememberSaveable { mutableStateOf(false) }
     var pendingApplyTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var preparedApply by remember { mutableStateOf<PreparedThemeApply?>(null) }
+    var themeOperationRunning by remember { mutableStateOf(false) }
+    var operationError by remember { mutableStateOf<String?>(null) }
     var backupStatus by remember { mutableStateOf(resources.getString(R.string.status_no_backup_yet)) }
     val cloudAccountStore = remember { CloudAccountStore(context) }
     var cloudAccount by remember { mutableStateOf(cloudAccountStore.load()) }
@@ -225,13 +240,20 @@ private fun StudioScreen(
     var themeDeviceImportStatus by remember { mutableStateOf(resources.getString(R.string.device_import_idle)) }
     var fontDeviceImportStatus by remember { mutableStateOf(resources.getString(R.string.device_import_idle)) }
     var deviceImportRunning by remember { mutableStateOf(false) }
+    val pauseCatalog = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    val catalogProgress by deviceThemeImporter.catalogProgress.collectAsState()
     var availableDeviceThemes by remember { mutableStateOf<List<DeviceThemeSummary>>(emptyList()) }
     var isScanningDeviceThemes by remember { mutableStateOf(false) }
     var showDeviceThemePicker by remember { mutableStateOf(false) }
+    var largeCatalogThemeCount by remember { mutableStateOf<Int?>(null) }
     var showThemeProtectionRestartDialog by remember { mutableStateOf(false) }
     val studioState = remember { context.getSharedPreferences("studio-ui-state", 0) }
-    var nativeLibraryThemeIds by remember { mutableStateOf(emptySet<String>()) }
-    var catalogLoadFinished by remember { mutableStateOf(!modernThemeManagerMode) }
+    var rootAccessAvailable by remember { mutableStateOf<Boolean?>(null) }
+    val capabilities = StudioCapabilityPolicy(
+        rootAvailable = rootAccessAvailable == true,
+        themeManagerBehavior = themeManagerBehavior,
+    )
+    var catalogLoadFinished by remember { mutableStateOf(true) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     var activeThemeId by rememberSaveable {
         mutableStateOf(studioState.getString("last-applied-theme-id", null))
@@ -342,9 +364,6 @@ private fun StudioScreen(
     suspend fun loadLibrarySnapshot(): Boolean {
         val snapshot = withContext(Dispatchers.IO) { library.load() }
         themes = snapshot.themes
-        nativeLibraryThemeIds = snapshot.themes.filter {
-            deviceThemeImporter.localIdFor(it) != null
-        }.mapTo(mutableSetOf()) { it.id.value }
         status = when {
             snapshot.warnings.isNotEmpty() -> resources.getString(R.string.status_library_warnings, snapshot.warnings.size)
             themes.isEmpty() -> resources.getString(R.string.status_library_empty)
@@ -373,6 +392,8 @@ private fun StudioScreen(
         result.data?.getStringArrayListExtra(ThemeManagerBridgeContract.EXTRA_DIAGNOSTIC_TRACE)
             ?.take(40)?.forEach(diagnostics::recordNativeStep)
         preparedApply = null
+        themeOperationRunning = false
+        pauseCatalog.set(false)
         clearPreparedApply()
         if (prepared != null) {
             scope.launch {
@@ -434,36 +455,18 @@ private fun StudioScreen(
                             }
                         }
                     } else {
-                        val fallback = if (prepared.manualImportPath != null) runCatching {
-                            diagnostics.record("manual_fallback", "Yerleşik elle içe aktarma yoluna geçiliyor")
-                            themeApplyCoordinator.prepareModernManualFallback(prepared)
-                        }.getOrNull() else null
                         diagnostics.record("theme_operation_unconfirmed", "Temalar işlemi başarısız veya sonuç doğrulanamadı", mapOf(
                             "operation" to prepared.operation, "theme" to prepared.themeName,
                             "error" to result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_ERROR),
                         ))
                         scope.launch(Dispatchers.IO) { themeApplyCoordinator.captureFailureDiagnostics(requestStartedAt) }
-                        if (fallback != null) {
-                            status = resources.getString(
-                                R.string.status_manual_import_ready,
-                                fallback.manualImportPath.orEmpty(),
-                            )
-                            Toast.makeText(
-                                context,
-                                resources.getString(
-                                    R.string.manual_import_toast,
-                                    fallback.manualImportPath.orEmpty().substringAfterLast('/'),
-                                ),
-                                Toast.LENGTH_LONG,
-                            ).show()
-                            context.startActivity(fallback.intent)
-                        } else {
-                            status = resources.getString(
-                                R.string.status_apply_failed,
-                                result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_ERROR)
-                                    ?: resources.getString(R.string.error_modern_bridge_failed),
-                            )
-                        }
+                        // Do not bounce straight back to the host after a failed or cancelled request.
+                        status = resources.getString(
+                            R.string.status_apply_failed,
+                            result.data?.getStringExtra(ThemeManagerBridgeContract.EXTRA_ERROR)
+                                ?: resources.getString(R.string.error_modern_bridge_failed),
+                        )
+                        operationError = status
                     }
                 }
 
@@ -473,31 +476,101 @@ private fun StudioScreen(
                         prepared.manualImportPath.orEmpty(),
                     )
                 }
+
+                ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT -> {
+                    diagnostics.record(
+                        "rootless_manual_returned",
+                        "Rootsuz Temalar yönlendirmesinden uygulamaya dönüldü",
+                        mapOf("theme" to prepared.themeName),
+                    )
+                    status = resources.getString(
+                        R.string.status_manual_import_ready,
+                        prepared.manualImportPath.orEmpty(),
+                    )
+                }
+
+                ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER -> {
+                    diagnostics.record(
+                        "rootless_legacy_apply_unverified",
+                        "Rootsuz Global tester çağrısı döndü; kesin uygulama sonucu ve kalıcılık doğrulanamaz",
+                        mapOf("theme" to prepared.themeName),
+                    )
+                    status = resources.getString(R.string.status_legacy_apply_unverified, prepared.themeName)
+                    activeThemeId = prepared.themeId
+                    studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                }
             }
         }
     }
 
+    fun launchThemeOperation(block: suspend () -> Unit) {
+        pauseCatalog.set(true)
+        scope.launch {
+            try {
+                block()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                diagnostics.record("theme_operation_failed", "Tema işlemi tamamlanamadı", error = error)
+                status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                operationError = status
+            } finally {
+                themeOperationRunning = preparedApply != null
+                if (preparedApply == null) pauseCatalog.set(false)
+            }
+        }
+    }
+
+    fun launchPreparedTheme(prepared: PreparedThemeApply) {
+        try {
+            preparedApply = prepared
+            persistPreparedApply(prepared)
+            diagnostics.record(
+                "theme_activity_launching",
+                "Temalar etkinliği başlatılıyor",
+                mapOf(
+                    "protocol" to prepared.protocol,
+                    "action" to prepared.intent.action,
+                    "component" to prepared.intent.component?.flattenToShortString(),
+                    "rootless" to prepared.protocol.name.startsWith("ROOTLESS_"),
+                ),
+            )
+            applyLauncher.launch(prepared.intent)
+            diagnostics.record(
+                "theme_activity_launched",
+                "Temalar etkinliği başlatıldı; dönüş bekleniyor",
+                mapOf("protocol" to prepared.protocol, "theme" to prepared.themeName),
+            )
+        } catch (error: Exception) {
+            preparedApply = null
+            clearPreparedApply()
+            diagnostics.record("theme_activity_launch_failed", "Temalar etkinliği başlatılamadı", error = error)
+            throw error
+        }
+    }
+
     fun deleteTheme(theme: LibraryTheme) {
+        if (themeOperationRunning) return
+        themeOperationRunning = true
         diagnostics.record("delete_requested", "Tema kaldırma istendi", mapOf("theme" to theme.displayName, "themeId" to theme.id.value))
-        if (modernThemeManagerMode) {
+        if (capabilities.usesNativeCatalog) {
             val localId = deviceThemeImporter.localIdFor(theme)
             if (localId != null) {
-                scope.launch {
+                launchThemeOperation {
                     runCatching {
                         withContext(Dispatchers.IO) { themeApplyCoordinator.prepareModernDelete(theme, localId) }
                     }.onSuccess { prepared ->
-                        preparedApply = prepared
-                        persistPreparedApply(prepared)
-                        applyLauncher.launch(prepared.intent)
+                        launchPreparedTheme(prepared)
                     }.onFailure { error ->
                         diagnostics.record("theme_request_prepare_failed", "Temalar işlemi hazırlanamadı", error = error)
                         status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                        operationError = status
                     }
                 }
                 return
             }
         }
-        scope.launch {
+        launchThemeOperation {
             val success = withContext(Dispatchers.IO) { library.deleteTheme(theme.id) }
             if (success) {
                 val snapshot = withContext(Dispatchers.IO) { library.load() }
@@ -525,7 +598,9 @@ private fun StudioScreen(
     }
 
     fun composeTheme() {
-        scope.launch {
+        if (themeOperationRunning) return
+        themeOperationRunning = true
+        launchThemeOperation {
             diagnostics.record("compose_started", "Tema oluşturma başladı", mapOf(
                 "name" to compositionName, "baseThemeId" to baseThemeId,
                 "selections" to selections.values.joinToString { "${it.category}=${it.themeId};default=${it.useDefault}" },
@@ -602,19 +677,22 @@ private fun StudioScreen(
                 themes = snapshot.themes
                 destination = StudioDestination.THEMES
                 status = resources.getString(R.string.status_compose_success, compositionName.trim())
-                if (modernThemeManagerMode) {
+                if (capabilities.usesNativeCatalog) {
                     runCatching {
                         withContext(Dispatchers.IO) { themeApplyCoordinator.prepareModernImportOnly(importedTheme) }
                     }.onSuccess { prepared ->
-                        preparedApply = prepared
-                        persistPreparedApply(prepared)
-                        applyLauncher.launch(prepared.intent)
+                        launchPreparedTheme(prepared)
                     }.onFailure { error ->
+                        themeOperationRunning = false
                         diagnostics.record("theme_request_prepare_failed", "Temalar işlemi hazırlanamadı", error = error)
                         status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                        operationError = status
                     }
+                } else {
+                    themeOperationRunning = false
                 }
             }.onFailure { error ->
+                themeOperationRunning = false
                 status = resources.getString(R.string.status_compose_failed, error.message ?: error::class.simpleName)
                 diagnostics.record("compose_failed", "Tema oluşturulamadı", error = error)
             }
@@ -695,42 +773,89 @@ private fun StudioScreen(
     }
 
     fun refreshModernThemeManagerCatalog() {
-        if (!modernThemeManagerMode || deviceImportRunning || preparedApply != null) return
+        if (!capabilities.usesNativeCatalog || deviceImportRunning || preparedApply != null || themeOperationRunning || checkingImportAccess) return
         // Claim the refresh before launching so entry/resume cannot start two scans.
         deviceImportRunning = true
+        pauseCatalog.set(false)
         scope.launch {
             catalogError = null
             themeDeviceImportStatus = resources.getString(R.string.device_import_working)
             android.util.Log.i("MtzCatalog", "Automatic catalog refresh started")
             diagnostics.record("catalog_sync_started", "Tema kitaplığı eşitleniyor")
             try {
-                runCatching {
-                    // Keep cached sources visible if privileged catalog access is unavailable.
-                    if (!catalogLoadFinished) loadLibrarySnapshot()
-                    val summary = withContext(Dispatchers.IO) { deviceThemeImporter.synchronizeModernLibrary() }
-                    // Publish the private snapshot before ending the loading state.
+                // Keep cached sources visible while a large Themes library is reconstructed in
+                // small resumable batches.  This work remains off the UI thread.
+                loadLibrarySnapshot()
+                catalogLoadFinished = true
+                var totalAdded = 0
+                var totalFailed = 0
+                var found = 0
+                var completed = false
+                while (!completed) {
+                    if (pauseCatalog.get()) {
+                        diagnostics.record("catalog_sync_waiting", "Öncelikli MTZ işlemi için katalog eşitlemesi bekletildi")
+                        while (pauseCatalog.get()) delay(250)
+                    }
+                    val batch = try {
+                        withContext(Dispatchers.IO) { deviceThemeImporter.synchronizeModernLibrary { pauseCatalog.get() } }
+                    } catch (error: Exception) {
+                        themeDeviceImportStatus = resources.getString(
+                            R.string.device_import_failed, error.message ?: error::class.simpleName,
+                        )
+                        diagnostics.record("catalog_sync_failed", "Tema kitaplığı eşitlenemedi", error = error)
+                        catalogError = themeDeviceImportStatus
+                        break
+                    }
                     loadLibrarySnapshot()
-                    summary
-                }.onSuccess { summary ->
+                    found = batch.found
+                    totalAdded += batch.added
+                    totalFailed += batch.failed
+                    completed = batch.completed
                     themeDeviceImportStatus = resources.getString(
                         R.string.modern_catalog_sync_summary,
-                        summary.found, summary.added, summary.failed,
+                        found, totalAdded, totalFailed,
                     )
-                    android.util.Log.i("MtzCatalog", "Catalog refreshed: found=${summary.found}, failed=${summary.failed}")
-                    diagnostics.record("catalog_sync_completed", "Tema kitaplığı eşitlendi", mapOf("found" to summary.found, "added" to summary.added, "failed" to summary.failed, "errors" to summary.errors.joinToString("\n")))
-                    if (summary.failed > 0) {
+                    android.util.Log.i("MtzCatalog", "Catalog batch: found=$found, added=$totalAdded, failed=$totalFailed, completed=$completed")
+                    diagnostics.record(
+                        if (completed) "catalog_sync_completed" else "catalog_sync_batch_completed",
+                        if (completed) "Tema kitaplığı eşitlendi" else "Tema kitaplığı arka planda sonraki gruba geçiyor",
+                        mapOf("found" to found, "added" to totalAdded, "failed" to totalFailed,
+                            "completed" to completed, "batchErrors" to batch.errors.joinToString("\n")),
+                    )
+                    if (totalFailed > 0) {
                         catalogError = resources.getString(R.string.catalog_partial_failure)
                     }
-                }.onFailure { error ->
-                    themeDeviceImportStatus = resources.getString(
-                        R.string.device_import_failed, error.message ?: error::class.simpleName,
-                    )
-                    diagnostics.record("catalog_sync_failed", "Tema kitaplığı eşitlenemedi", error = error)
-                    catalogError = themeDeviceImportStatus
+                    if (!completed) delay(350)
+                }
+                if (completed) {
+                    Toast.makeText(context, resources.getString(R.string.catalog_sync_all_complete), Toast.LENGTH_LONG).show()
                 }
             } finally {
                 catalogLoadFinished = true
                 deviceImportRunning = false
+            }
+        }
+    }
+
+    fun requestFullThemeManagerCatalog() {
+        if (!capabilities.usesNativeCatalog || deviceImportRunning || themeOperationRunning || checkingImportAccess) return
+        scope.launch {
+            isScanningDeviceThemes = true
+            val count = runCatching {
+                withContext(Dispatchers.IO) { deviceThemeImporter.availableThemeCount() }
+            }.onFailure { error ->
+                diagnostics.record("catalog_count_failed", "Tema Yöneticisi tema sayısı okunamadı", error = error)
+                themeDeviceImportStatus = resources.getString(
+                    R.string.device_import_failed, error.message ?: error::class.simpleName,
+                )
+            }.getOrNull()
+            isScanningDeviceThemes = false
+            if (count == null) return@launch
+            diagnostics.record("catalog_full_access_requested", "Tema Yöneticisindeki tüm temalar istendi", mapOf("count" to count))
+            if (count > MAX_SAFE_FULL_CATALOG_THEMES) {
+                largeCatalogThemeCount = count
+            } else {
+                refreshModernThemeManagerCatalog()
             }
         }
     }
@@ -749,9 +874,11 @@ private fun StudioScreen(
     }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
+        checkingImportAccess = false
+        if (uri != null && !themeOperationRunning) {
+            themeOperationRunning = true
             diagnostics.recordPickerResultReceived()
-            scope.launch {
+            launchThemeOperation {
                 status = resources.getString(R.string.status_copying_verifying)
                 var diagnosticSession: ImportDiagnosticSession? = null
                 runCatching {
@@ -759,8 +886,7 @@ private fun StudioScreen(
                         val document = documentDiagnostics(uri)
                         val session = diagnostics.beginImport(document)
                         diagnosticSession = session
-                        // Permission may have changed while the document picker was open.
-                        if (modernThemeManagerMode) themeApplyCoordinator.requireModernPrivilegedAccess()
+                        // Saving a private MTZ needs no root channel. Verify root only for host operations.
                         openInput(uri)?.use { input ->
                             library.importTheme(input, document.displayName, session.observer)
                         } ?: run {
@@ -770,39 +896,40 @@ private fun StudioScreen(
                         }
                     }
                 }.onSuccess { importedTheme ->
+                    themes = (themes.filterNot { it.id == importedTheme.id } + importedTheme)
                     diagnostics.record("import_components", "Tema bileşenleri ve genel önizleme incelendi", mapOf(
                         "themeId" to importedTheme.id.value,
                         "components" to importedTheme.archive.components.joinToString { it.category.name },
                         "defaultPreviews" to dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
                             .defaultPreviewPaths(importedTheme.archive.entries).joinToString(),
                     ))
-                    if (modernThemeManagerMode) {
+                    if (capabilities.usesNativeCatalog) {
                         runCatching {
                             withContext(Dispatchers.IO) { themeApplyCoordinator.prepareModernImportOnly(importedTheme) }
                         }.onSuccess { prepared ->
-                            preparedApply = prepared
-                            persistPreparedApply(prepared)
-                            applyLauncher.launch(prepared.intent)
+                            launchPreparedTheme(prepared)
                         }.onFailure { error ->
-                            val removed = withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
-                                runCatching { library.deleteTheme(importedTheme.id) }.getOrDefault(false)
-                            }
+                            themeOperationRunning = false
                             diagnostics.record(
-                                "modern_import_rolled_back",
-                                if (removed) "Tema Yöneticisine hazırlanamayan özel kitaplık kaydı geri alındı"
-                                else "Özel kitaplık kaydı geri alınamadı; kaynak korundu",
-                                mapOf("themeId" to importedTheme.id.value, "removed" to removed),
+                                "modern_import_source_retained",
+                                "Tema Yöneticisi hazırlanamadı; özel MTZ tekrar denemek için korundu",
+                                mapOf("themeId" to importedTheme.id.value),
                             )
                             status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                            operationError = status
                         }
                     } else {
+                        themeOperationRunning = false
                         reload(openThemesAfter = true)
                     }
                 }.onFailure { error ->
+                    themeOperationRunning = false
                     diagnosticSession?.failBeforeImport(error.message ?: error::class.simpleName ?: "unknown error")
                     status = resources.getString(R.string.status_import_rejected, error.message ?: error::class.simpleName)
                 }
             }
+        } else {
+            pauseCatalog.set(false)
         }
     }
 
@@ -844,30 +971,51 @@ private fun StudioScreen(
     }
 
     SheveryAuthorizationGate(privilegedRunner) {
-        if (modernThemeManagerMode) refreshModernThemeManagerCatalog()
+        rootAccessAvailable = true
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        ThemeProtectionServiceClient.setCommandRunner { cmd ->
-            runCatching { privilegedRunner.run(cmd, 3).output }.getOrNull()
+        // The local library is always available, including while capability detection runs.
+        reload()
+        val rootReady = withContext(Dispatchers.IO) { privilegedRunner.isRootReadySilently() }
+        rootAccessAvailable = rootReady
+        diagnostics.record(
+            "privilege_mode_selected",
+            if (rootReady) "Rootlu tam erişim modu etkin" else "Rootsuz yerel çalışma alanı etkin",
+            mapOf("root" to rootReady, "themeManagerBehavior" to themeManagerBehavior),
+        )
+        if (rootReady) {
+            ThemeProtectionServiceClient.initialize(context.applicationContext, globalThemeProtectionRequired)
+            ThemeProtectionServiceClient.setCommandRunner { cmd ->
+                runCatching { privilegedRunner.run(cmd, 3).output }.getOrNull()
+            }
+            ThemeProtectionServiceClient.refresh()
         }
-        ThemeProtectionServiceClient.refresh()
-        if (modernThemeManagerMode) {
-            refreshModernThemeManagerCatalog()
-        } else {
-            reload()
+    }
+    androidx.compose.runtime.LaunchedEffect(capabilities.usesNativeCatalog) {
+        if (!capabilities.usesNativeCatalog) {
+            catalogLoadFinished = true
+        }
+    }
+    androidx.compose.runtime.LaunchedEffect(catalogProgress) {
+        if (catalogProgress.total > 0) {
+            // Merge incremental catalog items without hiding a concurrently imported private source.
+            themes = (themes + catalogProgress.themes).associateBy { it.id }.values.toList()
+            if (deviceImportRunning) {
+                themeDeviceImportStatus = resources.getString(R.string.device_import_working) +
+                    " ${catalogProgress.processed}/${catalogProgress.total}"
+            }
         }
     }
     androidx.compose.runtime.LaunchedEffect(destination, modernThemeManagerMode) {
         diagnostics.record("screen_opened", "Ekran açıldı", mapOf("screen" to destination))
-        if (destination == StudioDestination.THEMES) refreshModernThemeManagerCatalog()
     }
     androidx.compose.runtime.LaunchedEffect(status) {
         diagnostics.record("operation_status", status)
     }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         // Also pick up changes made in Xiaomi Themes while Studio was in the background.
-        if (destination == StudioDestination.THEMES) refreshModernThemeManagerCatalog()
+        if (destination == StudioDestination.THEMES && capabilities.usesNativeCatalog) refreshModernThemeManagerCatalog()
     }
     androidx.compose.runtime.LaunchedEffect(globalThemeProtectionRequired) {
         if (!globalThemeProtectionRequired && destination == StudioDestination.THEME_PROTECTION) {
@@ -877,11 +1025,8 @@ private fun StudioScreen(
     }
     BackHandler(enabled = destination != StudioDestination.HOME, onBack = ::navigateBack)
 
-    val workspaceThemes = if (modernThemeManagerMode) {
-        themes.filter { it.id.value in nativeLibraryThemeIds }
-    } else {
-        themes
-    }
+    // Keep private drafts visible even while native synchronization is incomplete or unavailable.
+    val workspaceThemes = themes
 
     Scaffold(
         containerColor = if (contentStyle == AppContentStyle.LIQUID_GLASS) {
@@ -935,66 +1080,42 @@ private fun StudioScreen(
         when {
             destination == StudioDestination.HOME -> HomeMenuScreen(
                 importExpanded = importExpanded,
-                importing = diagnosticState.activeSessionId != null || checkingImportAccess,
+                importing = diagnosticState.activeSessionId != null || checkingImportAccess || themeOperationRunning,
+                rootlessMode = rootAccessAvailable == false,
                 themeManagerInspector = themeManagerInspector,
                 themeManagerUpdater = themeManagerUpdater,
                 openInput = openInput,
                 onToggleImport = { importExpanded = !importExpanded },
                 onAddMtz = {
-                    if (modernThemeManagerMode && !checkingImportAccess) {
+                    if (!checkingImportAccess && !themeOperationRunning) {
+                        pauseCatalog.set(true)
                         checkingImportAccess = true
-                        scope.launch {
-                            try {
-                            runCatching {
-                                withContext(Dispatchers.IO) {
-                                    themeApplyCoordinator.requireModernPrivilegedAccess()
-                                }
-                            }.onSuccess {
-                                diagnostics.recordPickerLaunched()
-                                picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                            }.onFailure { error ->
-                                diagnostics.record(
-                                    "import_authorization_required",
-                                    "MTZ seçilmeden önce yetkili işlem kanalı hazır değildi",
-                                    error = error,
-                                )
-                                status = resources.getString(
-                                    R.string.status_privileged_access_required,
-                                    error.message ?: resources.getString(R.string.privileged_access_unavailable),
-                                )
-                                Toast.makeText(context, status, Toast.LENGTH_LONG).show()
-                            }
-                            } finally {
-                                checkingImportAccess = false
-                            }
+                        runCatching {
+                            diagnostics.recordPickerLaunched()
+                            picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                        }.onFailure { error ->
+                            checkingImportAccess = false
+                            status = resources.getString(R.string.status_import_rejected, error.message ?: "")
                         }
-                    } else if (!modernThemeManagerMode) {
-                        diagnostics.recordPickerLaunched()
-                        picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                     }
                 },
                 onNavigate = { navigateTo(it) },
-                showThemeManagerVersionTool = !modernThemeManagerMode,
+                showThemeManagerVersionTool = rootAccessAvailable == true && !modernThemeManagerMode,
                 modifier = contentModifier,
             )
             destination == StudioDestination.THEMES -> ThemesScreen(
                 themes = workspaceThemes,
                 activeThemeId = activeThemeId,
                 deviceImportStatus = themeDeviceImportStatus,
-                deviceImportRunning = deviceImportRunning || (modernThemeManagerMode && !catalogLoadFinished),
+                deviceImportRunning = deviceImportRunning || (capabilities.usesNativeCatalog && !catalogLoadFinished),
                 catalogError = catalogError,
                 onRetryCatalog = ::refreshModernThemeManagerCatalog,
-                onOpenNativeThemes = {
-                    runCatching { context.startActivity(themeApplyCoordinator.nativeLibraryIntent()) }
-                        .onFailure { error ->
-                            status = resources.getString(R.string.catalog_native_open_failed)
-                            Toast.makeText(context, status, Toast.LENGTH_LONG).show()
-                            diagnostics.record("native_library_open_failed", "Yerleşik temalar açılamadı", error = error)
-                        }
-                },
                 onOpenDeviceThemePicker = ::openDeviceThemePicker,
-                showDeviceImport = !modernThemeManagerMode,
-                onApplyTheme = { pendingApplyTheme = it },
+                onShowAllDeviceThemes = ::requestFullThemeManagerCatalog,
+                showDeviceImport = rootAccessAvailable == true,
+                nativeCatalogMode = capabilities.usesNativeCatalog,
+                rootlessMode = rootAccessAvailable == false,
+                onApplyTheme = { if (!themeOperationRunning) pendingApplyTheme = it },
                 onDeleteTheme = ::deleteTheme,
                 modifier = contentModifier,
             )
@@ -1003,6 +1124,7 @@ private fun StudioScreen(
                 selections = selections,
                 compositionName = compositionName,
                 compositionMakerName = compositionMakerName,
+                operationRunning = themeOperationRunning,
                 lastResult = lastResult,
                 status = status,
                 baseThemeId = baseThemeId,
@@ -1045,6 +1167,7 @@ private fun StudioScreen(
             destination == StudioDestination.DIAGNOSTICS -> LiveDiagnosticsCard(
                 recorder = diagnostics,
                 shareDiagnostics = shareDiagnostics,
+                shareThemeManagerApk = shareThemeManagerApk,
                 modifier = contentModifier,
             )
             destination == StudioDestination.BACKUP -> BackupRestoreScreen(
@@ -1162,6 +1285,7 @@ private fun StudioScreen(
                 deviceImportStatus = fontDeviceImportStatus,
                 deviceImportRunning = deviceImportRunning,
                 onImportActiveFont = { importFromThemeManager(fontOnly = true) },
+                showDeviceFontImport = rootAccessAvailable == true,
                 modifier = contentModifier,
             )
         }
@@ -1169,7 +1293,7 @@ private fun StudioScreen(
 
     if (appMenuExpanded) {
         StudioOverlayMenu(
-            showThemeProtection = globalThemeProtectionRequired,
+            showThemeProtection = globalThemeProtectionRequired && rootAccessAvailable == true,
             onDismiss = { appMenuExpanded = false },
             onNavigate = { target ->
                 appMenuExpanded = false
@@ -1223,14 +1347,49 @@ private fun StudioScreen(
         )
     }
 
+    largeCatalogThemeCount?.let { count ->
+        AlertDialog(
+            onDismissRequest = { largeCatalogThemeCount = null },
+            title = { Text(stringResource(R.string.catalog_large_warning_title)) },
+            text = { Text(stringResource(R.string.catalog_large_warning_desc, count, MAX_SAFE_FULL_CATALOG_THEMES)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    largeCatalogThemeCount = null
+                    refreshModernThemeManagerCatalog()
+                }) { Text(stringResource(R.string.catalog_large_warning_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { largeCatalogThemeCount = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+
+    operationError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { operationError = null },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { operationError = null }) { Text(stringResource(R.string.action_close)) }
+            },
+        )
+    }
+
     pendingApplyTheme?.let { theme ->
         AlertDialog(
             onDismissRequest = { pendingApplyTheme = null },
-            title = { Text(stringResource(R.string.apply_dialog_title)) },
+            title = {
+                Text(
+                    stringResource(
+                        if (rootAccessAvailable != true) R.string.rootless_apply_dialog_title
+                        else R.string.apply_dialog_title,
+                    ),
+                )
+            },
             text = {
                 Text(
                     stringResource(
-                        R.string.apply_dialog_desc,
+                        if (rootAccessAvailable != true) R.string.rootless_apply_dialog_desc
+                        else R.string.apply_dialog_desc,
                         theme.archive.metadata?.name ?: theme.displayName,
                     ),
                 )
@@ -1238,18 +1397,24 @@ private fun StudioScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (themeOperationRunning) return@TextButton
+                        themeOperationRunning = true
                         pendingApplyTheme = null
-                        scope.launch {
+                        launchThemeOperation {
                             status = resources.getString(R.string.status_preparing_apply)
                             diagnostics.record("apply_requested", "Tema uygulama istendi", mapOf("theme" to theme.displayName, "themeId" to theme.id.value))
                             runCatching {
                                 withContext(Dispatchers.IO) {
-                                    themeApplyCoordinator.prepare(theme, deviceThemeImporter.localIdFor(theme))
+                                    if (rootAccessAvailable != true) {
+                                        themeApplyCoordinator.prepareRootlessManualImport(theme)
+                                    } else {
+                                        themeApplyCoordinator.prepare(theme, deviceThemeImporter.localIdFor(theme))
+                                    }
                                 }
                             }.onSuccess { prepared ->
-                                preparedApply = prepared
-                                persistPreparedApply(prepared)
-                                if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT) {
+                                if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT ||
+                                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT
+                                ) {
                                     status = resources.getString(
                                         R.string.status_manual_import_ready,
                                         prepared.manualImportPath.orEmpty(),
@@ -1263,14 +1428,23 @@ private fun StudioScreen(
                                         Toast.LENGTH_LONG,
                                     ).show()
                                 }
-                                applyLauncher.launch(prepared.intent)
+                                launchPreparedTheme(prepared)
                             }.onFailure { error ->
+                                themeOperationRunning = false
                                 diagnostics.record("apply_prepare_failed", "Tema uygulama hazırlanamadı", error = error)
                                 status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                                operationError = status
                             }
                         }
                     },
-                ) { Text(stringResource(R.string.action_apply)) }
+                ) {
+                    Text(
+                        stringResource(
+                            if (rootAccessAvailable != true) R.string.action_open_in_themes
+                            else R.string.action_apply,
+                        ),
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { pendingApplyTheme = null }) { Text(stringResource(R.string.action_cancel)) }

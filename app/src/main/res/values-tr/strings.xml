@@ -350,4 +350,19 @@
     <string name="device_import_failed">Tema Yöneticisinden alınamadı: %1$s</string>
     <string name="action_export_mtz">MTZ dışa aktar</string>
     <string name="status_export_failed">MTZ dışa aktarılamadı: %1$s</string>
+    <string name="action_open_in_themes">Temalar ile aç</string>
+    <string name="rootless_mode_title">Rootsuz mod</string>
+    <string name="rootless_mode_desc">Yerel MTZ içe aktarma, önizleme, kişiselleştirme, oluşturma, dışa aktarma ve yedekleme kullanılabilir. Uygulama işlemi Xiaomi Temalar uygulamasına devredilir ve elle içe aktarma gerekebilir.</string>
+    <string name="rootless_apply_dialog_title">Xiaomi Temalar ile içe aktar</string>
+    <string name="rootless_apply_dialog_desc">\"%1$s\", İndirilenler/MTZ Studio klasörüne kaydedilecek. Elle içe aktarıp uygulayabilmen için Xiaomi Temalar açılacak. Kalıcı Global tema koruması root gerektirir.</string>
+    <string name="diag_themes_apk_desc">Root erişimiyle kurulu Xiaomi Temalar temel APK’sını dışa aktarır; paylaşmadan önce paket adı, sürüm ve SHA-256 doğrulanır. Dosya otomatik olarak gönderilmez veya yüklenmez.</string>
+    <string name="btn_export_themes_apk">Xiaomi Temalar APK’sını dışa aktar</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Temalar APK’sı dışa aktarılamadı: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes Kitaplığı Temalar Klasörüne Eşitlendi</string>
+    <string name="catalog_full_library_title">Tema Yöneticisindeki tüm temaları göster</string>
+    <string name="catalog_full_library_desc">Tema Yöneticisindeki tüm temaları Studio kitaplığına alır. Büyük kitaplıklar sistem kaynaklarını yoğun kullanabilir.</string>
+    <string name="catalog_full_library_button">Tüm temaları göster</string>
+    <string name="catalog_large_warning_title">Büyük tema kitaplığı</string>
+    <string name="catalog_large_warning_desc">Tema Yöneticisinde %1$d tema var. %2$d üzerindeki kitaplıklar bazı sistemlerde hataya veya yavaşlamaya neden olabilir. Yine de devam edilsin mi?</string>
+    <string name="catalog_large_warning_confirm">Devam et</string>
 </resources>

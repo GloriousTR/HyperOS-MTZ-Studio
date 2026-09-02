@@ -318,4 +318,19 @@
     <string name="device_import_failed">கருப்பொருள் மேலாளர் இருந்து படிக்க முடியவில்லைஃ %1$s</string>
     <string name="action_export_mtz">MTZ ஏற்றுமதி செய்</string>
     <string name="status_export_failed">MTZ ஏற்றுமதி செய்ய முடியவில்லைஃ %1$s</string>
+    <string name="action_open_in_themes">தீம்களில் திற</string>
+    <string name="rootless_mode_title">ரூட் இல்லாத பயன்முறை</string>
+    <string name="rootless_mode_desc">உள்ளூர் MTZ இறக்குமதி, முன்னோட்டம், தனிப்பயனாக்கம், உருவாக்கம், ஏற்றுமதி மற்றும் காப்புப்பிரதி கிடைக்கும். பயன்படுத்துதல் Xiaomi Themesக்கு மாற்றப்படும்; கைமுறை இறக்குமதி தேவைப்படலாம்.</string>
+    <string name="rootless_apply_dialog_title">Xiaomi Themes மூலம் இறக்குமதி செய்</string>
+    <string name="rootless_apply_dialog_desc">“%1$s” Downloads/MTZ Studioவில் சேமிக்கப்படும். கைமுறையாக இறக்குமதி செய்து பயன்படுத்த Xiaomi Themes திறக்கப்படும். நிரந்தர Global தீம் பாதுகாப்புக்கு ரூட் தேவை.</string>
+    <string name="diag_themes_apk_desc">Exports the installed Xiaomi Themes base APK with root access; package, version and SHA-256 are verified before sharing. The file is never sent or uploaded automatically.</string>
+    <string name="btn_export_themes_apk">Export Xiaomi Themes APK</string>
+    <string name="diag_themes_apk_export_failed">Xiaomi Themes APK could not be exported: %1$s</string>
+    <string name="catalog_sync_all_complete">Xiaomi Themes library has been synchronized to the Themes folder</string>
+    <string name="catalog_full_library_title">Show all Theme Manager themes</string>
+    <string name="catalog_full_library_desc">Copies every Theme Manager theme to the private Studio library. Large catalogs may use significant system resources.</string>
+    <string name="catalog_full_library_button">Show all themes</string>
+    <string name="catalog_large_warning_title">Large theme library</string>
+    <string name="catalog_large_warning_desc">Theme Manager contains %1$d themes. Libraries over %2$d themes can cause errors or slowdowns on some systems. Continue anyway?</string>
+    <string name="catalog_large_warning_confirm">Continue</string>
 </resources>

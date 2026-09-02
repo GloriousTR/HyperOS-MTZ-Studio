@@ -7,7 +7,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 class VerifiedThemeManagerApk internal constructor(
     internal val stagedPath: Path,
@@ -42,13 +41,11 @@ class SuPrivilegedCommandRunner : PrivilegedCommandRunner {
         } catch (error: IOException) {
             throw ThemeManagerUpdateException("Root command channel could not be started", error)
         }
-        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            throw ThemeManagerUpdateException("Root package installation timed out")
-        }
+        val result = BoundedProcessOutput.collect(process, timeoutSeconds)
+        if (result.timedOut) throw ThemeManagerUpdateException("Root command timed out: ${result.output}")
         return PrivilegedCommandResult(
-            exitCode = process.exitValue(),
-            output = process.inputStream.bufferedReader().use { it.readText().takeLast(8_192) }.trim(),
+            exitCode = result.exitCode,
+            output = result.output,
             authorizationSource = "Root yöneticisi (su)",
         )
     }

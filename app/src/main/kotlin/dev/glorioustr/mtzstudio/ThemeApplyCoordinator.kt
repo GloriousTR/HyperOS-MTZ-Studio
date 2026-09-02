@@ -1,8 +1,10 @@
 package dev.glorioustr.mtzstudio
 
 import android.content.ComponentName
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.FileProvider
 import dev.glorioustr.mtzstudio.core.Hashing
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
@@ -26,6 +28,8 @@ enum class ThemeApplyProtocol {
     LEGACY_TESTER,
     MODERN_THEME_MANAGER_BRIDGE,
     MODERN_THEME_MANAGER_MANUAL_IMPORT,
+    ROOTLESS_MANUAL_IMPORT,
+    ROOTLESS_LEGACY_TESTER,
 }
 
 class ThemeApplyCoordinator(
@@ -52,6 +56,59 @@ class ThemeApplyCoordinator(
 
     fun prepareModernImportOnly(theme: LibraryTheme): PreparedThemeApply =
         prepareModernImport(theme, ThemeManagerOperation.IMPORT_ONLY)
+
+    /**
+     * Rootless hand-off: retain a public MTZ copy and open the best public Theme Manager surface.
+     * No claim is made that Xiaomi accepted or applied the file; the user completes the import.
+     */
+    fun prepareRootlessManualImport(theme: LibraryTheme): PreparedThemeApply {
+        check(Hashing.sha256(theme.archive.source) == theme.archive.sha256) {
+            "Tema kaynağı doğrulama sonrası değişmiş"
+        }
+        val themeName = theme.archive.metadata?.name ?: theme.displayName
+        val publicFile = checkNotNull(
+            MtzPublicExporter.exportToPublicDownloads(context, theme.archive.source, themeName),
+        ) { "MTZ, İndirilenler/MTZ Studio klasörüne kaydedilemedi" }
+        val installedVersion = installedThemeManagerVersion()
+        val behavior = ThemeManagerContract.behavior(installedVersion)
+        val legacyIntent = if (behavior ==
+            dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.LOCAL_THEME_IMPORT
+        ) {
+            val request = ThemeManagerContract.legacyTesterRequest(publicFile.absolutePath, context.packageName)
+            Intent(request.action).apply {
+                component = ComponentName(THEME_MANAGER_PACKAGE, request.componentClassName)
+                request.stringExtras.forEach(::putExtra)
+                request.longExtras.forEach(::putExtra)
+            }.takeIf { it.resolveActivity(context.packageManager) != null }
+        } else null
+        diagnostics.record(
+            "rootless_manual_handoff",
+            if (legacyIntent != null) {
+                "MTZ rootsuz Global içe aktarma için Temalar tester geçidine hazırlandı"
+            } else {
+                "MTZ rootsuz elle içe aktarma için hazırlandı"
+            },
+            mapOf(
+                "theme" to themeName,
+                "file" to publicFile.name,
+                "themeManagerVersion" to installedVersion,
+                "themeManagerBehavior" to behavior.name,
+                "legacyTesterResolved" to (legacyIntent != null),
+            ),
+        )
+        return PreparedThemeApply(
+            themeId = theme.id.value,
+            themeName = themeName,
+            stagedPath = "",
+            intent = legacyIntent ?: publicThemeManagerIntent(theme.archive.source),
+            protocol = if (legacyIntent != null) {
+                ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER
+            } else {
+                ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT
+            },
+            manualImportPath = publicFile.absolutePath,
+        )
+    }
 
     fun requireModernPrivilegedAccess() {
         diagnostics.record("privileged_preflight_started", "Root veya Shizuku uyumlu yetki denetleniyor")
@@ -94,6 +151,7 @@ class ThemeApplyCoordinator(
                 }
                 putExtra(ThemeManagerBridgeContract.EXTRA_THEME_PATH, stagedPath)
                 putExtra(ThemeManagerBridgeContract.EXTRA_THEME_SHA256, theme.archive.sha256)
+                putExtra(ThemeManagerBridgeContract.EXTRA_THEME_NAME, themeName.take(180))
             }
         }
         check(intent.resolveActivity(context.packageManager) != null) { "Xiaomi Temalar yerel tema ekranı bulunamadı" }
@@ -164,6 +222,30 @@ class ThemeApplyCoordinator(
         check(resolveActivity(context.packageManager) != null) { "Theme Manager local library is unavailable" }
     }
 
+    private fun publicThemeManagerIntent(source: java.nio.file.Path): Intent {
+        val sourceUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.files",
+            source.toFile(),
+        )
+        val directFileOpen = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(sourceUri, "application/octet-stream")
+            setPackage(THEME_MANAGER_PACKAGE)
+            clipData = ClipData.newRawUri("MTZ", sourceUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (directFileOpen.resolveActivity(context.packageManager) != null) return directFileOpen
+
+        val localLibrary = Intent().apply {
+            component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
+            putExtra("REQUEST_RESOURCE_CODE", "theme")
+        }
+        if (localLibrary.resolveActivity(context.packageManager) != null) return localLibrary
+        return checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
+            "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
+        }
+    }
+
     private fun prepareLegacyTester(theme: LibraryTheme): PreparedThemeApply {
         val stagedPath = "$THEME_MANAGER_STAGING_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
@@ -212,31 +294,33 @@ class ThemeApplyCoordinator(
 
     private fun isImportBridgeReady(): Boolean {
         val command = BRIDGE_MARKER_FILES.joinToString(separator = " || ") { path ->
-            "/system/bin/grep -q '^ready=true' ${shellQuote(path)} 2>/dev/null"
+            "( /system/bin/grep -q '^ready=true' ${shellQuote(path)} 2>/dev/null && " +
+                "/system/bin/grep -q '^version=${BuildConfig.VERSION_CODE}$' ${shellQuote(path)} 2>/dev/null )"
         }
-        return runRecorded("bridge_marker_check", command, 30).exitCode == 0
+        return runRecorded("bridge_marker_check", command, 5).exitCode == 0
     }
 
     private fun ensureModernThemeManagerBridgeScope(): Boolean {
-        val vectorCommand = buildString {
-            append("if [ -x ").append(shellQuote(VECTOR_CLI)).append(" ]; then ")
-            append(shellQuote(VECTOR_CLI)).append(" modules enable ").append(shellQuote(context.packageName))
-            append(" >/dev/null 2>&1 || exit 41; ")
-            append(shellQuote(VECTOR_CLI)).append(" scope rm ").append(shellQuote(context.packageName))
-            append(" system/0 >/dev/null 2>&1 || true; ")
-            append("if ! ").append(shellQuote(VECTOR_CLI)).append(" scope ls ").append(shellQuote(context.packageName))
-            append(" | /system/bin/grep -q ").append(shellQuote(THEME_MANAGER_PACKAGE)).append("; then ")
-            append(shellQuote(VECTOR_CLI)).append(" scope add ").append(shellQuote(context.packageName))
-            append(' ').append(shellQuote("$THEME_MANAGER_PACKAGE/0"))
-            append(" >/dev/null 2>&1 || exit 42; ")
-            append("fi; /system/bin/rm -f ")
-            BRIDGE_MARKER_FILES.forEach { path -> append(shellQuote(path)).append(' ') }
-            append("; /system/bin/am force-stop ").append(shellQuote(THEME_MANAGER_PACKAGE))
-            append("; exit 0; else exit 127; fi")
+        // Scope approval only shows that Vector/LSPosed accepted the selection. It does not prove
+        // the module was injected into the currently running Themes process. Require the marker
+        // emitted by onPackageReady before dispatching a bridge request; otherwise use the manual
+        // native-library screen instead of leaving the operation waiting for a callback forever.
+        val scopeApproved = ThemeProtectionServiceClient.isModernBridgeScopeApproved()
+        val markerReady = isImportBridgeReady()
+        if (markerReady) {
+            diagnostics.record(
+                "bridge_runtime_ready",
+                "Temalar köprüsü çalışan süreçte doğrulandı; ayarlar değiştirilmedi",
+                mapOf("scopeApproved" to scopeApproved),
+            )
+            return true
         }
-        val vectorResult = runRecorded("vector_scope_prepare", vectorCommand, 30)
-        if (vectorResult.exitCode == 0) return true
-        return isImportBridgeReady()
+        diagnostics.record(
+            "bridge_runtime_unavailable",
+            "Temalar kapsamı seçili olsa da köprü çalışan süreçte hazır değil; güvenli el ile içe aktarma açılacak",
+            mapOf("scopeApproved" to scopeApproved),
+        )
+        return false
     }
 
     private fun modernThemeManagerIntent(actionName: String): Intent = Intent(actionName).apply {
@@ -265,6 +349,7 @@ class ThemeApplyCoordinator(
                 .atZone(java.time.ZoneId.systemDefault())
                 .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS", java.util.Locale.US))
             val result = commandRunner.run("logcat -b crash -d -v threadtime -T ${shellQuote(since)} | tail -n 200", 10)
+            check(result.exitCode == 0) { "Crash log unavailable (${result.exitCode}): ${result.output}" }
             val lines = result.output.lines()
             val ownPids = lines.filter { it.contains("Process: $THEME_MANAGER_PACKAGE,") || it.contains("Process: ${context.packageName},") }
                 .mapNotNull { Regex("PID: (\\d+)").find(it)?.groupValues?.get(1) }.toSet()
@@ -272,6 +357,22 @@ class ThemeApplyCoordinator(
             diagnostics.record("host_crash_check", if (relevant.isEmpty()) "Bu işlem aralığında ilgili çökme kaydı bulunamadı; iptal veya yanıtsız dönüş olabilir" else "Temalar işlemine ait çökme ayrıntısı bulundu",
                 mapOf("crash" to relevant.joinToString("\n").takeLast(6000)))
         }.onFailure { diagnostics.record("host_crash_check_unavailable", "Ek çökme kaydı okunamadı", error = it) }
+        runCatching {
+            val filter = "thememanager|ThemeImport|ResourceImport|action_resource_import|MTZStudioProtection"
+            val result = commandRunner.run(
+                "logcat -b main -b system -d -v threadtime -t 1000 " +
+                    "| /system/bin/grep -E ${shellQuote(filter)} | /system/bin/tail -n 250",
+                30,
+            )
+            check(result.exitCode == 0) { "Import log unavailable (${result.exitCode}): ${result.output}" }
+            diagnostics.record(
+                "host_import_log",
+                if (result.output.isBlank()) "Tema Yöneticisi içe aktarma ayrıntısı üretmedi" else "Tema Yöneticisi içe aktarma çalışma kaydı alındı",
+                mapOf("exitCode" to result.exitCode, "log" to result.output.takeLast(6_000)),
+            )
+        }.onFailure {
+            diagnostics.record("host_import_log_unavailable", "Tema Yöneticisi çalışma kaydı okunamadı", error = it)
+        }
     }
 
     private companion object {
@@ -281,7 +382,6 @@ class ThemeApplyCoordinator(
             "/sdcard/Android/data/com.android.thememanager/files/MIUI/theme/.download"
         const val THEME_MANAGER_MODERN_LOCAL_ACTIVITY =
             "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity"
-        const val VECTOR_CLI = "/data/adb/modules/zygisk_vector/cli"
         val SAFE_LOCAL_ID = Regex("[A-Za-z0-9._-]{1,128}")
         val BRIDGE_MARKER_FILES = listOf(
             "/data/system/theme/${ThemeManagerBridgeContract.BRIDGE_MARKER}",

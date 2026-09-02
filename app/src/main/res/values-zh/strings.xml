@@ -318,4 +318,19 @@
     <string name="device_import_failed">不能读到主题管理器: %1$s</string>
     <string name="action_export_mtz">导出 MTZ</string>
     <string name="status_export_failed">无法导出 MTZ：%1$s</string>
+    <string name="action_open_in_themes">在主题中打开</string>
+    <string name="rootless_mode_title">无 Root 模式</string>
+    <string name="rootless_mode_desc">可使用本地 MTZ 导入、预览、个性化、合成、导出和备份。应用操作将转交给小米主题，可能需要手动导入。</string>
+    <string name="rootless_apply_dialog_title">使用小米主题导入</string>
+    <string name="rootless_apply_dialog_desc">“%1$s”将保存到 Downloads/MTZ Studio。随后会打开小米主题，以便手动导入并应用。Global 主题永久保护需要 Root。</string>
+    <string name="diag_themes_apk_desc">使用 Root 权限导出已安装的小米主题基础 APK；分享前会验证包名、版本和 SHA-256。文件不会自动发送或上传。</string>
+    <string name="btn_export_themes_apk">导出小米主题 APK</string>
+    <string name="diag_themes_apk_export_failed">无法导出小米主题 APK：%1$s</string>
+    <string name="catalog_sync_all_complete">小米主题库已同步到主题文件夹</string>
+    <string name="catalog_full_library_title">显示主题管理器中的所有主题</string>
+    <string name="catalog_full_library_desc">将主题管理器中的所有主题复制到 Studio 私有库。大型主题库可能会占用大量系统资源。</string>
+    <string name="catalog_full_library_button">显示所有主题</string>
+    <string name="catalog_large_warning_title">大型主题库</string>
+    <string name="catalog_large_warning_desc">主题管理器中有 %1$d 个主题。超过 %2$d 个主题的库可能在某些系统上导致错误或变慢。仍要继续吗？</string>
+    <string name="catalog_large_warning_confirm">继续</string>
 </resources>

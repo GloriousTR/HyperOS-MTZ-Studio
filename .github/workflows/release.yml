@@ -9,11 +9,11 @@ on:
       tag_name:
         description: 'Release Tag Name (e.g. v1.0.0)'
         required: false
-        default: 'v2.2.0'
+        default: 'v2.3.0'
       release_name:
         description: 'Release Title'
         required: false
-        default: 'HyperOS MTZ Studio v2.2.0'
+        default: 'HyperOS MTZ Studio v2.3.0'
 
 permissions:
   contents: write
@@ -79,7 +79,7 @@ jobs:
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
           name: ${{ steps.release_meta.outputs.title }}
-          body_path: docs/release-notes-v2.2.0.md
+          body_path: docs/release-notes-v2.3.0.md
           draft: false
           prerelease: false
           generate_release_notes: true

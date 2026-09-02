@@ -1,7 +1,7 @@
 package dev.glorioustr.mtzstudio.shevery
 
 import android.os.Process
-import java.util.concurrent.TimeUnit
+import dev.glorioustr.mtzstudio.tester.BoundedProcessOutput
 import kotlin.system.exitProcess
 
 class SheveryRootCommandService : IRootCommandService.Stub() {
@@ -12,12 +12,9 @@ class SheveryRootCommandService : IRootCommandService.Stub() {
         val process = ProcessBuilder("/system/bin/sh", "-c", command)
             .redirectErrorStream(true)
             .start()
-        if (!process.waitFor(timeoutSeconds.toLong(), TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            return "124\u0000Privileged command timed out"
-        }
-        val output = process.inputStream.bufferedReader().use { it.readText().takeLast(8_192) }.trim()
-        return "${process.exitValue()}\u0000$output"
+        val result = BoundedProcessOutput.collect(process, timeoutSeconds.coerceIn(1, 300).toLong())
+        val output = if (result.timedOut) "Privileged command timed out\n${result.output}" else result.output
+        return "${result.exitCode}\u0000$output"
     }
 
     override fun destroy() {

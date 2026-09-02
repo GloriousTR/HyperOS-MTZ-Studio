@@ -7,6 +7,7 @@ HyperOS MTZ Studio is an independent project. Its compatibility policy is define
 | Canonical version | Observed tester interpretation |
 | --- | --- |
 | `2.15.5.46` | Imports the MTZ as an independent local theme; recommended |
+| `3.0.4.32` | Uses the legacy exported `support3.0` local-import contract |
 | `3.0.5.6` | Imports the MTZ through the device-verified legacy tester contract |
 | `3.0.5.14` | Applies a temporary/composite result over “Default” |
 | `3.0.6.8` | Tester activity is removed |
@@ -23,7 +24,7 @@ The native surface was inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9.5.
 
 ## Startup behavior
 
-The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46` and `3.0.5.6` use the exported legacy tester contract. The request is intentionally frozen to the `support3.0` action, the `ApplyThemeForScreenshot` alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
+The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46`, `3.0.4.32` and `3.0.5.6` use the exported legacy tester contract. The `3.0.2.34` Global APK was statically inspected and exposes the same `support3.0` action and exported `ApplyThemeForScreenshot` alias used by the `3.0.4.32` branch. The request is intentionally frozen to that action, alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
 
 When Theme Manager `10.8.7.6` or a later modern build is detected, v2.2.0 switches to the native-library provider. MTZ Studio mirrors verified resources into a private editor cache so personalization can read MTZ components, while Xiaomi Theme Manager remains the visible and authoritative catalog. The “import from Theme Manager” step is removed. A theme added or composed in MTZ Studio is retained in `Downloads/MTZ Studio`, imported through Theme Manager's native importer, associated with the returned local resource ID, and then shown in the shared catalog.
 
@@ -41,7 +42,7 @@ Modern bridge requests carry a `ResultReceiver` capability to return intermediat
 
 Device validation covered startup, composing/importing/deleting a disposable theme, trace display, exporting the diagnostic file, and retaining those events after process restart. No active-theme change was needed for this diagnostic test.
 
-This path was initially validated on a physical device with Theme Manager `10.8.7.6` and Vector API 102. It requires root plus an enabled modern Xposed environment. Only the `com.android.thememanager` scope is needed: v2.2.0 removes the redundant `system` scope and hides the Global Theme Protection menu for modern versions. Vector scope preparation can be completed by the app through its privileged runner; compatible LSPosed forks can use their normal scope approval flow.
+This path was initially validated on a physical device with Theme Manager `10.8.7.6` and Vector API 102. It requires root plus an enabled modern Xposed environment. Only the `com.android.thememanager` scope is needed: the app requests this scope dynamically and does not ship a fixed `scope.list`, avoiding Vector's “module declared a static scope” lock. The redundant `system` scope and Global Theme Protection menu stay hidden for modern versions. Legacy Global builds request both scopes at runtime when protection is enabled. Vector scope preparation can be completed by the app through its privileged runner; compatible LSPosed forks can use their normal scope approval flow.
 
 The legacy 2.15/3.0 Global protocol remains frozen to its v1.2.0 behavior and is not routed through the modern bridge. The MTZ library and composer remain usable when the installed Theme Manager version is unknown.
 
@@ -60,6 +61,14 @@ With the user's approval, the test device's module was backed up and relocated t
 Shevery is not mandatory. The app uses the standard Shizuku API for a compatible root-mode service (including original Shizuku), or direct superuser access through the device root manager when that service is unavailable. ADB-mode Shizuku reports UID 2000 and is not sufficient for the private catalog operations. Xposed scope approval is separate from this command access: on modern Theme Manager versions, only the Themes scope is required; System Framework remains disabled intentionally.
 
 The command runner selects a channel using read-only UID probes and never retries a dispatched operation through another channel after an uncertain failure. Permission/binder changes are tracked beyond startup; an unavailable channel produces an authorization dialog with a retry action. Modern file imports check access before opening the picker and again before copying the selected document. A new private import record is removed if native preparation fails before launch; user source files and public backups are preserved. This does not roll back an already dispatched native import or discard a composed theme after an unconfirmed host result.
+
+## Rootless workspace
+
+When UID 0 cannot be verified, the private Theme Manager provider is not selected. This is a capability change, not an application failure: MTZ parsing, the private Studio library, previews, personalization, composition, public export, backup, restore and ordinary diagnostics remain available. Modern Theme Manager detection no longer hides these local themes or blocks the document picker.
+
+For an apply request, Studio verifies the immutable private source again and retains a public copy in `Downloads/MTZ Studio`. On verified legacy `2.15.5.46`/`3.0.5.6` builds, the exported tester contract is attempted with that public path and its return remains explicitly unverified. Other builds first try an exported file-open activity from `com.android.thememanager`; if none exists, Studio opens the best accessible Xiaomi Themes local/main screen. A manual return is never treated as verified application success.
+
+Private catalog synchronization, extraction of installed themes or the active font, automatic native import/apply/delete, package downgrade, Xposed preparation and Global persistence protection stay hidden or inactive without root. Shizuku running as UID 2000 is classified as rootless and is not presented as sufficient access.
 
 ## Root downgrade boundary
 

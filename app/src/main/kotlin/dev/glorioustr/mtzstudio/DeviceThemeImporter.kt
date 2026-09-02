@@ -42,6 +42,13 @@ internal data class DeviceThemeBulkImportResult(
     val duplicates: Int,
     val failed: Int,
     val errors: List<String>,
+    val completed: Boolean = true,
+)
+
+internal data class DeviceCatalogProgress(
+    val processed: Int = 0,
+    val total: Int = 0,
+    val themes: List<LibraryTheme> = emptyList(),
 )
 
 internal class DeviceThemeImporter(
@@ -54,6 +61,9 @@ internal class DeviceThemeImporter(
     private val appContext = context.applicationContext
     private val stagingRoot = appContext.filesDir.toPath().resolve("device-import")
     private val importOrigins = appContext.getSharedPreferences("theme-manager-imports", Context.MODE_PRIVATE)
+    private val diagnostics = LiveDiagnosticsRecorder.get(appContext)
+    private val mutableCatalogProgress = kotlinx.coroutines.flow.MutableStateFlow(DeviceCatalogProgress())
+    val catalogProgress: kotlinx.coroutines.flow.StateFlow<DeviceCatalogProgress> = mutableCatalogProgress
 
     /** Scans Theme Manager and returns list of available themes with metadata. */
     @Synchronized
@@ -77,6 +87,10 @@ internal class DeviceThemeImporter(
         }
     }
 
+    /** Reads metadata only; no MTZ reconstruction or Theme Manager component copy is performed. */
+    @Synchronized
+    fun availableThemeCount(): Int = readRecords().size
+
     /** Reconstructs selected Theme Manager items by localId. */
     @Synchronized
     fun importSelectedThemes(selectedLocalIds: Set<String>): DeviceThemeBulkImportResult {
@@ -91,32 +105,73 @@ internal class DeviceThemeImporter(
         Files.createDirectories(metadataDirectory)
         copyThemeMetadata(metadataDirectory)
 
-        return Files.list(metadataDirectory).use { paths ->
-            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".mrm") }
-                .map(::parseThemeRecord)
-                .sorted(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
-                .collect(java.util.stream.Collectors.toList())
+        val records = mutableListOf<ThemeManagerRecord>()
+        val skipped = mutableListOf<String>()
+        Files.newDirectoryStream(metadataDirectory, "*.mrm").use { paths ->
+            paths.forEach { path ->
+                if (!Files.isRegularFile(path)) return@forEach
+                runCatching { parseThemeRecord(path) }
+                    .onSuccess(records::add)
+                    .onFailure { error ->
+                        skipped += "${path.fileName}: ${error.message ?: error::class.simpleName}"
+                    }
+            }
         }
+        if (skipped.isNotEmpty()) {
+            diagnostics.record(
+                event = "catalog_records_skipped",
+                message = "Geçersiz veya boş Tema Yöneticisi kayıtları atlandı",
+                details = mapOf("count" to skipped.size, "records" to skipped.joinToString(" | ").take(5_000)),
+            )
+        }
+        return records.sortedWith(compareBy(ThemeManagerRecord::title, ThemeManagerRecord::localId))
     }
 
-    private fun importRecords(records: List<ThemeManagerRecord>): DeviceThemeBulkImportResult {
+    private fun importRecords(
+        records: List<ThemeManagerRecord>,
+        shouldPause: () -> Boolean = { false },
+        incremental: Boolean = false,
+        maxNewImports: Int = Int.MAX_VALUE,
+    ): DeviceThemeBulkImportResult {
         val knownThemes = library.load().themes.toMutableList()
+        val startedAt = System.nanoTime()
+        var processed = 0
+        var attemptedNewImports = 0
+        fun publishProgress(forceDiagnostic: Boolean = false) {
+            if (!incremental) return
+            mutableCatalogProgress.value = DeviceCatalogProgress(processed, records.size, knownThemes.toList())
+            if (forceDiagnostic || processed == 0 || processed == records.size || processed % CATALOG_PROGRESS_LOG_INTERVAL == 0) {
+                diagnostics.record("catalog_item_progress", "Tema kitaplığı aşamalı güncelleniyor",
+                    mapOf("processed" to processed, "total" to records.size))
+            }
+        }
+        publishProgress()
         var added = 0
         var duplicates = 0
         val errors = mutableListOf<String>()
-        records.forEachIndexed { index, record ->
+        for ((index, record) in records.withIndex()) {
+            if (shouldPause() || (incremental && System.nanoTime() - startedAt >= AUTO_CATALOG_TIME_BUDGET_NANOS) ||
+                (incremental && attemptedNewImports >= maxNewImports)) {
+                diagnostics.record("catalog_scan_paused", "Kitaplık taraması sınırlandırıldı; mevcut kaynaklar korundu",
+                    mapOf("processed" to processed, "total" to records.size, "added" to added, "attempted" to attemptedNewImports,
+                        "maxNewImports" to maxNewImports))
+                return DeviceThemeBulkImportResult(records.size, added, duplicates, errors.size, errors, completed = false)
+            }
             val existing = findExisting(record, knownThemes)
             if (existing != null) {
                 rememberOrigin(record, existing)
                 duplicates++
-                return@forEachIndexed
+                processed++
+                publishProgress()
+                continue
             }
 
+            attemptedNewImports++
             val itemDirectory = stagingRoot.resolve("theme-$index")
             val output = library.newExportPath(record.title)
             try {
                 Files.createDirectories(itemDirectory)
-                copyThemeFiles(record, itemDirectory)
+                copyThemeFiles(record, itemDirectory, if (incremental) 30 else 300)
                 buildMtz(record, itemDirectory, output)
                 val verified = parser.parse(output)
                 if (verified.components.isEmpty()) error("No recognizable MTZ component was produced")
@@ -125,11 +180,14 @@ internal class DeviceThemeImporter(
                 rememberOrigin(record, imported)
                 added++
             } catch (error: Exception) {
+                if (error is InterruptedException || error is java.util.concurrent.CancellationException) throw error
                 errors += "${record.title}: ${error.message ?: error::class.simpleName}"
             } finally {
                 Files.deleteIfExists(output)
                 itemDirectory.toFile().deleteRecursively()
             }
+            processed++
+            publishProgress()
         }
         stagingRoot.toFile().deleteRecursively()
         return DeviceThemeBulkImportResult(records.size, added, duplicates, errors.size, errors)
@@ -142,12 +200,17 @@ internal class DeviceThemeImporter(
 
     /** Keeps the private editor cache aligned with Theme Manager, which remains the source of truth. */
     @Synchronized
-    fun synchronizeModernLibrary(): DeviceThemeBulkImportResult {
+    fun synchronizeModernLibrary(shouldPause: () -> Boolean = { false }): DeviceThemeBulkImportResult {
         // One metadata snapshot, not two scans that may disagree during a native operation.
         val records = readRecords()
         val availableIds = records.mapTo(mutableSetOf(), ThemeManagerRecord::localId)
-        val result = importRecords(records)
-        if (result.failed > 0) return result
+        val result = importRecords(
+            records,
+            shouldPause,
+            incremental = true,
+            maxNewImports = AUTO_CATALOG_NEW_IMPORT_LIMIT,
+        )
+        if (result.failed > 0 || !result.completed) return result
         val staleOrigins = importOrigins.all.keys.filter { key ->
             key.startsWith(ORIGIN_PREFIX) && key.removePrefix(ORIGIN_PREFIX) !in availableIds
         }
@@ -267,7 +330,7 @@ internal class DeviceThemeImporter(
         }
     }
 
-    private fun copyThemeFiles(record: ThemeManagerRecord, target: Path) {
+    private fun copyThemeFiles(record: ThemeManagerRecord, target: Path, timeoutSeconds: Long = 300) {
         val parts = target.resolve("parts")
         val previews = target.resolve("preview")
         Files.createDirectories(parts)
@@ -293,7 +356,7 @@ internal class DeviceThemeImporter(
             append("chmod -R u+rwX,go-rwx ").append(shellQuote(target.toAbsolutePath().toString()))
                 .append(" || exit 91")
         }
-        runPrivileged(command, 300, "Theme components could not be copied")
+        runPrivileged(command, timeoutSeconds, "Theme components could not be copied")
         record.resources.indices.forEach { index ->
             val file = parts.resolve("$index.mrc")
             if (!Files.isRegularFile(file) || Files.size(file) <= 0L) {
@@ -541,6 +604,9 @@ internal class DeviceThemeImporter(
             "/data/media/0/Android/data/com.android.thememanager/files/MIUI/theme/.data"
         const val MAX_PREVIEWS_PER_THEME = 16
         const val MAX_PREVIEW_CANDIDATES = 16
+        const val AUTO_CATALOG_NEW_IMPORT_LIMIT = 8
+        const val AUTO_CATALOG_TIME_BUDGET_NANOS = 35_000_000_000L
+        const val CATALOG_PROGRESS_LOG_INTERVAL = 5
         const val ORIGIN_PREFIX = "theme:"
         val SAFE_IDENTIFIER = Regex("[A-Za-z0-9._-]{1,128}")
         val SAFE_RESOURCE_CODE = Regex("[A-Za-z0-9._-]{1,160}")

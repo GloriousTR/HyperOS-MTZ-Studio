@@ -14,6 +14,8 @@ public final class ThemeManagerBridgeContract {
             "dev.glorioustr.mtzstudio.extra.THEME_PATH";
     public static final String EXTRA_THEME_SHA256 =
             "dev.glorioustr.mtzstudio.extra.THEME_SHA256";
+    public static final String EXTRA_THEME_NAME =
+            "dev.glorioustr.mtzstudio.extra.THEME_NAME";
     public static final String EXTRA_THEME_LOCAL_ID =
             "dev.glorioustr.mtzstudio.extra.THEME_LOCAL_ID";
     public static final String EXTRA_RESULT =
