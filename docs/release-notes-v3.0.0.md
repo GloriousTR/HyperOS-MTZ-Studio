@@ -4,7 +4,7 @@ Version 3.0.0 brings the BAK restore workflow, adaptive root/Shizuku/rootless ac
 
 ## What's new
 
-- **BAK Import for rooted devices:** select a Xiaomi Themes `.bak` archive and let Studio validate, restore and index its contents. Restored themes are added to the Studio library without an unnecessary redirect to Xiaomi Themes.
+- **BAK Import for rooted devices:** select a Xiaomi Themes `.bak` archive and let Studio validate, restore and index its contents. Complete themes are added to Themes, while font-only resources are routed exclusively to Fonts without an unnecessary redirect to Xiaomi Themes.
 - **Adaptive privilege detection:** the opening screen waits for capability discovery and then selects verified root, Shizuku/Shevery or rootless behavior. Shell access is not mistaken for UID 0.
 - **Theme Language Tool:** translates the selected theme in place and keeps an internal original for clean retranslation to another language.
 - **Deeper theme coverage:** nested MTZ packages, XML and JSON display resources, safe MAML text expressions, date patterns, weather text and customization labels are handled.

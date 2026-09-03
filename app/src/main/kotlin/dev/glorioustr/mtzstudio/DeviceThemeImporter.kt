@@ -11,6 +11,7 @@ import dev.glorioustr.mtzstudio.composer.CompositionMetadata
 import dev.glorioustr.mtzstudio.composer.FontExportRequest
 import dev.glorioustr.mtzstudio.composer.MtzComposer
 import dev.glorioustr.mtzstudio.core.MtzParser
+import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
 import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
@@ -160,9 +161,12 @@ internal class DeviceThemeImporter(
             val existing = findExisting(record, knownThemes)
             if (existing != null) {
                 // A Theme Manager backup may contain a lockstyle-only resource. It still belongs
-                // in the Themes gallery after a BAK restore; do not hide it behind the usual
-                // multi-component gallery heuristic.
-                val visibleExisting = library.setThemeGalleryVisibility(existing, true)
+                // in the Themes gallery after a BAK restore. Font-only resources are the exception:
+                // they belong exclusively in Fonts and must not appear as complete themes.
+                val visibleExisting = library.setThemeGalleryVisibility(
+                    existing,
+                    !ThemeVisualPolicy.isFontOnly(existing.archive),
+                )
                 val existingIndex = knownThemes.indexOfFirst { it.id == existing.id }
                 if (existingIndex >= 0) knownThemes[existingIndex] = visibleExisting
                 rememberOrigin(record, visibleExisting)
@@ -182,7 +186,11 @@ internal class DeviceThemeImporter(
                 val verified = parser.parse(output)
                 if (verified.components.isEmpty()) error("No recognizable MTZ component was produced")
                 val imported = Files.newInputStream(output).use {
-                    library.importTheme(it, record.title, includeInThemeGallery = true)
+                    library.importTheme(
+                        it,
+                        record.title,
+                        includeInThemeGallery = !ThemeVisualPolicy.isFontOnly(verified),
+                    )
                 }
                 knownThemes += imported
                 rememberOrigin(record, imported)

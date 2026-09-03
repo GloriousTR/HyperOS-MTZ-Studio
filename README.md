@@ -48,7 +48,7 @@ Root remains necessary for reading Xiaomi Themes' private catalog and active fon
 
 ## v3.0.0 highlights
 
-- **BAK Import:** rooted devices can select a Xiaomi Themes `.bak` archive and let Studio validate, restore and index its themes. The restored items appear in Studio's Themes library without forcing a jump to Xiaomi Themes.
+- **BAK Import:** rooted devices can select a Xiaomi Themes `.bak` archive and let Studio validate, restore and index its contents. Complete themes appear in Themes, while font-only packages are classified under Fonts instead of cluttering the theme gallery.
 - **Three adaptive access modes:** Studio selects root, Shizuku/Shevery or rootless behavior from verified runtime access. The first screen no longer briefly reports rootless mode while privilege discovery is still running.
 - **Theme Language Tool:** translate the selected theme in place while retaining its original source for clean retranslation. Nested MTZ components, XML/JSON display text and safe MAML text expressions are covered.
 - **Natural Turkish theme text:** charging, weather, date and customization terminology use a domain glossary and post-processing instead of raw word-for-word output. Code, predicates and MAML control expressions are preserved.
@@ -83,14 +83,14 @@ Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9
 ## Interface
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio home screen" width="30%">
+  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio v3.0.0 home screen with MTZ and BAK Import" width="30%">
   &nbsp;
-  <img src="docs/screenshots/themes.png" alt="Visual theme library" width="30%">
+  <img src="docs/screenshots/themes.png" alt="HyperOS MTZ Studio v3.0.0 visual theme library" width="30%">
   &nbsp;
-  <img src="docs/screenshots/composer.png" alt="MTZ theme composer" width="30%">
+  <img src="docs/screenshots/composer.png" alt="HyperOS MTZ Studio v3.0.0 theme composer" width="30%">
 </p>
 
-<p align="center"><sub>The Themes screenshot shows the Global provider. On modern Theme Manager builds, users can import individual themes first or explicitly open the guarded full-library flow.</sub></p>
+<p align="center"><sub>Current v3.0.0 interface captured on a real device. Font-only BAK/MTZ resources are shown under Fonts; complete themes stay in the Themes gallery.</sub></p>
 
 - Material You and Liquid Glass presentation styles.
 - System, Light, Dark and AMOLED color modes.
@@ -105,7 +105,7 @@ Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9
 - Inspect MTZ structure and metadata before adding a file.
 - Keep imported and generated themes in the app-private library.
 - Browse themes through real home-screen previews with a full-width Apply action plus compact Translate and Delete controls.
-- Restore supported Xiaomi Themes `.bak` archives on rooted devices through the dedicated **BAK Import** card.
+- Restore supported Xiaomi Themes `.bak` archives on rooted devices through the dedicated **BAK Import** card. Font-only results are automatically routed to Fonts.
 - Translate supported visible theme text in place with the **Theme Language Tool**; the original archive is retained internally so changing language does not compound an earlier machine translation.
 - Export generated MTZ files to `Downloads/MTZ Studio` and create a restorable library backup.
 - On compatible rooted modern builds, import selected Xiaomi Theme Manager themes or explicitly request a guarded full-library reconstruction.

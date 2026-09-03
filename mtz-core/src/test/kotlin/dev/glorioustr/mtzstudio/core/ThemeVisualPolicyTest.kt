@@ -12,6 +12,22 @@ class ThemeVisualPolicyTest {
     private fun entry(path: String, size: Long = 32, directory: Boolean = false) =
         MtzEntry(path, size, size, 0, directory, false)
 
+    private fun archive(vararg categories: ComponentCategory) = MtzArchive(
+        source = java.nio.file.Path.of("fixture.mtz"),
+        sha256 = "fixture",
+        metadata = null,
+        entries = emptyList(),
+        components = categories.map { ThemeComponent(it, it.name, listOf(it.name), 1) },
+        rightsEntries = emptyList(),
+        expandedBytes = categories.size.toLong(),
+    )
+
+    @Test fun `font only package is separated from the complete theme gallery`() {
+        assertTrue(ThemeVisualPolicy.isFontOnly(archive(ComponentCategory.FONT)))
+        assertFalse(ThemeVisualPolicy.isFontOnly(archive(ComponentCategory.FONT, ComponentCategory.ICONS)))
+        assertFalse(ThemeVisualPolicy.isFontOnly(archive()))
+    }
+
     @Test fun `localized statusbar images outrank all launcher and default covers`() {
         val entries = listOf(entry("preview/preview_launcher_0.jpg"), entry("preview/en_US_launcher_0.jpg"),
             entry("preview/en_US_statusbar_1.jpg"), entry("preview/en_US_statusbar_0.jpg"),

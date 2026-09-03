@@ -2,6 +2,9 @@ package dev.glorioustr.mtzstudio.core
 
 /** Category availability is independent of screenshots; never invent missing components. */
 object ThemeVisualPolicy {
+    fun isFontOnly(archive: MtzArchive): Boolean =
+        archive.components.isNotEmpty() && archive.components.all { it.category == ComponentCategory.FONT }
+
     fun defaultSourceKey(category: ComponentCategory): String = "mtzstudiodefault_${category.name.lowercase()}"
 
     fun defaultSourceName(archive: MtzArchive, category: ComponentCategory): String? =

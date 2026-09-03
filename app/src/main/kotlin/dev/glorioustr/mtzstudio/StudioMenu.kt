@@ -113,6 +113,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import dev.glorioustr.mtzstudio.composer.CompositionResult
 import dev.glorioustr.mtzstudio.core.ComponentCategory
+import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
 import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
@@ -547,11 +548,16 @@ internal fun CategoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val category = requireNotNull(destination.category)
-    val sources = themes.flatMap { theme ->
+    val categoryThemes = if (category == ComponentCategory.FONT) {
+        themes.filter { ThemeVisualPolicy.isFontOnly(it.archive) }
+    } else {
+        themes
+    }
+    val sources = categoryThemes.flatMap { theme ->
         theme.archive.components.filter { it.category == category }.map { theme to it }
     }
-    val previewOnlyThemes = themes.filter {
-        dev.glorioustr.mtzstudio.core.ThemeVisualPolicy.isPreviewOnly(it.archive.components, it.archive.entries, category)
+    val previewOnlyThemes = categoryThemes.filter {
+        ThemeVisualPolicy.isPreviewOnly(it.archive.components, it.archive.entries, category)
     }
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -2965,6 +2971,9 @@ private data class OverlayMenuItem(
 )
 
 internal fun LibraryTheme.isThemeGalleryItem(): Boolean {
+    // Repair the classification of font packages imported by older BAK builds even when their
+    // persisted gallery flag was set. They remain available from the Fonts destination.
+    if (ThemeVisualPolicy.isFontOnly(archive)) return false
     if (includeInThemeGallery) return true
     val appearanceCategories = archive.components.asSequence()
         .map { it.category }
