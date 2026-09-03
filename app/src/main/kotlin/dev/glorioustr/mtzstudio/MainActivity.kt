@@ -1,9 +1,11 @@
 package dev.glorioustr.mtzstudio
 
+import android.Manifest
 import android.accounts.AccountManager
 import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
@@ -50,6 +52,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import dev.glorioustr.mtzstudio.composer.ComponentSelection
 import dev.glorioustr.mtzstudio.composer.CompositionMetadata
 import dev.glorioustr.mtzstudio.composer.CompositionRequest
@@ -91,6 +94,8 @@ class MainActivity : ComponentActivity() {
             commandRunner = privilegedRunner,
         )
         val themeApplyCoordinator = ThemeApplyCoordinator(applicationContext, privilegedRunner)
+        val bakImporter = ThemeManagerBakImporter(applicationContext, privilegedRunner)
+        val themeLanguageTool = ThemeLanguageTool(applicationContext, library)
         val deviceThemeImporter = DeviceThemeImporter(
             context = applicationContext,
             library = library,
@@ -123,6 +128,8 @@ class MainActivity : ComponentActivity() {
                     themeManagerUpdater = themeManagerUpdater,
                     privilegedRunner = privilegedRunner,
                     themeApplyCoordinator = themeApplyCoordinator,
+                    bakImporter = bakImporter,
+                    themeLanguageTool = themeLanguageTool,
                     deviceThemeImporter = deviceThemeImporter,
                     diagnostics = diagnostics,
                     documentDiagnostics = ::documentDiagnostics,
@@ -194,6 +201,8 @@ private fun StudioScreen(
     themeManagerUpdater: RootThemeManagerUpdater,
     privilegedRunner: PreferredPrivilegedCommandRunner,
     themeApplyCoordinator: ThemeApplyCoordinator,
+    bakImporter: ThemeManagerBakImporter,
+    themeLanguageTool: ThemeLanguageTool,
     deviceThemeImporter: DeviceThemeImporter,
     diagnostics: LiveDiagnosticsRecorder,
     documentDiagnostics: (Uri) -> SelectedDocumentDiagnostics,
@@ -227,6 +236,9 @@ private fun StudioScreen(
     var returnDestination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
     var appMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var importExpanded by rememberSaveable { mutableStateOf(false) }
+    var bakImporting by remember { mutableStateOf(false) }
+    var pendingBakArchive by remember { mutableStateOf<ThemeManagerBakArchive?>(null) }
+    var bakVersionMismatchAccepted by remember { mutableStateOf(false) }
     var pendingApplyTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var preparedApply by remember { mutableStateOf<PreparedThemeApply?>(null) }
     var themeOperationRunning by remember { mutableStateOf(false) }
@@ -249,6 +261,9 @@ private fun StudioScreen(
     var showThemeProtectionRestartDialog by remember { mutableStateOf(false) }
     val studioState = remember { context.getSharedPreferences("studio-ui-state", 0) }
     var rootAccessAvailable by remember { mutableStateOf<Boolean?>(null) }
+    // Keep this unknown until the asynchronous root/Shizuku probe finishes. Rendering STANDARD
+    // here caused a misleading rootless card to flash briefly on rooted devices.
+    var accessMode by remember { mutableStateOf<StudioAccessMode?>(null) }
     val capabilities = StudioCapabilityPolicy(
         rootAvailable = rootAccessAvailable == true,
         themeManagerBehavior = themeManagerBehavior,
@@ -379,6 +394,28 @@ private fun StudioScreen(
         }
     }
 
+    fun localizeTheme(theme: LibraryTheme) {
+        if (themeOperationRunning) return
+        themeOperationRunning = true
+        scope.launch {
+            status = resources.getString(R.string.theme_language_tool_working)
+            runCatching {
+                withContext(Dispatchers.IO) { themeLanguageTool.translateChineseTextToSystemLanguage(theme) }
+            }.onSuccess { localized ->
+                // Keep a portable copy alongside other Studio-generated MTZ files.
+                MtzPublicExporter.exportToPublicDownloads(context, localized.archive.source, localized.displayName)
+                reload(openThemesAfter = true)
+                status = resources.getString(R.string.theme_language_tool_complete)
+            }.onFailure { error ->
+                status = resources.getString(
+                    R.string.theme_language_tool_failed,
+                    error.message ?: error::class.simpleName,
+                )
+            }
+            themeOperationRunning = false
+        }
+    }
+
     val applyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val prepared = preparedApply ?: restorePreparedApply()
         val requestStartedAt = studioState.getLong("pending-started-at", System.currentTimeMillis())
@@ -501,6 +538,16 @@ private fun StudioScreen(
                 }
             }
         }
+    }
+
+    val rootlessNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        diagnostics.record(
+            "rootless_restore_notification_permission",
+            if (granted) "Rootsuz yeniden uygulama bildirim izni verildi" else "Rootsuz yeniden uygulama bildirim izni verilmedi",
+            mapOf("granted" to granted),
+        )
     }
 
     fun launchThemeOperation(block: suspend () -> Unit) {
@@ -933,6 +980,27 @@ private fun StudioScreen(
         }
     }
 
+    val bakPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null || bakImporting || themeOperationRunning) return@rememberLauncherForActivityResult
+        bakImporting = true
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val name = documentDiagnostics(uri).displayName ?: "Themes.bak"
+                    val stream = openInput(uri) ?: error(resources.getString(R.string.error_open_document))
+                    bakImporter.stageAndInspect(stream, name)
+                }
+            }.onSuccess { archive ->
+                pendingBakArchive = archive
+                bakVersionMismatchAccepted = false
+            }.onFailure { error ->
+                status = resources.getString(R.string.bak_import_failed, error.message ?: error::class.simpleName)
+                diagnostics.record("bak_inspect_failed", "BAK arşivi incelenemedi", error = error)
+            }
+            bakImporting = false
+        }
+    }
+
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) {
             scope.launch {
@@ -971,18 +1039,30 @@ private fun StudioScreen(
     }
 
     SheveryAuthorizationGate(privilegedRunner) {
-        rootAccessAvailable = true
+        scope.launch(Dispatchers.IO) {
+            val mode = privilegedRunner.accessModeSilently()
+            withContext(Dispatchers.Main) {
+                accessMode = mode
+                rootAccessAvailable = mode == StudioAccessMode.ROOT
+            }
+        }
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         // The local library is always available, including while capability detection runs.
         reload()
-        val rootReady = withContext(Dispatchers.IO) { privilegedRunner.isRootReadySilently() }
-        rootAccessAvailable = rootReady
+        val mode = withContext(Dispatchers.IO) { privilegedRunner.accessModeSilently() }
+        accessMode = mode
+        rootAccessAvailable = mode == StudioAccessMode.ROOT
+        val rootReady = mode == StudioAccessMode.ROOT
         diagnostics.record(
             "privilege_mode_selected",
-            if (rootReady) "Rootlu tam erişim modu etkin" else "Rootsuz yerel çalışma alanı etkin",
-            mapOf("root" to rootReady, "themeManagerBehavior" to themeManagerBehavior),
+            when (mode) {
+                StudioAccessMode.ROOT -> "Rootlu tam erişim modu etkin"
+                StudioAccessMode.SHIZUKU -> "Shizuku gelişmiş rootsuz modu etkin"
+                StudioAccessMode.STANDARD -> "Standart rootsuz çalışma alanı etkin"
+            },
+            mapOf("root" to rootReady, "mode" to mode.name, "themeManagerBehavior" to themeManagerBehavior),
         )
         if (rootReady) {
             ThemeProtectionServiceClient.initialize(context.applicationContext, globalThemeProtectionRequired)
@@ -1081,7 +1161,7 @@ private fun StudioScreen(
             destination == StudioDestination.HOME -> HomeMenuScreen(
                 importExpanded = importExpanded,
                 importing = diagnosticState.activeSessionId != null || checkingImportAccess || themeOperationRunning,
-                rootlessMode = rootAccessAvailable == false,
+                accessMode = accessMode,
                 themeManagerInspector = themeManagerInspector,
                 themeManagerUpdater = themeManagerUpdater,
                 openInput = openInput,
@@ -1098,6 +1178,12 @@ private fun StudioScreen(
                             status = resources.getString(R.string.status_import_rejected, error.message ?: "")
                         }
                     }
+                },
+                showBakImport = rootAccessAvailable == true,
+                bakImporting = bakImporting,
+                onAddBak = {
+                    runCatching { bakPicker.launch(arrayOf("application/octet-stream", "application/x-tar", "*/*")) }
+                        .onFailure { error -> status = resources.getString(R.string.bak_import_failed, error.message ?: "") }
                 },
                 onNavigate = { navigateTo(it) },
                 showThemeManagerVersionTool = rootAccessAvailable == true && !modernThemeManagerMode,
@@ -1116,6 +1202,7 @@ private fun StudioScreen(
                 nativeCatalogMode = capabilities.usesNativeCatalog,
                 rootlessMode = rootAccessAvailable == false,
                 onApplyTheme = { if (!themeOperationRunning) pendingApplyTheme = it },
+                onTranslateTheme = ::localizeTheme,
                 onDeleteTheme = ::deleteTheme,
                 modifier = contentModifier,
             )
@@ -1364,6 +1451,117 @@ private fun StudioScreen(
         )
     }
 
+    pendingBakArchive?.let { archive ->
+        val installedVersionCode = themeManagerInspector.inspect().versionCode ?: 0L
+        val versionsMatch = installedVersionCode == archive.backupVersionCode
+        AlertDialog(
+            onDismissRequest = {
+                archive.discardStagedCopy()
+                pendingBakArchive = null
+            },
+            title = { Text(stringResource(R.string.bak_restore_title)) },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    Text(stringResource(R.string.bak_restore_desc, archive.displayName, archive.entryCount))
+                    Text(
+                        stringResource(R.string.bak_restore_versions, archive.backupVersionCode, installedVersionCode),
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                    if (!versionsMatch) {
+                        androidx.compose.foundation.layout.Row(
+                            modifier = Modifier.padding(top = 10.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.material3.Checkbox(
+                                checked = bakVersionMismatchAccepted,
+                                onCheckedChange = { bakVersionMismatchAccepted = it },
+                            )
+                            Text(stringResource(R.string.bak_restore_mismatch_ack))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = versionsMatch || bakVersionMismatchAccepted,
+                    onClick = {
+                        if (bakImporting) return@TextButton
+                        bakImporting = true
+                        pendingBakArchive = null
+                        scope.launch {
+                            status = resources.getString(R.string.bak_restore_working)
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    check(privilegedRunner.isRootReadySilently()) {
+                                        resources.getString(R.string.bak_restore_root_required)
+                                    }
+                                    bakImporter.restore(archive, installedVersionCode, bakVersionMismatchAccepted)
+                                }
+                            }.onSuccess {
+                                // Restoring Theme Manager and mirroring it into Studio are separate
+                                // operations.  A slow/unsupported catalog must not make a successful
+                                // restore look failed or leave this confirmation flow spinning.
+                                archive.discardStagedCopy()
+                                reload(openThemesAfter = true)
+                                status = resources.getString(R.string.bak_restore_success)
+                                bakImporting = false
+
+                                deviceImportRunning = true
+                                themeDeviceImportStatus = resources.getString(R.string.device_import_working)
+                                scope.launch {
+                                    runCatching {
+                                        withContext(Dispatchers.IO) { deviceThemeImporter.importAllThemes() }
+                                    }.onSuccess { summary ->
+                                        diagnostics.record(
+                                            "bak_library_sync_completed",
+                                            "BAK sonrası Temalar kitaplığı MTZ Studio ile eşitlendi",
+                                            mapOf(
+                                                "found" to summary.found,
+                                                "added" to summary.added,
+                                                "duplicates" to summary.duplicates,
+                                                "failed" to summary.failed,
+                                            ),
+                                        )
+                                        reload(openThemesAfter = true)
+                                        themeDeviceImportStatus = resources.getString(
+                                            R.string.device_theme_import_summary,
+                                            summary.found,
+                                            summary.added,
+                                            summary.duplicates,
+                                            summary.failed,
+                                        )
+                                    }.onFailure { syncError ->
+                                        diagnostics.record(
+                                            "bak_library_sync_failed",
+                                            "BAK geri yüklendi ancak MTZ Studio kitaplığı eşitlenemedi",
+                                            error = syncError,
+                                        )
+                                        themeDeviceImportStatus = resources.getString(
+                                            R.string.device_import_failed,
+                                            syncError.message ?: syncError::class.simpleName,
+                                        )
+                                    }
+                                    deviceImportRunning = false
+                                }
+                            }.onFailure { error ->
+                                archive.discardStagedCopy()
+                                status = resources.getString(R.string.bak_restore_failed, error.message ?: error::class.simpleName)
+                                diagnostics.record("bak_restore_failed", "BAK geri yükleme işlemi tamamlanamadı", error = error)
+                                bakImporting = false
+                            }
+                        }
+                    },
+                ) { Text(stringResource(R.string.bak_restore_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    archive.discardStagedCopy()
+                    pendingBakArchive = null
+                }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+
     operationError?.let { message ->
         AlertDialog(
             onDismissRequest = { operationError = null },
@@ -1412,6 +1610,16 @@ private fun StudioScreen(
                                     }
                                 }
                             }.onSuccess { prepared ->
+                                if (prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT ||
+                                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER
+                                ) {
+                                    RootlessRestoreAssistant.remember(context, prepared)
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        rootlessNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                }
                                 if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT ||
                                     prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT
                                 ) {

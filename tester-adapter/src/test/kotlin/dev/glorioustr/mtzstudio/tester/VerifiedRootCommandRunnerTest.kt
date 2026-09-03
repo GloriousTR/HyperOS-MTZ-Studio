@@ -22,19 +22,19 @@ class VerifiedRootCommandRunnerTest {
         assertEquals(listOf("id -u", "operation"), direct.calls)
     }
 
-    @Test fun `root compatible service does not require su`() {
+    @Test fun `root compatible service is used when direct su is unavailable`() {
         val service = FakeRunner { ok() }
         val direct = FakeRunner { throw IOException("su unavailable") }
         VerifiedRootCommandRunner({ service }, direct).run("operation", 30)
         assertEquals(listOf("id -u", "operation"), service.calls)
-        assertEquals(emptyList(), direct.calls)
+        assertEquals(listOf("id -u"), direct.calls)
     }
 
-    @Test fun `adb uid is not accepted as root`() {
+    @Test fun `working direct root avoids constructing compatible service`() {
         val service = FakeRunner { ok("2000") }
         val direct = FakeRunner { ok() }
         VerifiedRootCommandRunner({ service }, direct).run("operation", 30)
-        assertEquals(listOf("id -u"), service.calls)
+        assertEquals(emptyList(), service.calls)
         assertEquals(listOf("id -u", "operation"), direct.calls)
     }
 
@@ -57,21 +57,21 @@ class VerifiedRootCommandRunnerTest {
         assertEquals(listOf("id -u"), direct.calls)
     }
 
-    @Test fun `uncertain service operation is not repeated via su`() {
+    @Test fun `uncertain direct operation is not repeated via service`() {
         val failure = IOException("binder died after dispatch")
-        val service = FakeRunner { if (it == "id -u") ok() else throw failure }
-        val direct = FakeRunner { ok() }
+        val service = FakeRunner { ok() }
+        val direct = FakeRunner { if (it == "id -u") ok() else throw failure }
         assertSame(failure, assertFailsWith<IOException> {
             VerifiedRootCommandRunner({ service }, direct).run("operation", 30)
         })
-        assertEquals(emptyList(), direct.calls)
+        assertEquals(emptyList(), service.calls)
     }
 
     @Test fun `nonzero command result is returned without fallback`() {
-        val service = FakeRunner { if (it == "id -u") ok() else PrivilegedCommandResult(42, "failure", "service") }
-        val direct = FakeRunner { ok() }
+        val service = FakeRunner { ok() }
+        val direct = FakeRunner { if (it == "id -u") ok() else PrivilegedCommandResult(42, "failure", "su") }
         assertEquals(42, VerifiedRootCommandRunner({ service }, direct).run("operation", 30).exitCode)
-        assertEquals(emptyList(), direct.calls)
+        assertEquals(emptyList(), service.calls)
     }
 
     @Test fun `preflight reuses probe result`() {
@@ -80,12 +80,12 @@ class VerifiedRootCommandRunnerTest {
         assertEquals(listOf("id -u"), direct.calls)
     }
 
-    @Test fun `interrupted probe does not try another channel`() {
-        val service = FakeRunner { throw InterruptedException("cancelled") }
-        val direct = FakeRunner { ok() }
+    @Test fun `interrupted direct probe does not try another channel`() {
+        val service = FakeRunner { ok() }
+        val direct = FakeRunner { throw InterruptedException("cancelled") }
         assertFailsWith<InterruptedException> {
             VerifiedRootCommandRunner({ service }, direct).run("operation", 30)
         }
-        assertEquals(emptyList(), direct.calls)
+        assertEquals(emptyList(), service.calls)
     }
 }

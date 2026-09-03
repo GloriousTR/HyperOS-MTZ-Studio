@@ -365,4 +365,30 @@
     <string name="catalog_large_warning_title">Büyük tema kitaplığı</string>
     <string name="catalog_large_warning_desc">Tema Yöneticisinde %1$d tema var. %2$d üzerindeki kitaplıklar bazı sistemlerde hataya veya yavaşlamaya neden olabilir. Yine de devam edilsin mi?</string>
     <string name="catalog_large_warning_confirm">Devam et</string>
+    <!-- Rootless restore assistant -->
+    <string name="rootless_restore_channel_name">Rootsuz yeniden uygulama</string>
+    <string name="rootless_restore_notification_title">Son seçtiğiniz MTZ, yeniden başlatma sonrası Xiaomi Temalar içinde açılmaya hazır.</string>
+    <string name="rootless_restore_notification_text">%1$s temasını Xiaomi Temalar ile yeniden aç</string>
+    <!-- Xiaomi Themes BAK import -->
+    <string name="bak_import_title">BAK İçe Aktar</string>
+    <string name="bak_import_desc">Yalnızca root: Xiaomi Temalar MIUI yedeğini inceler, geri dönüş yedeği oluşturur ve Temalar verisini geri yükler.</string>
+    <string name="bak_import_btn_select">Temalar BAK dosyasını seç</string>
+    <string name="bak_import_inspecting">BAK inceleniyor…</string>
+    <string name="bak_import_failed">BAK okunamadı: %1$s</string>
+    <string name="bak_restore_title">Tema Yöneticisi yedeğini geri yükle</string>
+    <string name="bak_restore_desc">%1$s, Tema Yöneticisine ait %2$d yedek girdisi içeriyor. Geri yükleme öncesinde mevcut verinin anlık görüntüsü alınır.</string>
+    <string name="bak_restore_versions">Yedek sürüm kodu: %1$d · Cihaz sürüm kodu: %2$d</string>
+    <string name="bak_restore_mismatch_ack">Bu yedek farklı bir Tema Yöneticisi sürümünden geliyor. Başarısız olabileceğini ve geri dönüş yedeğinin gerekebileceğini anlıyorum.</string>
+    <string name="bak_restore_working">Tema Yöneticisi yedeği geri yükleniyor…</string>
+    <string name="bak_restore_confirm">Yedeği geri yükle</string>
+    <string name="bak_restore_root_required">BAK geri yükleme için root erişimi gerekli.</string>
+    <string name="bak_restore_success">Tema Yöneticisi yedeği geri yüklendi.</string>
+    <string name="bak_restore_failed">BAK geri yüklemesi başarısız: %1$s</string>
+    <string name="shizuku_mode_title">Shizuku modu</string>
+    <string name="shizuku_mode_desc">Shizuku kablosuz hata ayıklama ile bağlı. Gelişmiş Xiaomi Temalar köprüsü ve uyumluluk tanıları kullanılabilir; Temalar’ın özel verileri ve BAK geri yükleme yine root gerektirir.</string>
+    <string name="theme_language_tool_title">Tema Dil Aracı</string>
+    <string name="theme_language_tool_desc">Seçilen temanın Çince XML metinlerini cihaz dilinize göre yerinde günceller. Görseller ve kilit ekranı davranışı değişmez.</string>
+    <string name="theme_language_tool_working">Tema metinleri çevriliyor…</string>
+    <string name="theme_language_tool_complete">Seçilen tema güncellendi.</string>
+    <string name="theme_language_tool_failed">Tema metinleri çevrilemedi: %1$s</string>
 </resources>

@@ -14,10 +14,21 @@ class SheveryRootCommandService : IRootCommandService.Stub() {
             .start()
         val result = BoundedProcessOutput.collect(process, timeoutSeconds.coerceIn(1, 300).toLong())
         val output = if (result.timedOut) "Privileged command timed out\n${result.output}" else result.output
+        // Certain Vector/Shevery builds retain non-daemon user services after unbind. Schedule
+        // self-termination only after Binder has had time to return this response, preventing a
+        // growing set of orphaned root processes from degrading the device.
+        Thread {
+            Thread.sleep(SHUTDOWN_AFTER_REPLY_MS)
+            exitProcess(0)
+        }.apply { isDaemon = true }.start()
         return "${result.exitCode}\u0000$output"
     }
 
     override fun destroy() {
         exitProcess(0)
+    }
+
+    private companion object {
+        const val SHUTDOWN_AFTER_REPLY_MS = 750L
     }
 }

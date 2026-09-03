@@ -14,8 +14,8 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
-        versionName = "2.3.0"
+        versionCode = 18
+        versionName = "2.4.0"
     }
 
     signingConfigs {
@@ -42,6 +42,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keeps the installed release and its data untouched while validating new flows by ADB.
+            applicationIdSuffix = ".test"
+            versionNameSuffix = "-test"
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("releaseStable")
@@ -73,5 +78,8 @@ dependencies {
     compileOnly("io.github.libxposed:api:101.0.0")
     implementation("io.github.libxposed:service:101.0.0")
     implementation("org.luckypray:dexkit:2.2.0")
+    // Text-only theme localization. Language models are downloaded by ML Kit only when the
+    // user explicitly runs the Theme Language Tool; no theme content is uploaded by Studio.
+    implementation("com.google.mlkit:translate:17.0.3")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

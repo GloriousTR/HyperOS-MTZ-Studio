@@ -141,6 +141,39 @@ class ThemeLibrary internal constructor(
         return target
     }
 
+    /**
+     * Replaces the private source of an existing library item without creating a second theme.
+     * The prior source is kept in private history so an interrupted conversion never destroys the
+     * user's only copy. It is deliberately not exposed as another gallery item.
+     */
+    fun replaceTheme(theme: LibraryTheme, input: InputStream): LibraryTheme {
+        val directory = libraryRoot.resolve(theme.id.value)
+        require(Files.isDirectory(directory)) { "Theme is no longer in the private library" }
+        val source = directory.resolve("source.mtz")
+        val staging = directory.resolve(".replace-${UUID.randomUUID()}.tmp")
+        try {
+            copyBounded(input, staging, ImportObserver.NONE)
+            val archive = parser.parse(staging)
+            val backupDirectory = historyRoot.resolve("source-backups").resolve(theme.id.value)
+            Files.createDirectories(backupDirectory)
+            Files.copy(source, backupDirectory.resolve("${Instant.now().toEpochMilli()}-${theme.archive.sha256.take(12)}.mtz"))
+            moveAtomically(staging, source)
+            val replaced = theme.copy(archive = archive)
+            writeManifest(directory, replaced)
+            return replaced
+        } finally {
+            Files.deleteIfExists(staging)
+        }
+    }
+
+    /** Marks an existing private item as a full-theme gallery entry without copying it again. */
+    fun setThemeGalleryVisibility(theme: LibraryTheme, visible: Boolean): LibraryTheme {
+        if (theme.includeInThemeGallery == visible) return theme
+        val directory = libraryRoot.resolve(theme.id.value)
+        require(Files.isDirectory(directory)) { "Theme is no longer in the private library" }
+        return theme.copy(includeInThemeGallery = visible).also { writeManifest(directory, it) }
+    }
+
     fun deleteTheme(themeId: ThemeId): Boolean {
         val themeDirectory = libraryRoot.resolve(themeId.value)
         return if (Files.exists(themeDirectory)) {

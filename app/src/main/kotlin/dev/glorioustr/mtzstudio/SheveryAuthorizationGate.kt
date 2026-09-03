@@ -48,7 +48,9 @@ internal fun SheveryAuthorizationGate(runner: PreferredPrivilegedCommandRunner, 
         if (checking) return
         checking = true
         scope.launch {
-            val ready = withContext(Dispatchers.IO) { runCatching { runner.requireRootReady() }.isSuccess }
+            val ready = withContext(Dispatchers.IO) {
+                runner.accessModeSilently() != StudioAccessMode.STANDARD
+            }
             checking = false
             if (ready) {
                 runner.dismissAuthorizationFailure()

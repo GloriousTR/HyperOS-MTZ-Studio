@@ -159,7 +159,13 @@ internal class DeviceThemeImporter(
             }
             val existing = findExisting(record, knownThemes)
             if (existing != null) {
-                rememberOrigin(record, existing)
+                // A Theme Manager backup may contain a lockstyle-only resource. It still belongs
+                // in the Themes gallery after a BAK restore; do not hide it behind the usual
+                // multi-component gallery heuristic.
+                val visibleExisting = library.setThemeGalleryVisibility(existing, true)
+                val existingIndex = knownThemes.indexOfFirst { it.id == existing.id }
+                if (existingIndex >= 0) knownThemes[existingIndex] = visibleExisting
+                rememberOrigin(record, visibleExisting)
                 duplicates++
                 processed++
                 publishProgress()
@@ -175,7 +181,9 @@ internal class DeviceThemeImporter(
                 buildMtz(record, itemDirectory, output)
                 val verified = parser.parse(output)
                 if (verified.components.isEmpty()) error("No recognizable MTZ component was produced")
-                val imported = Files.newInputStream(output).use { library.importTheme(it, record.title) }
+                val imported = Files.newInputStream(output).use {
+                    library.importTheme(it, record.title, includeInThemeGallery = true)
+                }
                 knownThemes += imported
                 rememberOrigin(record, imported)
                 added++

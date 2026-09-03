@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Cloud
@@ -148,12 +149,15 @@ internal enum class StudioDestination(
 internal fun HomeMenuScreen(
     importExpanded: Boolean,
     importing: Boolean,
-    rootlessMode: Boolean = false,
+    accessMode: StudioAccessMode? = null,
     themeManagerInspector: ThemeManagerInspector,
     themeManagerUpdater: RootThemeManagerUpdater,
     openInput: (Uri) -> InputStream?,
     onToggleImport: () -> Unit,
     onAddMtz: () -> Unit,
+    showBakImport: Boolean,
+    bakImporting: Boolean,
+    onAddBak: () -> Unit,
     onNavigate: (StudioDestination) -> Unit,
     showThemeManagerVersionTool: Boolean = true,
     modifier: Modifier = Modifier,
@@ -171,7 +175,7 @@ internal fun HomeMenuScreen(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (rootlessMode) {
+        if (accessMode == StudioAccessMode.STANDARD || accessMode == StudioAccessMode.SHIZUKU) {
             item {
                 StudioCard(Modifier.fillMaxWidth()) {
                     Row(
@@ -182,12 +186,12 @@ internal fun HomeMenuScreen(
                         MenuIconBox(Icons.Filled.Lock, Color(0xFF2E7D32))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(
-                                stringResource(R.string.rootless_mode_title),
+                                stringResource(if (accessMode == StudioAccessMode.SHIZUKU) R.string.shizuku_mode_title else R.string.rootless_mode_title),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Text(
-                                stringResource(R.string.rootless_mode_desc),
+                                stringResource(if (accessMode == StudioAccessMode.SHIZUKU) R.string.shizuku_mode_desc else R.string.rootless_mode_desc),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -227,6 +231,25 @@ internal fun HomeMenuScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        if (showBakImport) {
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    MenuHeader(
+                        icon = Icons.Filled.Restore,
+                        color = Color(0xFFFF8A3D),
+                        title = stringResource(R.string.bak_import_title),
+                        subtitle = if (bakImporting) {
+                            stringResource(R.string.bak_import_inspecting)
+                        } else {
+                            stringResource(R.string.bak_import_desc)
+                        },
+                        expanded = false,
+                        onClick = onAddBak,
+                    )
                 }
             }
         }
@@ -371,6 +394,7 @@ internal fun ThemesScreen(
     nativeCatalogMode: Boolean = false,
     rootlessMode: Boolean = false,
     onApplyTheme: (LibraryTheme) -> Unit,
+    onTranslateTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -442,6 +466,7 @@ internal fun ThemesScreen(
                 isActive = theme.id.value == activeThemeId,
                 onOpenDetails = { detailsTheme = theme },
                 onApplyTheme = onApplyTheme,
+                onTranslateTheme = onTranslateTheme,
                 onDeleteTheme = { pendingDeleteTheme = it },
             )
         }
@@ -456,6 +481,10 @@ internal fun ThemesScreen(
             onApply = {
                 detailsTheme = null
                 onApplyTheme(theme)
+            },
+            onTranslate = {
+                detailsTheme = null
+                onTranslateTheme(theme)
             },
             onDelete = {
                 detailsTheme = null
@@ -2006,6 +2035,7 @@ private fun ThemeGalleryCard(
     isActive: Boolean,
     onOpenDetails: () -> Unit,
     onApplyTheme: (LibraryTheme) -> Unit,
+    onTranslateTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -2053,6 +2083,16 @@ private fun ThemeGalleryCard(
                 Text(stringResource(R.string.action_apply), maxLines = 1)
             }
             OutlinedIconButton(
+                onClick = { onTranslateTheme(theme) },
+                modifier = Modifier.size(44.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Translate,
+                    contentDescription = stringResource(R.string.theme_language_tool_title),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            OutlinedIconButton(
                 onClick = { onDeleteTheme(theme) },
                 modifier = Modifier.size(44.dp),
             ) {
@@ -2072,6 +2112,7 @@ private fun ThemeDetailsDialog(
     isActive: Boolean,
     onDismiss: () -> Unit,
     onApply: () -> Unit,
+    onTranslate: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val title = theme.archive.metadata?.name ?: theme.displayName
@@ -2185,6 +2226,9 @@ private fun ThemeDetailsDialog(
                     ) {
                         Button(onClick = onApply, modifier = Modifier.weight(1f).height(48.dp)) {
                             Text(stringResource(R.string.action_apply))
+                        }
+                        OutlinedButton(onClick = onTranslate, modifier = Modifier.height(48.dp)) {
+                            Text(stringResource(R.string.theme_language_tool_title), maxLines = 1)
                         }
                         OutlinedIconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                             Icon(

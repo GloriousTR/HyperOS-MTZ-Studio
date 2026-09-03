@@ -6,14 +6,19 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
+      publish_release:
+        description: 'Publish a public GitHub release'
+        required: true
+        type: boolean
+        default: false
       tag_name:
-        description: 'Release Tag Name (e.g. v1.0.0)'
+        description: 'Release tag, or signed artifact label for a private test build'
         required: false
-        default: 'v2.3.0'
+        default: 'v2.4.0-preview'
       release_name:
         description: 'Release Title'
         required: false
-        default: 'HyperOS MTZ Studio v2.3.0'
+        default: 'HyperOS MTZ Studio v2.4.0'
 
 permissions:
   contents: write
@@ -74,7 +79,15 @@ jobs:
           sha256sum "MTZ_Studio_${TAG}.apk" > "MTZ_Studio_${TAG}.apk.sha256"
           ls -la
 
+      - name: Upload Signed Test Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MTZ_Studio_${{ steps.release_meta.outputs.tag }}
+          path: release-artifacts/*
+          if-no-files-found: error
+
       - name: Publish GitHub Release
+        if: github.event_name == 'push' || github.event.inputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
