@@ -404,13 +404,16 @@ private fun StudioScreen(
             }.onSuccess { localized ->
                 // Keep a portable copy alongside other Studio-generated MTZ files.
                 MtzPublicExporter.exportToPublicDownloads(context, localized.archive.source, localized.displayName)
-                reload(openThemesAfter = true)
+                loadLibrarySnapshot()
+                destination = StudioDestination.THEMES
                 status = resources.getString(R.string.theme_language_tool_complete)
+                operationError = status
             }.onFailure { error ->
                 status = resources.getString(
                     R.string.theme_language_tool_failed,
                     error.message ?: error::class.simpleName,
                 )
+                operationError = status
             }
             themeOperationRunning = false
         }

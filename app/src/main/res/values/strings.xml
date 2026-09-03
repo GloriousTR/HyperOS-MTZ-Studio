@@ -389,7 +389,7 @@
     <string name="theme_language_tool_title">Theme Language Tool</string>
     <string name="theme_language_tool_desc">Updates Chinese XML text in the selected theme using your device language. Images and lockscreen behavior stay unchanged.</string>
     <string name="theme_language_tool_working">Translating theme text…</string>
-    <string name="theme_language_tool_complete">Selected theme was updated.</string>
+    <string name="theme_language_tool_complete">Supported text was translated in the existing theme. Apply the theme again to see the changes. Text embedded in images and functional expressions stays unchanged.</string>
     <string name="theme_language_tool_failed">Theme text could not be translated: %1$s</string>
     <string name="action_translate">Translate</string>
 </resources>

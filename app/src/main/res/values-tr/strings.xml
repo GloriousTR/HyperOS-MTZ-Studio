@@ -389,7 +389,7 @@
     <string name="theme_language_tool_title">Tema Dil Aracı</string>
     <string name="theme_language_tool_desc">Seçilen temanın Çince XML metinlerini cihaz dilinize göre yerinde günceller. Görseller ve kilit ekranı davranışı değişmez.</string>
     <string name="theme_language_tool_working">Tema metinleri çevriliyor…</string>
-    <string name="theme_language_tool_complete">Seçilen tema güncellendi.</string>
+    <string name="theme_language_tool_complete">Çevrilebilen metinler mevcut temaya kaydedildi. Değişiklikleri görmek için temayı yeniden uygulayın. Görsellere gömülü yazılar ve işlevsel ifadeler değişmez.</string>
     <string name="theme_language_tool_failed">Tema metinleri çevrilemedi: %1$s</string>
     <string name="action_translate">Çeviri</string>
 </resources>
