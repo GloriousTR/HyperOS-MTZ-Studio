@@ -10,6 +10,7 @@ import java.io.OutputStream
 import java.io.StringReader
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -23,15 +24,16 @@ class ThemeTextLocalizer(
     private val maxExpandedBytes: Long = 512L * 1024 * 1024,
     private val maxEntryBytes: Long = 128L * 1024 * 1024,
     private val maxDepth: Int = 4,
+    private val targetLanguage: String = "tr",
 ) {
-    data class Result(val changedFiles: List<String>, val translatedNodes: Int, val skippedFiles: List<String>)
+    data class Result(val changedFiles: List<String>, val translatedNodes: Int, val skippedFiles: List<String>, val unresolvedTexts: List<String> = emptyList())
 
     fun rewrite(source: Path, output: Path, translate: (String) -> String): Result {
         require(source.toAbsolutePath().normalize() != output.toAbsolutePath().normalize())
         val state = State(translate)
         try {
             rewriteZip(source, output, "", 0, state)
-            return Result(state.changed.toList(), state.nodes, state.skipped.toList())
+            return Result(state.changed.toList(), state.nodes, state.skipped.toList(), state.unresolved.toList())
         } catch (error: Throwable) {
             Files.deleteIfExists(output)
             throw error
@@ -45,11 +47,15 @@ class ThemeTextLocalizer(
         val changed = mutableListOf<String>()
         val skipped = mutableListOf<String>()
         val cache = mutableMapOf<String, String>()
+        val unresolved = linkedSetOf<String>()
         fun text(value: String): String {
             if (!CHINESE.containsMatchIn(value)) return value
             check(!Thread.currentThread().isInterrupted) { "Translation interrupted" }
             return cache.getOrPut(value) {
-                translate(value).also { check(it.isNotBlank()) { "Empty translation result" } }
+                translate(value).also {
+                    check(it.isNotBlank()) { "Empty translation result" }
+                    if (CHINESE.containsMatchIn(it)) unresolved += value
+                }
             }
         }
     }
@@ -86,16 +92,26 @@ class ThemeTextLocalizer(
                                     Files.deleteIfExists(rewritten)
                                 }
                             }
-                            name.endsWith(".xml", true) && !name.endsWith("description.xml", true) &&
-                                !name.contains("rights", true) && entry.size in 0..MAX_XML_BYTES -> {
+                            name.endsWith(".xml", true) &&
+                                !name.contains("rights", true) && entry.size in 0..MAX_RESOURCE_BYTES -> {
                                 val bytes = ByteArrayOutputStream()
-                                copyBounded(input, bytes, state, MAX_XML_BYTES)
+                                copyBounded(input, bytes, state, MAX_RESOURCE_BYTES)
                                 val original = bytes.toByteArray()
                                 val replacement = localizeXml(original, path, state)
                                 out.write(replacement)
                             }
+                            name.endsWith(".json", true) &&
+                                !name.contains("rights", true) && entry.size in 0..MAX_RESOURCE_BYTES -> {
+                                val bytes = ByteArrayOutputStream()
+                                copyBounded(input, bytes, state, MAX_RESOURCE_BYTES)
+                                val original = bytes.toByteArray()
+                                val replacement = localizeJson(original, path, state)
+                                out.write(replacement)
+                            }
                             else -> {
-                                if (name.endsWith(".xml", true) && entry.size > MAX_XML_BYTES) state.skipped += path
+                                if ((name.endsWith(".xml", true) || name.endsWith(".json", true)) && entry.size > MAX_RESOURCE_BYTES) {
+                                    state.skipped += path
+                                }
                                 copyBounded(input, out, state)
                             }
                         }
@@ -145,47 +161,55 @@ class ThemeTextLocalizer(
             return bytes
         }
         val before = state.nodes
-        fun visit(node: Node) {
-            if (node is Element) {
-                for (name in DISPLAY_ATTRIBUTES) {
-                    if (!node.hasAttribute(name)) continue
-                    val original = node.getAttribute(name)
-                    val replacement = state.text(original)
-                    if (replacement != original) {
-                        node.setAttribute(name, replacement)
-                        state.nodes++
-                    }
-                }
-                // Only display expressions, never Var/VariableCommand expressions or identifiers.
-                if (node.tagName == "Text" && node.hasAttribute("textExp")) {
-                    val original = node.getAttribute("textExp")
-                    if (UNSAFE_DISPLAY_EXPRESSION.containsMatchIn(original)) {
-                        if (CHINESE.containsMatchIn(original)) state.skipped += "$path#textExp"
-                    } else {
-                        val replacement = STRING_LITERAL.replace(original) { literal ->
-                            CHINESE.replace(literal.value) { fragment ->
-                                state.text(fragment.value).replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"")
-                            }
+        val expressions = MamlTextTranslator(document, targetLanguage, state::text)
+        // Snapshot: localized helper variables inserted during rewriting must not be processed twice.
+        val nodes = document.getElementsByTagName("*").let { all ->
+            (0 until all.length).map { all.item(it) as Element }
+        }
+        for (originalNode in nodes) {
+            var node = originalNode
+            if (node.tagName.equals("DateTime", true)) {
+                val pattern = if (node.hasAttribute("formatExp")) node.getAttribute("formatExp") else MamlTextTranslator.quote(node.getAttribute("format"))
+                if (node.hasAttribute("format") || node.hasAttribute("formatExp")) {
+                    val display = expressions.expression(pattern, node.getAttribute("value").ifBlank { "#time_sys" })
+                    if (CHINESE.containsMatchIn(pattern) || pattern.contains('@')) {
+                        val replacement = document.createElement("Text")
+                        for (i in 0 until node.attributes.length) {
+                            val attribute = node.attributes.item(i)
+                            if (attribute.nodeName !in setOf("format", "formatExp", "value")) replacement.setAttribute(attribute.nodeName, attribute.nodeValue)
                         }
-                        if (replacement != original) {
-                            node.setAttribute("textExp", replacement)
-                            state.nodes++
-                        }
-                    }
-                }
-                if (node.tagName == "string" && (0 until node.childNodes.length).none { node.childNodes.item(it) is Element }) {
-                    val original = node.textContent
-                    val replacement = state.text(original)
-                    if (replacement != original) {
-                        node.textContent = replacement
+                        replacement.setAttribute("textExp", display)
+                        node.parentNode.replaceChild(replacement, node)
+                        node = replacement
                         state.nodes++
                     }
                 }
             }
-            val children = node.childNodes
-            for (i in 0 until children.length) visit(children.item(i))
+            val tag = node.tagName.lowercase(Locale.ROOT)
+            val attrs = node.attributes
+            for (i in 0 until attrs.length) {
+                val attr = attrs.item(i)
+                val name = attr.nodeName.lowercase(Locale.ROOT)
+                val original = attr.nodeValue
+                val replacement = when {
+                    name == "textexp" && tag == "text" -> expressions.expression(original)
+                    name == "format" && tag == "datetime" -> ThemeGlossary.convertDatePattern(original, targetLanguage) ?: original
+                    name in DISPLAY_ATTRIBUTES && tag !in CODE_TAGS -> state.text(original)
+                    name == "default" && tag in setOf("stringinput", "string") -> ThemeGlossary.convertDatePattern(original, targetLanguage) ?: state.text(original)
+                    else -> original
+                }
+                if (replacement != original) {
+                    attr.nodeValue = replacement
+                    state.nodes++
+                }
+            }
+            val leaf = (0 until node.childNodes.length).none { node.childNodes.item(it) is Element }
+            if (leaf && tag in setOf("string", "title", "description", "summary", "label", "p", "span")) {
+                val original = node.textContent
+                val replacement = state.text(original)
+                if (replacement != original) { node.textContent = replacement; state.nodes++ }
+            }
         }
-        visit(document.documentElement)
         if (state.nodes == before) return bytes
         val result = ByteArrayOutputStream()
         TransformerFactory.newInstance().newTransformer().transform(DOMSource(document), StreamResult(result))
@@ -195,11 +219,37 @@ class ThemeTextLocalizer(
         return result.toByteArray()
     }
 
+    private fun localizeJson(bytes: ByteArray, path: String, state: State): ByteArray {
+        val text = bytes.toString(Charsets.UTF_8)
+        if (!CHINESE.containsMatchIn(text)) return bytes
+        var changes = 0
+        // Validate before invoking the translator, so malformed JSON cannot partially consume work.
+        try { JsonDisplayLocalizer(text) { it }.rewrite() } catch (_: IllegalArgumentException) {
+            state.skipped += path
+            return bytes
+        } catch (_: IllegalStateException) {
+            state.skipped += path
+            return bytes
+        }
+        val rewritten = JsonDisplayLocalizer(text) { original ->
+            state.text(original).also { if (it != original) changes++ }
+        }.rewrite()
+        if (changes == 0) return bytes
+        state.nodes += changes
+        state.changed += path
+        return rewritten.toByteArray(Charsets.UTF_8)
+    }
+
     companion object {
-        private const val MAX_XML_BYTES = 2L * 1024 * 1024
+        private const val MAX_RESOURCE_BYTES = 2L * 1024 * 1024
         private val CHINESE = Regex("[\\p{IsHan}]+")
-        private val DISPLAY_ATTRIBUTES = listOf("text", "summary", "title", "description", "hint")
-        private val STRING_LITERAL = Regex("""'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"""")
-        private val UNSAFE_DISPLAY_EXPRESSION = Regex("""(?i)formatDate|formatTime|eqs\s*\(|str\w*\s*\(|[=!]=\s*['"]""")
+        private val DISPLAY_ATTRIBUTES = setOf(
+            "text", "summary", "title", "description", "hint", "label",
+            "contentdescription", "content_description", "placeholder", "preview_text", "subtitle", "message",
+        )
+        private val CODE_TAGS = setOf(
+            "script", "source", "command", "var", "variable", "variablecommand",
+            "action", "intent", "method", "function",
+        )
     }
 }

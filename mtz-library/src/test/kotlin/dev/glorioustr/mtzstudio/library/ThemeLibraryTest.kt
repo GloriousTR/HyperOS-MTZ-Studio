@@ -18,6 +18,20 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class ThemeLibraryTest {
+    @Test fun `translation retains baseline and replaces with an existing source path`() {
+        val library = ThemeLibrary(Files.createTempDirectory("translation-library"))
+        val original = zip("icons" to byteArrayOf(1))
+        val theme = library.importTheme(original.inputStream(), "test")
+        val baseline = library.translationSource(theme)
+        val changed = library.replaceTheme(theme, zip("icons" to byteArrayOf(2)).inputStream())
+        assertTrue(Files.exists(changed.archive.source))
+        library.recordTranslation(changed)
+        kotlin.test.assertContentEquals(original, Files.readAllBytes(library.translationSource(changed)))
+        val edited = zip("icons" to byteArrayOf(3))
+        val other = library.replaceTheme(changed, edited.inputStream())
+        kotlin.test.assertContentEquals(edited, Files.readAllBytes(library.translationSource(other)))
+        assertEquals(baseline, library.translationSource(other))
+    }
     @Test
     fun `imports reloads composes and records provenance in private roots`() {
         val root = Files.createTempDirectory("mtz-library-test")

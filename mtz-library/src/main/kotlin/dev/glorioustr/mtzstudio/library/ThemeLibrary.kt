@@ -158,12 +158,35 @@ class ThemeLibrary internal constructor(
             Files.createDirectories(backupDirectory)
             Files.copy(source, backupDirectory.resolve("${Instant.now().toEpochMilli()}-${theme.archive.sha256.take(12)}.mtz"))
             moveAtomically(staging, source)
-            val replaced = theme.copy(archive = archive)
+            val replaced = theme.copy(archive = archive.copy(source = source))
             writeManifest(directory, replaced)
             return replaced
         } finally {
             Files.deleteIfExists(staging)
         }
+    }
+
+    /** Re-translation starts from the original, unless the user changed the theme in between. */
+    fun translationSource(theme: LibraryTheme): Path {
+        val directory = libraryRoot.resolve(theme.id.value).resolve("translation")
+        Files.createDirectories(directory)
+        val original = directory.resolve("original.mtz")
+        val receipt = directory.resolve("last-output.sha256")
+        val current = parser.parse(theme.archive.source)
+        val known = if (Files.isRegularFile(receipt)) String(Files.readAllBytes(receipt), Charsets.UTF_8).trim() else ""
+        if (!Files.isRegularFile(original) || known != current.sha256) {
+            val staging = directory.resolve("original.tmp")
+            Files.copy(theme.archive.source, staging, StandardCopyOption.REPLACE_EXISTING)
+            moveAtomically(staging, original)
+            Files.write(receipt, current.sha256.toByteArray(Charsets.UTF_8))
+        }
+        return original
+    }
+
+    fun recordTranslation(theme: LibraryTheme) {
+        val directory = libraryRoot.resolve(theme.id.value).resolve("translation")
+        Files.createDirectories(directory)
+        Files.write(directory.resolve("last-output.sha256"), theme.archive.sha256.toByteArray(Charsets.UTF_8))
     }
 
     /** Marks an existing private item as a full-theme gallery entry without copying it again. */

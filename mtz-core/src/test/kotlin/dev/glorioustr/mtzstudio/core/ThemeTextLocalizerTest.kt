@@ -56,15 +56,30 @@ class ThemeTextLocalizerTest {
         assertContentEquals(original, nested(output, "lockscreen"))
     }
 
-    @Test fun `handles encoded XML text and skips comments and unsafe display expressions`() {
+    @Test fun `handles encoded XML text and translates dynamic display expressions`() {
         val xml = """<Root><!-- 中文注释 --><string name="id">&#x58C1;&#x7EB8;</string><Text textExp="formatDate('M月d日',#time)"/><Text textExp="ifelse(eqs(@a,'中文'),'是','否')"/></Root>"""
         val (source, output) = archive(zip("config.xml" to xml.toByteArray()))
         val result = ThemeTextLocalizer().rewrite(source, output) { "Duvar kağıdı" }
-        assertEquals(1, result.translatedNodes)
-        assertEquals(2, result.skippedFiles.size)
+        assertTrue(result.translatedNodes >= 3)
         val rewritten = nested(output, "config.xml").toString(Charsets.UTF_8)
         assertTrue(rewritten.contains("中文注释"))
-        assertTrue(rewritten.contains("M月d日"))
+        assertFalse(rewritten.contains("M月d日"))
+        assertTrue(rewritten.contains("formatDate('MMMM'"))
+        assertTrue(rewritten.contains("eqs(@a,'中文')"))
+    }
+
+    @Test fun `translates description xml and json configuration files`() {
+        val descXml = """<theme><title>经典主题</title><description>精美壁纸</description></theme>"""
+        val configJson = """{"title": "时钟样式", "options": ["简约", "数字"]}"""
+        val (source, output) = archive(zip("description.xml" to descXml.toByteArray(), "config.json" to configJson.toByteArray()))
+        val result = ThemeTextLocalizer().rewrite(source, output) { "Translated" }
+        assertEquals(3, result.translatedNodes)
+        val desc = nested(output, "description.xml").toString(Charsets.UTF_8)
+        assertTrue(desc.contains("<title>Translated</title>"))
+        assertTrue(desc.contains("<description>Translated</description>"))
+        val json = nested(output, "config.json").toString(Charsets.UTF_8)
+        assertTrue(json.contains("\"title\": \"Translated\""))
+        assertTrue(json.contains("\"简约\", \"数字\"")) // Unknown option values may be control IDs.
     }
 
     @Test fun `rejects external entities without changing source`() {
@@ -94,12 +109,27 @@ class ThemeTextLocalizerTest {
     @Test fun `optional real device fixture includes wallpaper settings in nested lockscreen`() {
         val fixture = System.getenv("MTZ_TRANSLATION_FIXTURE") ?: return
         val output = Files.createTempDirectory("real-theme-translation").resolve("output.mtz")
-        val result = ThemeTextLocalizer().rewrite(Path.of(fixture), output) { "Translated" }
+        val unknown = sortedSetOf<String>()
+        val result = ThemeTextLocalizer().rewrite(Path.of(fixture), output) {
+            ThemeGlossary.resolve(it, "tr") ?: "Translated".also { _ -> unknown += it }
+        }
         assertTrue(result.translatedNodes > 100, result.toString())
         assertTrue(result.changedFiles.contains("lockscreen!/advance/manifest.xml"), result.toString())
         val lock = nested(output, "lockscreen")
         val xml = entry(lock, "advance/manifest.xml").toString(Charsets.UTF_8)
         assertFalse(xml.contains("text=\"壁纸设置\""))
         println("Real theme: ${result.translatedNodes} translated nodes, ${result.changedFiles.size} changed XML files")
+        println("Needs model: " + unknown.joinToString("\n"))
+    }
+
+    @Test fun `JSON preserves keys IDs paths and embedded quoted text`() {
+        val json = """{"中文键":"中文值","path":"中文.png","payload":"\"title\":\"中文\"","text":"\u58c1\u7eb8","labels":["中文"]}"""
+        val (source, output) = archive(zip("config.json" to json.toByteArray()))
+        ThemeTextLocalizer().rewrite(source, output) { "Duvar\nkağıdı" }
+        val rewritten = nested(output, "config.json").toString(Charsets.UTF_8)
+        assertTrue(rewritten.contains("\"path\":\"中文.png\""))
+        assertTrue(rewritten.contains("\"中文键\":\"中文值\""))
+        assertTrue(rewritten.contains("\\\"title\\\":\\\"中文\\\""))
+        assertTrue(rewritten.contains("Duvar\\u000akağıdı"))
     }
 }

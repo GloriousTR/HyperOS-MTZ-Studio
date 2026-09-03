@@ -14,8 +14,8 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "2.4.0"
+        versionCode = 30
+        versionName = "3.0.0"
     }
 
     signingConfigs {
@@ -43,9 +43,7 @@ android {
 
     buildTypes {
         debug {
-            // Keeps the installed release and its data untouched while validating new flows by ADB.
-            applicationIdSuffix = ".test"
-            versionNameSuffix = "-test"
+            isDebuggable = true
         }
         release {
             isMinifyEnabled = false

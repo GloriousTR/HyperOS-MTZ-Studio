@@ -5,6 +5,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.TranslatorOptions
+import dev.glorioustr.mtzstudio.core.ThemeGlossary
 import dev.glorioustr.mtzstudio.core.ThemeTextLocalizer
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
@@ -28,7 +29,12 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
             var uniqueTexts = 0
             diagnostics.record("theme_language_tool_started", "İç bileşenler dahil tema metinleri taranıyor",
                 mapOf("sourceTheme" to theme.id.value, "targetLanguage" to target))
-            val result = ThemeTextLocalizer().rewrite(theme.archive.source, output) { text ->
+            val original = library.translationSource(theme)
+            val result = ThemeTextLocalizer(targetLanguage = target).rewrite(original, output) { text ->
+                // 1. High-accuracy domain glossary & pattern resolver (Weather, Battery, Dates, Health, Gestures)
+                ThemeGlossary.resolve(text, target)?.let { return@rewrite it }
+
+                // 2. ML Kit offline neural translation for generic sentences
                 if (!modelReady) {
                     diagnostics.record("theme_language_model_loading", "Yerel çeviri dil modeli hazırlanıyor")
                     Tasks.await(translator.downloadModelIfNeeded(DownloadConditions.Builder().build()), 5, TimeUnit.MINUTES)
@@ -39,13 +45,19 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                 uniqueTexts++
                 if (uniqueTexts % 25 == 0) diagnostics.record("theme_language_progress", "Tema metinleri çevriliyor",
                     mapOf("uniqueTexts" to uniqueTexts))
-                translated
+
+                // 3. Post-processing to eliminate awkward machine translation artifacts
+                val polished = ThemeGlossary.postProcessTranslation(translated, target)
+                text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
             }
             require(result.translatedNodes > 0) { "Desteklenen metinlerde çeviri yapılamadı; tema değiştirilmedi (${result.skippedFiles.size} bölüm atlandı)." }
             val localized = Files.newInputStream(output).use { library.replaceTheme(theme, it) }
+            library.recordTranslation(localized)
             diagnostics.record("theme_language_tool_completed", "Mevcut MTZ iç bileşenleriyle birlikte çevrildi",
                 mapOf("sourceTheme" to theme.id.value, "targetLanguage" to target,
                     "changedFiles" to result.changedFiles.joinToString(), "translatedNodes" to result.translatedNodes,
+                    "unresolvedTextCount" to result.unresolvedTexts.size,
+                    "unresolvedTexts" to result.unresolvedTexts.take(40).joinToString(" | "),
                     "skippedFiles" to result.skippedFiles.distinct().joinToString()))
             return localized
         } catch (error: Throwable) {
