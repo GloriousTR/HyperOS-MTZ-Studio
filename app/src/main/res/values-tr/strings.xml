@@ -48,7 +48,7 @@
     <string name="action_cancel">İptal</string>
     <string name="action_apply">Uygula</string>
     <string name="action_share">Paylaş</string>
-    <string name="action_delete">Kaldır</string>
+    <string name="action_delete">Sil</string>
     <string name="delete_theme_dialog_title">Temayı kaldır?</string>
     <string name="delete_theme_dialog_desc">\"%1$s\" özel kitaplığınızdan kaldırılacak. Bu işlem geri alınamaz.</string>
     <string name="status_theme_removed">\"%1$s\" kitaplıktan kaldırıldı</string>
@@ -370,7 +370,7 @@
     <string name="rootless_restore_notification_title">Son seçtiğiniz MTZ, yeniden başlatma sonrası Xiaomi Temalar içinde açılmaya hazır.</string>
     <string name="rootless_restore_notification_text">%1$s temasını Xiaomi Temalar ile yeniden aç</string>
     <!-- Xiaomi Themes BAK import -->
-    <string name="bak_import_title">BAK İçe Aktar</string>
+    <string name="bak_import_title">BAK Import</string>
     <string name="bak_import_desc">Yalnızca root: Xiaomi Temalar MIUI yedeğini inceler, geri dönüş yedeği oluşturur ve Temalar verisini geri yükler.</string>
     <string name="bak_import_btn_select">Temalar BAK dosyasını seç</string>
     <string name="bak_import_inspecting">BAK inceleniyor…</string>
@@ -391,4 +391,5 @@
     <string name="theme_language_tool_working">Tema metinleri çevriliyor…</string>
     <string name="theme_language_tool_complete">Seçilen tema güncellendi.</string>
     <string name="theme_language_tool_failed">Tema metinleri çevrilemedi: %1$s</string>
+    <string name="action_translate">Çeviri</string>
 </resources>

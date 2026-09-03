@@ -391,4 +391,5 @@
     <string name="theme_language_tool_working">Translating theme text…</string>
     <string name="theme_language_tool_complete">Selected theme was updated.</string>
     <string name="theme_language_tool_failed">Theme text could not be translated: %1$s</string>
+    <string name="action_translate">Translate</string>
 </resources>

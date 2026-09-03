@@ -60,21 +60,29 @@ class ThemeManagerBakImporter(
         val source = shellQuote(archive.source.absolutePath)
         val command = """
             set -eu
+            stage=preflight
+            trap 'rc=${'$'}?; if [ "${'$'}rc" -ne 0 ]; then echo "MTZ_BAK_FAILED stage=${'$'}stage exit=${'$'}rc" >&2; fi' EXIT
             test "${'$'}(id -u)" = 0
             mkdir -p $work/payload $work/rollback
             pm path $PACKAGE_NAME >/dev/null
+            if [ ! -d /data/user/0/$PACKAGE_NAME ]; then echo "Theme Manager data is not visible in this root mount namespace" >&2; exit 41; fi
+            stage=snapshot
             am force-stop $PACKAGE_NAME || true
             if [ -d /data/user/0/$PACKAGE_NAME ]; then tar -cpf $work/rollback/private.tar -C /data/user/0 $PACKAGE_NAME; touch $work/rollback/private.existed; else touch $work/rollback/private.missing; fi
             if [ -d /data/user_de/0/$PACKAGE_NAME ]; then tar -cpf $work/rollback/device.tar -C /data/user_de/0 $PACKAGE_NAME; touch $work/rollback/device.existed; else touch $work/rollback/device.missing; fi
             if [ -d /storage/emulated/0/Android/data/$PACKAGE_NAME ]; then tar -cpf $work/rollback/external.tar -C /storage/emulated/0/Android/data $PACKAGE_NAME; touch $work/rollback/external.existed; else touch $work/rollback/external.missing; fi
             touch $work/rollback/ready
-            dd if=$source ibs=${archive.tarOffset} skip=1 2>/dev/null | tar -xpf - -C $work/payload
+            stage=extract
+            dd if=$source ibs=${archive.tarOffset} skip=1 | tar -xpf - -C $work/payload
             test -f $work/payload/apps/$PACKAGE_NAME/_manifest
+            stage=identity
             identity_path=/data/user/0/$PACKAGE_NAME
             [ -d ${'$'}identity_path ] || identity_path=/data/user_de/0/$PACKAGE_NAME
             test -d ${'$'}identity_path
             uid=${'$'}(stat -c %u ${'$'}identity_path)
             gid=${'$'}(stat -c %g ${'$'}identity_path)
+            stage=restore
+            touch $work/rollback/mutation-started
             rm -rf /data/user/0/$PACKAGE_NAME/files /data/user/0/$PACKAGE_NAME/databases /data/user/0/$PACKAGE_NAME/shared_prefs
             rm -rf /data/user_de/0/$PACKAGE_NAME/shared_prefs
             rm -rf /storage/emulated/0/Android/data/$PACKAGE_NAME/files
@@ -100,8 +108,14 @@ class ThemeManagerBakImporter(
             // A rollback may delete live data only after every pre-restore snapshot completed.
             // This prevents a missing optional directory from turning a failed backup attempt
             // into destructive data loss.
-            runCatching { commandRunner.run(rollbackCommand(work), 120) }
-            diagnostics.record("bak_restore_failed", "Tema Yöneticisi BAK geri yüklemesi başarısız", mapOf("output" to result.output.takeLast(2_000)))
+            val rollback = runCatching { commandRunner.run(rollbackCommand(work), 120) }
+            diagnostics.record("bak_restore_failed", "Tema Yöneticisi BAK geri yüklemesi başarısız", mapOf(
+                "exitCode" to result.exitCode,
+                "channel" to result.authorizationSource,
+                "output" to result.output.takeLast(2_000),
+                "rollbackExitCode" to rollback.getOrNull()?.exitCode,
+                "rollbackOutput" to (rollback.getOrNull()?.output ?: rollback.exceptionOrNull()?.message),
+            ))
             error("BAK geri yüklenemedi: ${result.output.takeLast(500)}")
         }
         diagnostics.record("bak_restore_completed", "Tema Yöneticisi BAK geri yüklemesi tamamlandı", mapOf("name" to archive.displayName))
@@ -176,8 +190,9 @@ class ThemeManagerBakImporter(
     private fun shellQuote(value: String) = "'${value.replace("'", "'\\\"'\\\"'")}'"
 
     private fun rollbackCommand(work: String) = """
+        set -e
         am force-stop $PACKAGE_NAME || true
-        if [ -f $work/rollback/ready ]; then if [ -f $work/rollback/private.existed ]; then rm -rf /data/user/0/$PACKAGE_NAME; tar -xpf $work/rollback/private.tar -C /data/user/0; fi; if [ -f $work/rollback/private.missing ]; then rm -rf /data/user/0/$PACKAGE_NAME; fi; if [ -f $work/rollback/device.existed ]; then rm -rf /data/user_de/0/$PACKAGE_NAME; tar -xpf $work/rollback/device.tar -C /data/user_de/0; fi; if [ -f $work/rollback/device.missing ]; then rm -rf /data/user_de/0/$PACKAGE_NAME; fi; if [ -f $work/rollback/external.existed ]; then rm -rf /storage/emulated/0/Android/data/$PACKAGE_NAME; tar -xpf $work/rollback/external.tar -C /storage/emulated/0/Android/data; fi; if [ -f $work/rollback/external.missing ]; then rm -rf /storage/emulated/0/Android/data/$PACKAGE_NAME; fi; fi
+        if [ -f $work/rollback/ready ] && [ -f $work/rollback/mutation-started ]; then if [ -f $work/rollback/private.existed ]; then rm -rf /data/user/0/$PACKAGE_NAME; tar -xpf $work/rollback/private.tar -C /data/user/0; fi; if [ -f $work/rollback/private.missing ]; then rm -rf /data/user/0/$PACKAGE_NAME; fi; if [ -f $work/rollback/device.existed ]; then rm -rf /data/user_de/0/$PACKAGE_NAME; tar -xpf $work/rollback/device.tar -C /data/user_de/0; fi; if [ -f $work/rollback/device.missing ]; then rm -rf /data/user_de/0/$PACKAGE_NAME; fi; if [ -f $work/rollback/external.existed ]; then rm -rf /storage/emulated/0/Android/data/$PACKAGE_NAME; tar -xpf $work/rollback/external.tar -C /storage/emulated/0/Android/data; fi; if [ -f $work/rollback/external.missing ]; then rm -rf /storage/emulated/0/Android/data/$PACKAGE_NAME; fi; fi
         rm -rf $work
     """.trimIndent().replace("\n", " ; ")
 

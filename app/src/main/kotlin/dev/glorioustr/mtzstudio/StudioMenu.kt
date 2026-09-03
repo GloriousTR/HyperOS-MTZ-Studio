@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -2065,42 +2066,61 @@ private fun ThemeGalleryCard(
         }
         Text(
             theme.archive.metadata?.name ?: theme.displayName,
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenDetails),
             fontWeight = FontWeight.SemiBold,
-            minLines = 2,
-            maxLines = 2,
+            minLines = 1,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        ThemeActionDock(
+            onApply = { onApplyTheme(theme) },
+            onTranslate = { onTranslateTheme(theme) },
+            onDelete = { onDeleteTheme(theme) },
+        )
+    }
+}
+
+@Composable
+private fun ThemeActionDock(
+    onApply: () -> Unit,
+    onTranslate: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column {
             Button(
-                onClick = { onApplyTheme(theme) },
-                modifier = Modifier.weight(1f).height(44.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                onClick = onApply,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(0.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp),
             ) {
-                Text(stringResource(R.string.action_apply), maxLines = 1)
+                Text(stringResource(R.string.action_apply), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            OutlinedIconButton(
-                onClick = { onTranslateTheme(theme) },
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    Icons.Filled.Translate,
-                    contentDescription = stringResource(R.string.theme_language_tool_title),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            OutlinedIconButton(
-                onClick = { onDeleteTheme(theme) },
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.error,
-                )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(
+                    onClick = onTranslate,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(0.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    Text(stringResource(R.string.action_translate), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant))
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(0.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    Text(stringResource(R.string.action_delete), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }
@@ -2219,24 +2239,12 @@ private fun ThemeDetailsDialog(
                     }
                 }
                 item {
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth().padding(20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Button(onClick = onApply, modifier = Modifier.weight(1f).height(48.dp)) {
-                            Text(stringResource(R.string.action_apply))
-                        }
-                        OutlinedButton(onClick = onTranslate, modifier = Modifier.height(48.dp)) {
-                            Text(stringResource(R.string.theme_language_tool_title), maxLines = 1)
-                        }
-                        OutlinedIconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.action_delete),
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        }
+                        ThemeActionDock(onApply = onApply, onTranslate = onTranslate, onDelete = onDelete)
                         TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                     }
                 }

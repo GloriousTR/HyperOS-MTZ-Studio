@@ -35,9 +35,22 @@ fun interface PrivilegedCommandRunner {
 }
 
 class SuPrivilegedCommandRunner : PrivilegedCommandRunner {
+    private val useGlobalMountNamespace: Boolean by lazy {
+        try {
+            val help = BoundedProcessOutput.collect(
+                ProcessBuilder("su", "--help").redirectErrorStream(true).start(), 3,
+            )
+            !help.timedOut && SuCommandPolicy.supportsGlobalMountNamespace(help.output)
+        } catch (error: Exception) {
+            if (error is InterruptedException || error is java.util.concurrent.CancellationException) throw error
+            false
+        }
+    }
+
     override fun run(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
         val process = try {
-            ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+            ProcessBuilder(SuCommandPolicy.arguments(command, useGlobalMountNamespace))
+                .redirectErrorStream(true).start()
         } catch (error: IOException) {
             throw ThemeManagerUpdateException("Root command channel could not be started", error)
         }
@@ -46,7 +59,7 @@ class SuPrivilegedCommandRunner : PrivilegedCommandRunner {
         return PrivilegedCommandResult(
             exitCode = result.exitCode,
             output = result.output,
-            authorizationSource = "Root yöneticisi (su)",
+            authorizationSource = if (useGlobalMountNamespace) "Root yöneticisi (su, global mount namespace)" else "Root yöneticisi (su)",
         )
     }
 }

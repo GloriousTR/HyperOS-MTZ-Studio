@@ -14,7 +14,7 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
+        versionCode = 19
         versionName = "2.4.0"
     }
 
