@@ -54,4 +54,19 @@ class MamlTextTranslatorTest {
         assertTrue(tool.expression("@quality").contains("eqs(@quality,'优'),'Çok iyi'"))
         assertEquals("ifelse(#aqi {= 50,'优','良')", (document.getElementsByTagName("VariableCommand").item(0) as org.w3c.dom.Element).getAttribute("expression"))
     }
+
+    @Test fun `runtime text written in another language is localized without changing the writer`() {
+        val document = doc("""<Root><VariableCommand name="state" type="string" expression="ifelse(#online,'Подключено','Отключено')"/></Root>""")
+        val translations = mapOf("Подключено" to "Connected", "Отключено" to "Disconnected")
+        val tool = MamlTextTranslator(document, "en") { translations[it] ?: it }
+
+        val output = tool.expression("@state")
+
+        assertTrue(output.contains("eqs(@state,'Подключено'),'Connected'"), output)
+        assertTrue(output.contains("eqs(@state,'Отключено'),'Disconnected'"), output)
+        assertEquals(
+            "ifelse(#online,'Подключено','Отключено')",
+            (document.getElementsByTagName("VariableCommand").item(0) as org.w3c.dom.Element).getAttribute("expression"),
+        )
+    }
 }

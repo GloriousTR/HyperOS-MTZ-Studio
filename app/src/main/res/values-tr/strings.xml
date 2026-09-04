@@ -387,7 +387,7 @@
     <string name="shizuku_mode_title">Shizuku modu</string>
     <string name="shizuku_mode_desc">Shizuku kablosuz hata ayıklama ile bağlı. Gelişmiş Xiaomi Temalar köprüsü ve uyumluluk tanıları kullanılabilir; Temalar’ın özel verileri ve BAK geri yükleme yine root gerektirir.</string>
     <string name="theme_language_tool_title">Tema Dil Aracı</string>
-    <string name="theme_language_tool_desc">Seçilen temanın Çince XML metinlerini cihaz dilinize göre yerinde günceller. Görseller ve kilit ekranı davranışı değişmez.</string>
+    <string name="theme_language_tool_desc">Desteklenen kaynak dilleri otomatik algılar ve görünür tema metinlerini uygulama dilinize göre yerinde çevirir. Görseller ve kilit ekranı davranışı değişmez.</string>
     <string name="theme_language_tool_working">Tema metinleri çevriliyor…</string>
     <string name="theme_language_tool_complete">Çevrilebilen metinler mevcut temaya kaydedildi. Değişiklikleri görmek için temayı yeniden uygulayın. Görsellere gömülü yazılar ve işlevsel ifadeler değişmez.</string>
     <string name="theme_language_tool_failed">Tema metinleri çevrilemedi: %1$s</string>

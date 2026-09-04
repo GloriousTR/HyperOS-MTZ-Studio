@@ -101,7 +101,7 @@ internal class MamlTextTranslator(
         if (elements.any { it.tagName == "Variable" && it.getAttribute("name") == name && it.getAttribute("column") == "description" }) {
             candidates += listOf("晴", "晴天", "多云", "阴", "阴天", "少云", "阵雨", "雷阵雨", "雷雨", "小雨", "中雨", "大雨", "暴雨", "大暴雨", "特大暴雨", "雨夹雪", "小雪", "中雪", "大雪", "暴雪", "雾", "霾", "浮尘", "扬沙", "沙尘暴")
         }
-        val mappings = candidates.filter(ThemeGlossary::containsChinese).map { it to translate(it) }.filter { it.first != it.second }
+        val mappings = candidates.map { it to translate(it) }.filter { it.first != it.second }
         if (mappings.isEmpty()) return s
         return "ifelse(" + mappings.joinToString(",") { (from, to) -> "eqs($s,${quote(from)}),${quote(to)}" } + ",$s)"
     }

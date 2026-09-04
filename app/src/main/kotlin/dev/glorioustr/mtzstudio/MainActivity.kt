@@ -400,7 +400,7 @@ private fun StudioScreen(
         scope.launch {
             status = resources.getString(R.string.theme_language_tool_working)
             runCatching {
-                withContext(Dispatchers.IO) { themeLanguageTool.translateChineseTextToSystemLanguage(theme) }
+                withContext(Dispatchers.IO) { themeLanguageTool.translateTextToSystemLanguage(theme) }
             }.onSuccess { localized ->
                 // Keep a portable copy alongside other Studio-generated MTZ files.
                 MtzPublicExporter.exportToPublicDownloads(context, localized.archive.source, localized.displayName)

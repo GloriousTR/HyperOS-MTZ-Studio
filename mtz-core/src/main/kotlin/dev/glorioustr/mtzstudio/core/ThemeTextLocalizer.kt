@@ -25,6 +25,7 @@ class ThemeTextLocalizer(
     private val maxEntryBytes: Long = 128L * 1024 * 1024,
     private val maxDepth: Int = 4,
     private val targetLanguage: String = "tr",
+    private val translateAllDisplayText: Boolean = false,
 ) {
     data class Result(val changedFiles: List<String>, val translatedNodes: Int, val skippedFiles: List<String>, val unresolvedTexts: List<String> = emptyList())
 
@@ -49,7 +50,7 @@ class ThemeTextLocalizer(
         val cache = mutableMapOf<String, String>()
         val unresolved = linkedSetOf<String>()
         fun text(value: String): String {
-            if (!CHINESE.containsMatchIn(value)) return value
+            if (!isTranslationCandidate(value)) return value
             check(!Thread.currentThread().isInterrupted) { "Translation interrupted" }
             return cache.getOrPut(value) {
                 translate(value).also {
@@ -57,6 +58,14 @@ class ThemeTextLocalizer(
                     if (CHINESE.containsMatchIn(it)) unresolved += value
                 }
             }
+        }
+
+        fun isTranslationCandidate(value: String): Boolean {
+            if (!translateAllDisplayText) return CHINESE.containsMatchIn(value)
+            val trimmed = value.trim()
+            if (trimmed.isEmpty() || !LETTER.containsMatchIn(trimmed)) return false
+            if (NON_DISPLAY_VALUE.matches(trimmed)) return false
+            return true
         }
     }
 
@@ -172,7 +181,9 @@ class ThemeTextLocalizer(
                 val pattern = if (node.hasAttribute("formatExp")) node.getAttribute("formatExp") else MamlTextTranslator.quote(node.getAttribute("format"))
                 if (node.hasAttribute("format") || node.hasAttribute("formatExp")) {
                     val display = expressions.expression(pattern, node.getAttribute("value").ifBlank { "#time_sys" })
-                    if (CHINESE.containsMatchIn(pattern) || pattern.contains('@')) {
+                    if (CHINESE.containsMatchIn(pattern) ||
+                        (translateAllDisplayText && containsDateProse(pattern)) || pattern.contains('@')
+                    ) {
                         val replacement = document.createElement("Text")
                         for (i in 0 until node.attributes.length) {
                             val attribute = node.attributes.item(i)
@@ -221,7 +232,6 @@ class ThemeTextLocalizer(
 
     private fun localizeJson(bytes: ByteArray, path: String, state: State): ByteArray {
         val text = bytes.toString(Charsets.UTF_8)
-        if (!CHINESE.containsMatchIn(text)) return bytes
         var changes = 0
         // Validate before invoking the translator, so malformed JSON cannot partially consume work.
         try { JsonDisplayLocalizer(text) { it }.rewrite() } catch (_: IllegalArgumentException) {
@@ -243,6 +253,10 @@ class ThemeTextLocalizer(
     companion object {
         private const val MAX_RESOURCE_BYTES = 2L * 1024 * 1024
         private val CHINESE = Regex("[\\p{IsHan}]+")
+        private val LETTER = Regex("\\p{L}")
+        private val NON_DISPLAY_VALUE = Regex(
+            """(?ix)(?:[a-z][a-z0-9+.-]*://\S+)|(?:[/\\][^\s]+)+|(?:\x23[0-9a-f]{3,8})|(?:-?\d+(?:\.\d+)?(?:dp|sp|px|%)?)""",
+        )
         private val DISPLAY_ATTRIBUTES = setOf(
             "text", "summary", "title", "description", "hint", "label",
             "contentdescription", "content_description", "placeholder", "preview_text", "subtitle", "message",
@@ -251,5 +265,12 @@ class ThemeTextLocalizer(
             "script", "source", "command", "var", "variable", "variablecommand",
             "action", "intent", "method", "function",
         )
+
+        private fun containsDateProse(pattern: String): Boolean {
+            val withoutTokens = pattern
+                .replace(Regex("[yMdEHhmsSaDZzYNe]+"), "")
+                .replace(Regex("['\\s,./:()_-]+"), "")
+            return LETTER.containsMatchIn(withoutTokens)
+        }
     }
 }

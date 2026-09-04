@@ -56,6 +56,30 @@ class ThemeTextLocalizerTest {
         assertContentEquals(original, nested(output, "lockscreen"))
     }
 
+    @Test fun `multilingual mode translates safe display text from different scripts`() {
+        val xml = """<Root><Text text="Customize"/><Text text="Настройки"/><Text text="إعدادات"/><Text text="カスタマイズ"/><Var name="code" expression="'Настройки'"/><Image src="Настройки.png"/></Root>"""
+        val (source, output) = archive(zip("manifest.xml" to xml.toByteArray()))
+        val seen = mutableListOf<String>()
+        val result = ThemeTextLocalizer(translateAllDisplayText = true).rewrite(source, output) {
+            seen += it
+            "localized"
+        }
+        assertEquals(4, result.translatedNodes)
+        assertEquals(listOf("Customize", "Настройки", "إعدادات", "カスタマイズ"), seen)
+        val rewritten = nested(output, "manifest.xml").toString(Charsets.UTF_8)
+        assertTrue(rewritten.contains("expression=\"'Настройки'\""))
+        assertTrue(rewritten.contains("src=\"Настройки.png\""))
+    }
+
+    @Test fun `multilingual mode ignores paths colors numbers and ordinary date token patterns`() {
+        val xml = """<Root><Text text="https://example.com/theme"/><Text text="#AABBCC"/><Text text="24dp"/><DateTime format="dd/MM/yyyy"/></Root>"""
+        val (source, output) = archive(zip("manifest.xml" to xml.toByteArray()))
+        val result = ThemeTextLocalizer(translateAllDisplayText = true).rewrite(source, output) {
+            error("Non-display values must not reach translation")
+        }
+        assertEquals(0, result.translatedNodes)
+    }
+
     @Test fun `handles encoded XML text and translates dynamic display expressions`() {
         val xml = """<Root><!-- 中文注释 --><string name="id">&#x58C1;&#x7EB8;</string><Text textExp="formatDate('M月d日',#time)"/><Text textExp="ifelse(eqs(@a,'中文'),'是','否')"/></Root>"""
         val (source, output) = archive(zip("config.xml" to xml.toByteArray()))

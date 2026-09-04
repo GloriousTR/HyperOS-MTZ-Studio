@@ -14,8 +14,8 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30
-        versionName = "3.0.0"
+        versionCode = 31
+        versionName = "3.1.0"
     }
 
     signingConfigs {
@@ -79,5 +79,6 @@ dependencies {
     // Text-only theme localization. Language models are downloaded by ML Kit only when the
     // user explicitly runs the Theme Language Tool; no theme content is uploaded by Studio.
     implementation("com.google.mlkit:translate:17.0.3")
+    implementation("com.google.mlkit:language-id:17.0.6")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

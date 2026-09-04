@@ -355,7 +355,7 @@
     <string name="shizuku_mode_title">Shizuku mode</string>
     <string name="shizuku_mode_desc">Shizuku is connected with wireless debugging. Advanced Xiaomi Themes hand-off and compatibility diagnostics are available; private Theme Manager data and BAK restore still require root.</string>
     <string name="theme_language_tool_title">Theme Language Tool</string>
-    <string name="theme_language_tool_desc">Creates a new MTZ with Chinese XML text translated to your device language. Images and lockscreen behavior stay unchanged.</string>
+    <string name="theme_language_tool_desc">معاون ماخذ زبانوں کا خودکار طور پر پتہ لگا کر نظر آنے والے تھیم متن کا ایپ کی زبان میں اسی تھیم کے اندر ترجمہ کرتا ہے۔ تصاویر اور لاک اسکرین کا رویہ تبدیل نہیں ہوتا۔</string>
     <string name="theme_language_tool_working">Translating theme text…</string>
     <string name="theme_language_tool_complete">Translated theme added to Themes.</string>
     <string name="theme_language_tool_failed">Theme text could not be translated: %1$s</string>

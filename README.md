@@ -16,9 +16,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.0.0"><strong>Download v3.0.0</strong></a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.1.0"><strong>Download v3.1.0</strong></a>
   ·
-  <a href="docs/release-notes-v3.0.0.md">Release notes</a>
+  <a href="docs/release-notes-v3.1.0.md">Release notes</a>
   ·
   <a href="docs/theme-manager-compatibility.md">Compatibility details</a>
   ·
@@ -46,11 +46,18 @@ Root is not required to import, inspect, preview, organize, personalize, compose
 
 Root remains necessary for reading Xiaomi Themes' private catalog and active font, automatic native import/apply/delete, Theme Manager downgrade, Xposed scope preparation and permanent Global theme protection. ADB-mode Shizuku is intentionally treated as rootless because UID 2000 cannot read Xiaomi's private theme data.
 
-## v3.0.0 highlights
+## v3.1.0 highlights
+
+- **Multilingual Theme Language Tool:** automatically detects supported source languages and translates visible theme text into the active MTZ Studio language. The reviewed Chinese glossary remains the first layer, preserving natural charging, weather, date and customization terminology.
+- **Broader theme-text coverage:** multilingual XML, JSON and safe MAML display expressions are supported, including values written at runtime. Conditions, identifiers, paths, images and executable behavior remain untouched.
+- **Clear Xposed setup:** Vector/LSPosed displays Android System, System Framework and Themes as editable recommended targets. The app does not use a fixed static scope list, so users remain free to adjust the selection.
+- **Better diagnostics:** detected source languages, downloaded model pairs, unsupported fragments and skipped files are recorded in Live Diagnostics.
+
+### v3.0.0 foundations
 
 - **BAK Import:** rooted devices can select a Xiaomi Themes `.bak` archive and let Studio validate, restore and index its contents. Complete themes appear in Themes, while font-only packages are classified under Fonts instead of cluttering the theme gallery.
 - **Three adaptive access modes:** Studio selects root, Shizuku/Shevery or rootless behavior from verified runtime access. The first screen no longer briefly reports rootless mode while privilege discovery is still running.
-- **Theme Language Tool:** translate the selected theme in place while retaining its original source for clean retranslation. Nested MTZ components, XML/JSON display text and safe MAML text expressions are covered.
+- **Multilingual Theme Language Tool:** automatically detect supported source languages and translate the selected theme into the active app language in place while retaining its original source for clean retranslation. Nested MTZ components, XML/JSON display text and safe MAML text expressions are covered.
 - **Natural Turkish theme text:** charging, weather, date and customization terminology use a domain glossary and post-processing instead of raw word-for-word output. Code, predicates and MAML control expressions are preserved.
 - **Cleaner theme actions:** each card uses a single-line ellipsized title, a full-width Apply action and a compact second row for Translate and Delete.
 - **Traceable operations:** BAK restore, localization, composition, import and apply steps report progress and failures through Live Diagnostics.
@@ -83,14 +90,14 @@ Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9
 ## Interface
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio v3.0.0 home screen with MTZ and BAK Import" width="30%">
+  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio v3.1.0 home screen with MTZ and BAK Import" width="30%">
   &nbsp;
-  <img src="docs/screenshots/themes.png" alt="HyperOS MTZ Studio v3.0.0 visual theme library" width="30%">
+  <img src="docs/screenshots/themes.png" alt="HyperOS MTZ Studio v3.1.0 visual theme library" width="30%">
   &nbsp;
-  <img src="docs/screenshots/composer.png" alt="HyperOS MTZ Studio v3.0.0 theme composer" width="30%">
+  <img src="docs/screenshots/composer.png" alt="HyperOS MTZ Studio v3.1.0 theme composer" width="30%">
 </p>
 
-<p align="center"><sub>Current v3.0.0 interface captured on a real device. Font-only BAK/MTZ resources are shown under Fonts; complete themes stay in the Themes gallery.</sub></p>
+<p align="center"><sub>Current v3.1.0 interface. Font-only BAK/MTZ resources are shown under Fonts; complete themes stay in the Themes gallery.</sub></p>
 
 - Material You and Liquid Glass presentation styles.
 - System, Light, Dark and AMOLED color modes.
@@ -106,7 +113,7 @@ Modern host surfaces were inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9
 - Keep imported and generated themes in the app-private library.
 - Browse themes through real home-screen previews with a full-width Apply action plus compact Translate and Delete controls.
 - Restore supported Xiaomi Themes `.bak` archives on rooted devices through the dedicated **BAK Import** card. Font-only results are automatically routed to Fonts.
-- Translate supported visible theme text in place with the **Theme Language Tool**; the original archive is retained internally so changing language does not compound an earlier machine translation.
+- Automatically detect supported source languages and translate visible theme text in place with the **Theme Language Tool**. The active app language is used as the target, and the original archive is retained internally so changing language does not compound an earlier machine translation. Reviewed Chinese terminology remains the first translation layer before the generic on-device model.
 - Export generated MTZ files to `Downloads/MTZ Studio` and create a restorable library backup.
 - On compatible rooted modern builds, import selected Xiaomi Theme Manager themes or explicitly request a guarded full-library reconstruction.
 - Without root, retain the complete local editor and hand exported MTZ files to any public import surface Xiaomi Themes exposes.
@@ -136,7 +143,7 @@ Live Diagnostics keeps a bounded private journal and displays the latest 200 eve
 
 ## Compatibility and requirements
 
-| Xiaomi Themes version | v3.0.0 status | Notes |
+| Xiaomi Themes version | v3.1.0 status | Notes |
 | --- | --- | --- |
 | `2.15.5.46` | Supported legacy path | Imports an MTZ as an independent local theme; this is the recommended legacy version. |
 | `3.0.5.6` | Supported Global path | Uses the device-verified legacy tester contract. |
@@ -149,21 +156,23 @@ The automatic modern provider requires:
 
 1. Root access.
 2. An enabled Vector or LSPosed-compatible Xposed environment.
-3. Runtime scope approval for `com.android.thememanager` only. The APK does not publish a fixed
-   Xposed scope list, so Vector/LSPosed will not lock the scope screen with a “static scope” notice.
+3. Vector/LSPosed scope approval. The manager displays **Android System** (`android`),
+   **System Framework** (`system`) and **Themes** (`com.android.thememanager`) as the app's
+   editable recommended targets. The APK does not publish a fixed libxposed `scope.list`, so the
+   scope screen remains user-editable and must not show the “static scope” lock.
 
 Without these requirements the app automatically selects its rootless local workspace; MTZ creation and library features remain available.
 
-Global Theme Protection and the redundant `system` scope are hidden on modern builds because the modern Theme Manager/module path already provides its own theme persistence behavior. Legacy Global builds request `system` and `com.android.thememanager` at runtime only when Global Theme Protection is enabled. MTZ Studio does not install Xiaomi Theme Manager modules, silently change store-update settings or modify root-module mounts.
+Global Theme Protection remains hidden on modern builds because the modern Theme Manager/module path already provides its own theme persistence behavior. The complete cross-version recommendation remains visible in Vector/LSPosed so users do not have to guess which system entries are intended. MTZ Studio does not install Xiaomi Theme Manager modules, silently change store-update settings or modify root-module mounts.
 
 For the complete decision flow, tested surfaces and downgrade safety boundary, see [Theme Manager compatibility](docs/theme-manager-compatibility.md).
 
 ## Install or upgrade
 
-1. Download `MTZ_Studio_v3.0.0.apk` and its `.sha256` file from the [v3.0.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.0.0).
+1. Download `MTZ_Studio_v3.1.0.apk` and its `.sha256` file from the [v3.1.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.1.0).
 2. Back up the Studio library before replacing an older installation.
 3. Install the APK, then allow the app to detect the active Xiaomi Themes provider.
-4. On modern builds, approve the `com.android.thememanager` Xposed scope and reboot if your framework requires it.
+4. In Vector/LSPosed, review the recommended Android System, System Framework and Themes scopes, then reboot if your framework requires it.
 
 > [!IMPORTANT]
 > Releases up to v2.0.0 were produced with an ephemeral CI debug certificate. Android may therefore reject an in-place update to v2.2.0. If you see a signature conflict, back up the Studio library, uninstall the old APK, install v2.2.0 and restore the backup. v2.1.0 and later releases use the same stable signing key, so v2.1.0 can update normally.
@@ -188,7 +197,7 @@ Additional technical documentation:
 - [Threat model](docs/threat-model.md)
 - [Localization and language review](docs/localization.md)
 - [Theme Language Tool design and safety](docs/theme-language-translation.md)
-- [v3.0.0 release notes](docs/release-notes-v3.0.0.md)
+- [v3.1.0 release notes](docs/release-notes-v3.1.0.md)
 
 ## Build from source
 

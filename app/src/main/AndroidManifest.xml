@@ -32,6 +32,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.HyperOSMtzStudio">
+        <!-- Recommended Xposed targets. This is intentionally editable manager metadata,
+             not a libxposed static scope.list, so Vector/LSPosed must not lock the list. -->
+        <meta-data
+            android:name="xposedscope"
+            android:resource="@array/xposed_recommended_scope" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

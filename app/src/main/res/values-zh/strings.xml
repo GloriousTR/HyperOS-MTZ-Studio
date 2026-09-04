@@ -355,7 +355,7 @@
     <string name="shizuku_mode_title">Shizuku mode</string>
     <string name="shizuku_mode_desc">Shizuku is connected with wireless debugging. Advanced Xiaomi Themes hand-off and compatibility diagnostics are available; private Theme Manager data and BAK restore still require root.</string>
     <string name="theme_language_tool_title">主题语言工具</string>
-    <string name="theme_language_tool_desc">创建一个新的 MTZ，将中文 XML 文本翻译为设备语言；图片和锁屏行为保持不变。</string>
+    <string name="theme_language_tool_desc">自动识别支持的源语言，并将可见主题文本原位翻译为应用语言；图片和锁屏行为保持不变。</string>
     <string name="theme_language_tool_working">正在翻译主题文本…</string>
     <string name="theme_language_tool_complete">已将翻译后的主题添加到主题。</string>
     <string name="theme_language_tool_failed">无法翻译主题文本：%1$s</string>
