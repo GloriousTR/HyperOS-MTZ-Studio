@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
                     shareMtz = { share(it, "application/zip", "Export MTZ") },
                     shareDiagnostics = { share(it, "text/plain", "Export diagnostics") },
                     shareThemeManagerApk = { share(it, "application/vnd.android.package-archive", "Export Xiaomi Themes APK") },
+                    openAppShareForThemesExport = ::openAppShareForThemesExport,
                     appearance = appearance,
                     onAppearanceChange = { selected ->
                         appearanceStore.save(selected)
@@ -183,6 +184,20 @@ class MainActivity : ComponentActivity() {
         }
         startActivity(Intent.createChooser(intent, chooserTitle))
     }
+
+    private fun openAppShareForThemesExport() {
+        val appShare = packageManager.getLaunchIntentForPackage("com.software41.appshare")
+        if (appShare != null) {
+            startActivity(appShare)
+        } else {
+            startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=com.software41.appshare"),
+                ),
+            )
+        }
+    }
 }
 
 internal data class UiSelection(
@@ -212,6 +227,7 @@ private fun StudioScreen(
     shareMtz: (Path) -> Unit,
     shareDiagnostics: (Path) -> Unit,
     shareThemeManagerApk: (Path) -> Unit,
+    openAppShareForThemesExport: () -> Unit,
     appearance: AppAppearance,
     onAppearanceChange: (AppAppearance) -> Unit,
     contentStyle: AppContentStyle,
@@ -1347,6 +1363,7 @@ private fun StudioScreen(
                 recorder = diagnostics,
                 shareDiagnostics = shareDiagnostics,
                 shareThemeManagerApk = shareThemeManagerApk,
+                openAppShareForThemesExport = openAppShareForThemesExport,
                 modifier = contentModifier,
             )
             destination == StudioDestination.BACKUP -> BackupRestoreScreen(

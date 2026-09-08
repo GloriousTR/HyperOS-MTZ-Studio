@@ -34,6 +34,7 @@ internal fun LiveDiagnosticsCard(
     recorder: LiveDiagnosticsRecorder,
     shareDiagnostics: (Path) -> Unit,
     shareThemeManagerApk: (Path) -> Unit,
+    openAppShareForThemesExport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -118,7 +119,15 @@ internal fun LiveDiagnosticsCard(
                         scope.launch {
                             runCatching { withContext(Dispatchers.IO) { recorder.exportInstalledThemeManagerApk() } }
                                 .onSuccess(shareThemeManagerApk)
-                                .onFailure { actionStatus = resources.getString(R.string.diag_themes_apk_export_failed, it.message ?: "") }
+                                .onFailure {
+                                    recorder.record(
+                                        "themes_apk_export_appshare_fallback",
+                                        "Rootsuz APK kopyası açılamadı; App Share dışa aktarma akışına yönlendiriliyor",
+                                        error = it,
+                                    )
+                                    actionStatus = resources.getString(R.string.diag_themes_apk_export_failed, it.message ?: "")
+                                    openAppShareForThemesExport()
+                                }
                         }
                     },
                 ) { Text(stringResource(R.string.btn_export_themes_apk)) }
