@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.util.Locale
 import java.util.zip.ZipException
 import java.util.zip.ZipFile
+import java.io.InputStream
 
 class MtzParser(private val limits: MtzSecurityLimits = MtzSecurityLimits()) {
     fun parse(source: Path): MtzArchive {
@@ -77,7 +78,13 @@ class MtzParser(private val limits: MtzSecurityLimits = MtzSecurityLimits()) {
         val metadata = metadataEntry?.let { info ->
             if (info.expandedBytes > limits.maxMetadataBytes) fail(UnsafeMtzException.Reason.METADATA_TOO_LARGE, "description.xml is too large")
             val native = zip.getEntry(info.path) ?: nativeEntries.first { it.name.equals(info.path, ignoreCase = true) }
-            val bytes = zip.getInputStream(native).use { it.readNBytes((limits.maxMetadataBytes + 1).toInt()) }
+            // java.io.InputStream.readNBytes is a Java 9 API, but it is not available on
+            // every Android runtime we support.  Calling it on affected Android 14 builds
+            // aborts an otherwise valid import with NoSuchMethodError.  Keep the one-byte
+            // overflow check while using the portable InputStream.read overload instead.
+            val bytes = zip.getInputStream(native).use {
+                readAtMost(it, (limits.maxMetadataBytes + 1).toInt())
+            }
             if (bytes.size > limits.maxMetadataBytes) fail(UnsafeMtzException.Reason.METADATA_TOO_LARGE, "description.xml is too large")
             DescriptionXmlParser.parse(bytes)
         }
@@ -107,6 +114,18 @@ class MtzParser(private val limits: MtzSecurityLimits = MtzSecurityLimits()) {
             "Entry exceeds expanded-size limit: $path",
         )
         return total + amount
+    }
+
+    private fun readAtMost(input: InputStream, maximumBytes: Int): ByteArray {
+        val bytes = ByteArray(maximumBytes)
+        var offset = 0
+        while (offset < bytes.size) {
+            val read = input.read(bytes, offset, bytes.size - offset)
+            if (read < 0) break
+            if (read == 0) continue
+            offset += read
+        }
+        return bytes.copyOf(offset)
     }
 
     private fun isRightsPath(path: String): Boolean {
