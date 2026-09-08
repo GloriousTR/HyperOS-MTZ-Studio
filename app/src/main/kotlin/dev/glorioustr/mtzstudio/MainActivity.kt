@@ -530,6 +530,18 @@ private fun StudioScreen(
                     )
                 }
 
+                ThemeApplyProtocol.ROOTLESS_FILE_MANAGER_HANDOFF -> {
+                    diagnostics.record(
+                        "rootless_file_manager_returned",
+                        "Dosya Yöneticisi MTZ aktarımından uygulamaya dönüldü; Temalar sonucu dış uygulama tarafından yönetilir",
+                        mapOf("theme" to prepared.themeName),
+                    )
+                    status = resources.getString(
+                        R.string.status_manual_import_ready,
+                        prepared.manualImportPath.orEmpty(),
+                    )
+                }
+
                 ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER -> {
                     diagnostics.record(
                         "rootless_legacy_apply_unverified",
@@ -632,13 +644,15 @@ private fun StudioScreen(
                 }
             }.onSuccess { prepared ->
                 if (prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT ||
+                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_FILE_MANAGER_HANDOFF ||
                     prepared.protocol == ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER ||
                     prepared.protocol == ThemeApplyProtocol.ROOTLESS_BACKUP_RESTORE
                 ) {
                     RootlessRestoreAssistant.remember(context, prepared)
                 }
                 if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT ||
-                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT
+                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT ||
+                    prepared.protocol == ThemeApplyProtocol.ROOTLESS_FILE_MANAGER_HANDOFF
                 ) {
                     status = resources.getString(
                         R.string.status_manual_import_ready,

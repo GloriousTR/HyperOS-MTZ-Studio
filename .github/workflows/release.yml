@@ -14,11 +14,11 @@ on:
       tag_name:
         description: 'Release tag, or signed artifact label for a private test build'
         required: false
-        default: 'v3.2.1-test2'
+        default: 'v3.2.1-test3'
       release_name:
         description: 'Release Title'
         required: false
-        default: 'HyperOS MTZ Studio v3.2.1 Test 2'
+        default: 'HyperOS MTZ Studio v3.2.1 Test 3'
 
 permissions:
   contents: write

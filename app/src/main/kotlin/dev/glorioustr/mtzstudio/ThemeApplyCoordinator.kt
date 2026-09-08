@@ -29,6 +29,7 @@ enum class ThemeApplyProtocol {
     MODERN_THEME_MANAGER_BRIDGE,
     MODERN_THEME_MANAGER_MANUAL_IMPORT,
     ROOTLESS_MANUAL_IMPORT,
+    ROOTLESS_FILE_MANAGER_HANDOFF,
     ROOTLESS_LEGACY_TESTER,
     ROOTLESS_BACKUP_RESTORE,
 }
@@ -143,7 +144,7 @@ class ThemeApplyCoordinator(
             protocol = if (legacyIntent != null) {
                 ThemeApplyProtocol.ROOTLESS_LEGACY_TESTER
             } else {
-                ThemeApplyProtocol.ROOTLESS_MANUAL_IMPORT
+                ThemeApplyProtocol.ROOTLESS_FILE_MANAGER_HANDOFF
             },
             manualImportPath = publicFile.absolutePath,
         )
@@ -294,13 +295,37 @@ class ThemeApplyCoordinator(
             }
         }
 
+        // These Global branches removed their former public Themes import activity.  Xiaomi File
+        // Manager is installed on the supported ROM families and can receive a public MTZ URI,
+        // then hand it to the version-specific Themes importer.  Do not restrict this intent to
+        // Themes: that restriction is exactly what left 2.15.6.12 and 3.0.5.19 at the launcher.
+        val fileManagerIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(sourceUri, "application/vnd.miui.mtz")
+            clipData = ClipData.newRawUri("MTZ", sourceUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val fileManagerTargets = context.packageManager.queryIntentActivities(fileManagerIntent, 0)
+            .filter { it.activityInfo.packageName != THEME_MANAGER_PACKAGE }
+        if (fileManagerTargets.isNotEmpty()) {
+            diagnostics.record(
+                "rootless_file_manager_handoff",
+                "Temalar bu sürümde dış MTZ içe aktarmayı ilan etmiyor; MTZ Dosya Yöneticisi aktarımına hazırlanıyor",
+                mapOf(
+                    "version" to installedThemeManagerVersion(),
+                    "targets" to fileManagerTargets.joinToString { it.activityInfo.packageName },
+                ),
+            )
+            return Intent.createChooser(fileManagerIntent, "MTZ Import")
+        }
+
         diagnostics.record(
             "rootless_public_file_handoff_unavailable",
-            "Bu Temalar sürümü dış MTZ dosyası için ilan edilmiş bir içe aktarma etkinliği sunmuyor; Temalar ana ekranı açılacak",
+            "Bu Temalar sürümü dış MTZ dosyası için ilan edilmiş bir içe aktarma etkinliği sunmuyor; MTZ Dosya Yöneticisi klasöründe hazır bırakıldı",
             mapOf("version" to installedThemeManagerVersion()),
         )
-        return checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
-            "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
+        return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/vnd.miui.mtz"
         }
     }
 
