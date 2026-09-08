@@ -130,6 +130,9 @@ class RootlessRestoreBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        if (context.getSharedPreferences("theme-persistence", Context.MODE_PRIVATE).getBoolean("enabled", false)) {
+            runCatching { ThemePersistenceGuardService.start(context.applicationContext) }
+        }
         RootlessRestoreAssistant.notifyAfterRestart(context.applicationContext, action)
     }
 }

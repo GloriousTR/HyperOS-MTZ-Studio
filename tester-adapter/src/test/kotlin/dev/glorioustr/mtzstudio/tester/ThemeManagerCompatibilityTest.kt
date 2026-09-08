@@ -98,6 +98,18 @@ class ThemeManagerCompatibilityTest {
     }
 
     @Test
+    fun `restored local request matches zyper contract`() {
+        val path = "/storage/emulated/0/Android/data/com.android.thememanager/files/MIUI/theme/Test.mtz"
+        val request = ThemeManagerContract.localRestoredThemeRequest(path)
+
+        assertEquals("", request.action)
+        assertEquals("com.android.thememanager.ApplyThemeForScreenshot", request.componentClassName)
+        assertEquals(path, request.stringExtras["theme_file_path"])
+        assertEquals("com.android.thememanager", request.stringExtras["api_called_from"])
+        assertTrue(request.longExtras.isEmpty())
+    }
+
+    @Test
     fun `root command stages verified apk in a fixed temporary namespace and cleans it`() {
         val command = RootInstallCommand.forStagedApk(
             "/data/user/0/dev.glorioustr.mtzstudio/cache/theme-manager-update/themes-id.apk",

@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ColorLens
@@ -141,6 +142,7 @@ internal enum class StudioDestination(
     OTHER(R.string.dest_other, ComponentCategory.OTHER),
     PERSONALIZE(R.string.dest_personalize),
     APPEARANCE(R.string.dest_appearance),
+    AI_TRANSLATION(R.string.theme_language_tool_title),
     BACKUP(R.string.dest_backup),
     DIAGNOSTICS(R.string.dest_diagnostics),
     THEME_PROTECTION(R.string.dest_theme_protection),
@@ -282,6 +284,12 @@ internal fun StudioOverlayMenu(
             icon = Icons.Filled.Palette,
             color = Color(0xFF5C6BC0),
             descriptionRes = R.string.overlay_appearance_desc,
+        ),
+        OverlayMenuItem(
+            destination = StudioDestination.AI_TRANSLATION,
+            icon = Icons.Filled.AutoFixHigh,
+            color = Color(0xFFFF8A3D),
+            descriptionRes = R.string.theme_language_tool_desc,
         ),
         OverlayMenuItem(
             destination = StudioDestination.BACKUP,

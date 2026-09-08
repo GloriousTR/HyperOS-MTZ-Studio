@@ -354,7 +354,7 @@
     <string name="rootless_mode_title">Rootsuz mod</string>
     <string name="rootless_mode_desc">Yerel MTZ içe aktarma, önizleme, kişiselleştirme, oluşturma, dışa aktarma ve yedekleme kullanılabilir. Uygulama işlemi Xiaomi Temalar uygulamasına devredilir ve elle içe aktarma gerekebilir.</string>
     <string name="rootless_apply_dialog_title">Xiaomi Temalar ile içe aktar</string>
-    <string name="rootless_apply_dialog_desc">\"%1$s\", İndirilenler/MTZ Studio klasörüne kaydedilecek. Elle içe aktarıp uygulayabilmen için Xiaomi Temalar açılacak. Kalıcı Global tema koruması root gerektirir.</string>
+    <string name="rootless_apply_dialog_desc">\"%1$s\" güvenli kopya olarak İndirilenler/MTZ Studio’ya kaydedilecek. Shizuku/Shevery hazırsa Tema kitaplığına doğrudan aktarılacak; ardından Xiaomi’nin uyumluluk uygulama ekranı açılacak ve rootsuz tema koruması etkinleşecek.</string>
     <string name="diag_themes_apk_desc">Root erişimiyle kurulu Xiaomi Temalar temel APK’sını dışa aktarır; paylaşmadan önce paket adı, sürüm ve SHA-256 doğrulanır. Dosya otomatik olarak gönderilmez veya yüklenmez.</string>
     <string name="btn_export_themes_apk">Xiaomi Temalar APK’sını dışa aktar</string>
     <string name="diag_themes_apk_export_failed">Xiaomi Temalar APK’sı dışa aktarılamadı: %1$s</string>
@@ -370,8 +370,8 @@
     <string name="rootless_restore_notification_title">Son seçtiğiniz MTZ, yeniden başlatma sonrası Xiaomi Temalar içinde açılmaya hazır.</string>
     <string name="rootless_restore_notification_text">%1$s temasını Xiaomi Temalar ile yeniden aç</string>
     <!-- Xiaomi Themes BAK import -->
-    <string name="bak_import_title">BAK Import</string>
-    <string name="bak_import_desc">Yalnızca root: Xiaomi Temalar MIUI yedeğini inceler, geri dönüş yedeği oluşturur ve Temalar verisini geri yükler.</string>
+    <string name="bak_import_title">BAK Converter</string>
+    <string name="bak_import_desc">BAK içindeki temaları Xiaomi Temalar verilerine dokunmadan doğrudan MTZ’ye dönüştürür ve Studio kitaplığına ekler.</string>
     <string name="bak_import_btn_select">Temalar BAK dosyasını seç</string>
     <string name="bak_import_inspecting">BAK inceleniyor…</string>
     <string name="bak_import_failed">BAK okunamadı: %1$s</string>
@@ -379,13 +379,13 @@
     <string name="bak_restore_desc">%1$s, Tema Yöneticisine ait %2$d yedek girdisi içeriyor. Geri yükleme öncesinde mevcut verinin anlık görüntüsü alınır.</string>
     <string name="bak_restore_versions">Yedek sürüm kodu: %1$d · Cihaz sürüm kodu: %2$d</string>
     <string name="bak_restore_mismatch_ack">Bu yedek farklı bir Tema Yöneticisi sürümünden geliyor. Başarısız olabileceğini ve geri dönüş yedeğinin gerekebileceğini anlıyorum.</string>
-    <string name="bak_restore_working">Tema Yöneticisi yedeği geri yükleniyor…</string>
-    <string name="bak_restore_confirm">Yedeği geri yükle</string>
+    <string name="bak_restore_working">BAK temaları MTZ’ye dönüştürülüyor…</string>
+    <string name="bak_restore_confirm">MTZ’ye dönüştür</string>
     <string name="bak_restore_root_required">BAK geri yükleme için root erişimi gerekli.</string>
-    <string name="bak_restore_success">Tema Yöneticisi yedeği geri yüklendi.</string>
-    <string name="bak_restore_failed">BAK geri yüklemesi başarısız: %1$s</string>
+    <string name="bak_restore_success">BAK temaları MTZ olarak Studio kitaplığına eklendi.</string>
+    <string name="bak_restore_failed">BAK, MTZ’ye dönüştürülemedi: %1$s</string>
     <string name="shizuku_mode_title">Shizuku modu</string>
-    <string name="shizuku_mode_desc">Shizuku kablosuz hata ayıklama ile bağlı. Gelişmiş Xiaomi Temalar köprüsü ve uyumluluk tanıları kullanılabilir; Temalar’ın özel verileri ve BAK geri yükleme yine root gerektirir.</string>
+    <string name="shizuku_mode_desc">Shizuku/Shevery bağlı. Gelişmiş Xiaomi Temalar geçişi ve tanılama kullanılabilir; BAK dosyaları Xiaomi Temalar verilerine dokunmadan MTZ’ye dönüştürülebilir.</string>
     <string name="theme_language_tool_title">Tema Dil Aracı</string>
     <string name="theme_language_tool_desc">Desteklenen kaynak dilleri otomatik algılar ve görünür tema metinlerini uygulama dilinize göre yerinde çevirir. Görseller ve kilit ekranı davranışı değişmez.</string>
     <string name="theme_language_tool_working">Tema metinleri çevriliyor…</string>

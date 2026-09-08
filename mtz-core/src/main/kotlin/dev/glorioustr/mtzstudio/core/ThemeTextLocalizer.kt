@@ -22,10 +22,12 @@ import javax.xml.transform.stream.StreamResult
 /** Text-only rewrite. Nested components are identified by ZIP magic, not file extensions. */
 class ThemeTextLocalizer(
     private val maxExpandedBytes: Long = 512L * 1024 * 1024,
-    private val maxEntryBytes: Long = 128L * 1024 * 1024,
+    private val maxEntryBytes: Long = 256L * 1024 * 1024,
+    private val maxPreservedEntryBytes: Long = 512L * 1024 * 1024,
     private val maxDepth: Int = 4,
     private val targetLanguage: String = "tr",
     private val translateAllDisplayText: Boolean = false,
+    private val shouldTranslate: ((String) -> Boolean)? = null,
 ) {
     data class Result(val changedFiles: List<String>, val translatedNodes: Int, val skippedFiles: List<String>, val unresolvedTexts: List<String> = emptyList())
 
@@ -41,7 +43,16 @@ class ThemeTextLocalizer(
         }
     }
 
-    private inner class State(val translate: (String) -> String) {
+    /** Scans only nested packages and small textual resources; large images are never copied. */
+    fun collectCandidates(source: Path): Set<String> {
+        require(Files.exists(source) && Files.isRegularFile(source)) { "Theme archive not found" }
+        val candidates = linkedSetOf<String>()
+        val state = State({ value -> value.trim().takeIf(String::isNotBlank)?.let(candidates::add); value }, collectOnly = true)
+        scanZip(source, "", 0, state)
+        return candidates
+    }
+
+    private inner class State(val translate: (String) -> String, val collectOnly: Boolean = false) {
         var expanded = 0L
         var entries = 0
         var nodes = 0
@@ -61,11 +72,50 @@ class ThemeTextLocalizer(
         }
 
         fun isTranslationCandidate(value: String): Boolean {
+            shouldTranslate?.let { return it(value) }
             if (!translateAllDisplayText) return CHINESE.containsMatchIn(value)
             val trimmed = value.trim()
             if (trimmed.isEmpty() || !LETTER.containsMatchIn(trimmed)) return false
             if (NON_DISPLAY_VALUE.matches(trimmed)) return false
             return true
+        }
+    }
+
+    private fun scanZip(source: Path, prefix: String, depth: Int, state: State) {
+        check(depth <= maxDepth) { "Theme archive nesting limit exceeded" }
+        ZipFile(source.toFile()).use { zip ->
+            val names = hashSetOf<String>()
+            zip.entries().asSequence().forEach { entry ->
+                check(++state.entries <= 20_000) { "Theme archive entry limit exceeded" }
+                val name = SafeArchivePath.normalize(entry.name, entry.isDirectory)
+                check(names.add(name)) { "Duplicate archive entry: $name" }
+                if (entry.isDirectory) return@forEach
+                val path = "$prefix$name"
+                if (isOpaqueComponent(name, depth) || entry.size > maxEntryBytes) { state.skipped += path; return@forEach }
+                zip.getInputStream(entry).buffered().use { input ->
+                    input.mark(4)
+                    val magic = ByteArray(4)
+                    val count = input.read(magic)
+                    input.reset()
+                    when {
+                        count == 4 && magic.contentEquals(byteArrayOf(80, 75, 3, 4)) -> {
+                            val temp = Files.createTempFile(source.toAbsolutePath().parent, ".translation-scan-", ".zip")
+                            try {
+                                Files.newOutputStream(temp).use { copyBounded(input, it, state) }
+                                scanZip(temp, "$path!/", depth + 1, state)
+                            } finally { Files.deleteIfExists(temp) }
+                        }
+                        name.endsWith(".xml", true) && !name.contains("rights", true) && entry.size in 0..MAX_RESOURCE_BYTES -> {
+                            val bytes = ByteArrayOutputStream(); copyBounded(input, bytes, state, MAX_RESOURCE_BYTES)
+                            localizeXml(bytes.toByteArray(), path, state)
+                        }
+                        name.endsWith(".json", true) && !name.contains("rights", true) && entry.size in 0..MAX_RESOURCE_BYTES -> {
+                            val bytes = ByteArrayOutputStream(); copyBounded(input, bytes, state, MAX_RESOURCE_BYTES)
+                            localizeJson(bytes.toByteArray(), path, state)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -78,10 +128,16 @@ class ThemeTextLocalizer(
                     check(++state.entries <= 20_000) { "Theme archive entry limit exceeded" }
                     val name = SafeArchivePath.normalize(entry.name, entry.isDirectory)
                     check(names.add(name)) { "Duplicate archive entry: $name" }
-                    check(entry.size <= maxEntryBytes) { "Theme entry too large: $name" }
                     val path = "$prefix$name"
                     out.putNextEntry(ZipEntry(entry.name).apply { time = entry.time })
                     if (!entry.isDirectory) zip.getInputStream(entry).buffered().use { input ->
+                        if (isOpaqueComponent(name, depth) || entry.size > maxEntryBytes) {
+                            check(entry.size <= maxPreservedEntryBytes) { "Theme entry too large: $name" }
+                            state.skipped += path
+                            copyBounded(input, out, state, maxPreservedEntryBytes)
+                            out.closeEntry()
+                            return@forEach
+                        }
                         input.mark(4)
                         val magic = ByteArray(4)
                         val count = input.read(magic)
@@ -170,7 +226,7 @@ class ThemeTextLocalizer(
             return bytes
         }
         val before = state.nodes
-        val expressions = MamlTextTranslator(document, targetLanguage, state::text)
+        val expressions = MamlTextTranslator(document, targetLanguage, state::text, state::isTranslationCandidate)
         // Snapshot: localized helper variables inserted during rewriting must not be processed twice.
         val nodes = document.getElementsByTagName("*").let { all ->
             (0 until all.length).map { all.item(it) as Element }
@@ -203,7 +259,12 @@ class ThemeTextLocalizer(
                 val name = attr.nodeName.lowercase(Locale.ROOT)
                 val original = attr.nodeValue
                 val replacement = when {
-                    name == "textexp" && tag == "text" -> expressions.expression(original)
+                    name in setOf("textexp", "formatexp") && tag == "text" -> expressions.expression(original)
+                    name == "text" && tag == "text" -> {
+                        if (state.isTranslationCandidate(original)) state.text(original)
+                        else expressions.expression(original).takeIf { it != original } ?: state.text(original)
+                    }
+                    name == "format" && tag == "text" -> state.text(original)
                     name == "format" && tag == "datetime" -> ThemeGlossary.convertDatePattern(original, targetLanguage) ?: original
                     name in DISPLAY_ATTRIBUTES && tag !in CODE_TAGS -> state.text(original)
                     name == "default" && tag in setOf("stringinput", "string") -> ThemeGlossary.convertDatePattern(original, targetLanguage) ?: state.text(original)
@@ -217,10 +278,14 @@ class ThemeTextLocalizer(
             val leaf = (0 until node.childNodes.length).none { node.childNodes.item(it) is Element }
             if (leaf && tag in setOf("string", "title", "description", "summary", "label", "p", "span")) {
                 val original = node.textContent
-                val replacement = state.text(original)
+                // MAML string resource files also store date-format patterns. Sending those
+                // through a prose model can turn tokens into visible words and break the clock.
+                val replacement = ThemeGlossary.convertDatePattern(original, targetLanguage) ?: state.text(original)
                 if (replacement != original) { node.textContent = replacement; state.nodes++ }
             }
         }
+        if (state.collectOnly) return bytes
+        if (state.nodes > before) state.nodes += ThemeLayoutOptimizer.optimize(document, targetLanguage)
         if (state.nodes == before) return bytes
         val result = ByteArrayOutputStream()
         TransformerFactory.newInstance().newTransformer().transform(DOMSource(document), StreamResult(result))
@@ -244,6 +309,7 @@ class ThemeTextLocalizer(
         val rewritten = JsonDisplayLocalizer(text) { original ->
             state.text(original).also { if (it != original) changes++ }
         }.rewrite()
+        if (state.collectOnly) return bytes
         if (changes == 0) return bytes
         state.nodes += changes
         state.changed += path
@@ -265,6 +331,9 @@ class ThemeTextLocalizer(
             "script", "source", "command", "var", "variable", "variablecommand",
             "action", "intent", "method", "function",
         )
+
+        private fun isOpaqueComponent(name: String, depth: Int): Boolean =
+            depth == 0 && name.substringAfterLast('/').equals("icons", ignoreCase = true)
 
         private fun containsDateProse(pattern: String): Boolean {
             val withoutTokens = pattern

@@ -8,11 +8,17 @@ internal class MamlTextTranslator(
     private val document: Document,
     private val language: String,
     private val translate: (String) -> String,
+    private val shouldTranslate: (String) -> Boolean,
 ) {
+    constructor(document: Document, language: String, translate: (String) -> String) :
+        this(document, language, translate, { true })
     private val elements = document.getElementsByTagName("*").let { nodes ->
         (0 until nodes.length).map { nodes.item(it) as Element }
     }
-    private val definitions = elements.filter { it.tagName == "Var" && it.getAttribute("type").startsWith("string") }
+    private val definitions = elements.filter { element ->
+        element.tagName == "Var" && (element.getAttribute("type").startsWith("string") ||
+            sequenceOf("expression", "values").map(element::getAttribute).any(ThemeGlossary::containsChinese))
+    }
         .groupBy { it.getAttribute("name") }
     private val clones = mutableMapOf<String, String>()
     private val visiting = hashSetOf<String>()
@@ -65,6 +71,10 @@ internal class MamlTextTranslator(
                     }.joinToString(",") + ")"
                 } else s
                 "formatDate" -> if (args.size == 2) expression(args[0], args[1], depth + 1) else s
+                // Chinese themes often build the weekday from a compact seven-character
+                // string. Translating that string as prose would break substr indexes, so
+                // preserve the index expression and return localized weekday branches.
+                "substr" -> localizedWeekdaySubstring(args) ?: s
                 else -> s // Includes comparison literals: translating them would change program behavior.
             }
         }
@@ -95,15 +105,37 @@ internal class MamlTextTranslator(
         }
         // Event-driven and provider values stay intact. Only their displayed value is mapped.
         val candidates = linkedSetOf<String>()
+        // Duplicate static variables are common in large MAML files (one per screen/group).
+        // They cannot be cloned unambiguously, but their final displayed values can still be
+        // mapped without changing any source variable or comparison logic.
+        definitions[name].orEmpty().forEach { definition ->
+            val attribute = if (definition.hasAttribute("values")) "values" else "expression"
+            LITERALS.findAll(definition.getAttribute(attribute)).forEach { literal(it.value)?.let(candidates::add) }
+        }
         elements.filter { it.tagName == "VariableCommand" && it.getAttribute("name") == name }.forEach { writer ->
             LITERALS.findAll(writer.getAttribute("expression")).forEach { literal(it.value)?.let(candidates::add) }
         }
         if (elements.any { it.tagName == "Variable" && it.getAttribute("name") == name && it.getAttribute("column") == "description" }) {
             candidates += listOf("晴", "晴天", "多云", "阴", "阴天", "少云", "阵雨", "雷阵雨", "雷雨", "小雨", "中雨", "大雨", "暴雨", "大暴雨", "特大暴雨", "雨夹雪", "小雪", "中雪", "大雪", "暴雪", "雾", "霾", "浮尘", "扬沙", "沙尘暴")
         }
-        val mappings = candidates.map { it to translate(it) }.filter { it.first != it.second }
+        val mappings = candidates.filter(shouldTranslate).map { it to translate(it) }.filter { it.first != it.second }
         if (mappings.isEmpty()) return s
         return "ifelse(" + mappings.joinToString(",") { (from, to) -> "eqs($s,${quote(from)}),${quote(to)}" } + ",$s)"
+    }
+
+    private fun localizedWeekdaySubstring(args: List<String>): String? {
+        if (args.size != 3) return null
+        val source = literal(args[0]) ?: return null
+        if (source !in setOf("日一二三四五六", "天一二三四五六")) return null
+        val start = args[1]
+        val length = args[2].trim()
+        if (length != "1") return null
+        val weekdays = if (language.startsWith("tr")) {
+            listOf("Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt")
+        } else {
+            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+        }
+        return "ifelse(" + weekdays.mapIndexed { index, day -> "eq($start,$index),${quote(day)}" }.joinToString(",") + ",${quote(weekdays[0])})"
     }
 
     private fun chargingBranches(s: String): String = LITERALS.replace(s) { match ->

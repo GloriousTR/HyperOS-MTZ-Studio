@@ -30,6 +30,7 @@ enum class ThemeApplyProtocol {
     MODERN_THEME_MANAGER_MANUAL_IMPORT,
     ROOTLESS_MANUAL_IMPORT,
     ROOTLESS_LEGACY_TESTER,
+    ROOTLESS_BACKUP_RESTORE,
 }
 
 class ThemeApplyCoordinator(
@@ -71,6 +72,44 @@ class ThemeApplyCoordinator(
         ) { "MTZ, İndirilenler/MTZ Studio klasörüne kaydedilemedi" }
         val installedVersion = installedThemeManagerVersion()
         val behavior = ThemeManagerContract.behavior(installedVersion)
+        if (SheveryBackupRestorer.state() == SheveryBackupRestorer.State.READY) {
+            val backup = java.io.File(context.cacheDir, "rootless-theme-${UUID.randomUUID()}.bak")
+            val restoredThemePath = MtzToBakConverter.restoredThemePath(theme.archive.source.toFile())
+            val restored = runCatching {
+                diagnostics.record("rootless_mtz_backup_build", "MTZ, cihazın Temalar sürümüne uygun BAK paketine dönüştürülüyor")
+                MtzToBakConverter.convert(theme.archive.source.toFile(), backup, MtzToBakConverter.deviceInfo(context))
+                val bytes = SheveryBackupRestorer.restore(backup)
+                diagnostics.record("rootless_mtz_backup_restored", "MTZ, HyperOS yedekleme servisi üzerinden Temalar kitaplığına aktarıldı", mapOf("bytes" to bytes, "theme" to themeName))
+                true
+            }.onFailure {
+                diagnostics.record("rootless_mtz_backup_fallback", "Doğrudan rootsuz aktarım tamamlanamadı; güvenli elle içe aktarma kullanılacak", error = it)
+            }.getOrDefault(false)
+            backup.delete()
+            if (restored) {
+                // Downloads is not directly readable by Themes under scoped storage. The BAK
+                // restore places the MTZ in Themes' own external-files domain, so the Zyper
+                // local-apply contract can consume it without a picker or online rights check.
+                val tester = ThemeManagerContract.localRestoredThemeRequest(restoredThemePath)
+                val testerIntent = Intent().apply {
+                    component = ComponentName(THEME_MANAGER_PACKAGE, tester.componentClassName)
+                    tester.stringExtras.forEach(::putExtra)
+                    tester.longExtras.forEach(::putExtra)
+                }.takeIf { it.resolveActivity(context.packageManager) != null }
+                diagnostics.record(
+                    "rootless_local_apply_ready",
+                    "Tema Xiaomi'nin yerel uygulama geçidine hazırlandı",
+                    mapOf("restoredPath" to restoredThemePath, "caller" to THEME_MANAGER_PACKAGE),
+                )
+                return PreparedThemeApply(
+                    themeId = theme.id.value,
+                    themeName = themeName,
+                    stagedPath = "",
+                    intent = testerIntent ?: publicThemeManagerIntent(theme.archive.source),
+                    protocol = ThemeApplyProtocol.ROOTLESS_BACKUP_RESTORE,
+                    manualImportPath = restoredThemePath,
+                )
+            }
+        }
         val legacyIntent = if (behavior ==
             dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.LOCAL_THEME_IMPORT
         ) {

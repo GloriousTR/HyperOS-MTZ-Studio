@@ -7,16 +7,22 @@ import java.util.Locale
  * Provides high-accuracy, natural, native translations for UI widgets, weather conditions,
  * battery/charging statuses, calendar/date formats, health metrics, gestures, and settings.
  */
-object ThemeGlossary {
+object BakThemeGlossary {
 
     private val CHINESE_CHARS = Regex("[\\p{IsHan}]+")
 
     fun containsChinese(text: String): Boolean = CHINESE_CHARS.containsMatchIn(text)
 
-    /** Protects Xiaomi/MAML terms before the Chinese -> English -> target-language route. */
+    /**
+     * Protects Xiaomi/MAML product terms from being interpreted as ordinary Chinese words by
+     * the on-device model. English is intentional here: this text is fed to the Chinese ->
+     * English leg and then translated to the device language.
+     */
     fun prepareChineseForEnglishPivot(text: String): String {
         var prepared = text
-        CHINESE_PIVOT_TERMS.forEach { (source, replacement) -> prepared = prepared.replace(source, " $replacement ") }
+        CHINESE_PIVOT_TERMS.forEach { (source, replacement) ->
+            prepared = prepared.replace(source, " $replacement ")
+        }
         return prepared.replace(Regex("\\s+"), " ").trim()
     }
 
@@ -157,10 +163,183 @@ object ThemeGlossary {
     }
 
     private fun resolveTurkish(text: String): String? =
-        TURKISH_THEME_UI[text] ?: TURKISH_DICTIONARY[text] ?: BakThemeGlossary.resolve(text, "tr")
+        RasterThemeGlossary.resolve(text) ?: TURKISH_THEME_UI[text] ?: TURKISH_DICTIONARY[text]
     private fun resolveEnglish(text: String): String? = ENGLISH_DICTIONARY[text]
 
     private val TURKISH_THEME_UI = mapOf(
+        "璟" to "Parıltı",
+        "遇见hyper27" to "Hyper27 ile Tanış",
+        "免费主题，请勿倒卖！侵权后果自负！" to
+            "Bu tema ücretsizdir; lütfen ücret karşılığı satmayın. Telif ihlalinden doğacak sonuçlar kullanıcıya aittir.",
+        """◉深、浅色图标跟随系统自动切换（部分app无效）。
+◉免费主题，请勿倒卖！侵权后果自负！
+
+本主题混搭、修改详情：
+全局、设置：基于OS2/OS3默认设置。
+锁屏：《iP26超级3D景深》。
+图标：深浅色图标代码来自《亭记》主题。有需要适配深浅色图标的酷安帖子留言。
+桌面：默认。
+桌面时钟：《AP16超级米果》。
+短信：基于《AP景深宠物岛》主题修改。
+拨号：基于《AP景深宠物岛》主题修改。
+状态栏信号：单卡正常信号来自酷安@阿巴阿巴ovo 。双卡信号来自@tpsxx 米客app双卡模块（来自@MonetCarlos《起源V10》）。
+状态栏电池：来自酷安@MonetCarlos《起源架构》 iOS16电池，圆角电池来自酷安@模块盗贼。
+状态栏WIFI：酷安@阿巴阿巴ovo
+其他：参考《O14》《一时间》《幻想艺术家》等主题。
+
+更新日志：
+2025.12.10更新：
+1、适配HyperOS3系统。
+2、其他深浅色图标更新。
+
+2025.1.19更新：
+1、增加控制中心高级材质背景通透度。（来自老王@Mari0us教程代码）
+2、控制中心部分磁贴图标重新修改。
+3、统一焦点通知背景（手电筒背景需要反编译系统界面组件）。（来自老王@Mari0us教程代码）
+
+2024.12.26更新：
+1、使用《亭记》主题代码，深色图标跟随系统深色模式自动切换。
+
+2023.11.21更新详情：
+
+1、适配hyperOS1.0，除控制中心，其他已全部适配完成，删除以前全局按钮代码（hyper已经好看很多了）。
+2、更换为《AP景深宠物岛》锁屏，因为动画顺畅很多，很多iOS17特性小组件也很喜欢。""".trimIndent() to
+            """◉ Koyu ve açık simgeler sistem temasına göre otomatik değişir (bazı uygulamalarda çalışmayabilir).
+◉ Bu tema ücretsizdir; lütfen ücret karşılığı satmayın. Telif ihlalinden doğacak sonuçlar kullanıcıya aittir.
+
+Bu temada kullanılan ve düzenlenen bileşenler:
+Genel görünüm ve Ayarlar: OS2/OS3 varsayılanı temel alınmıştır.
+Kilit ekranı: “iP26 Süper 3D Derinlik”.
+Simgeler: Açık/koyu simge kodu “亭记” temasından alınmıştır. Uyumlanmasını istediğiniz simgeleri Coolapk gönderisine yorum olarak yazabilirsiniz.
+Ana ekran: Varsayılan.
+Ana ekran saati: “AP16 Süper Miguo”.
+Mesajlar ve Arama: “AP Derinlik Efektli Evcil Hayvan Adası” temasından uyarlanmıştır.
+Durum çubuğu sinyali: Tek SIM tasarımı Coolapk'te @阿巴阿巴ovo'dan; çift SIM tasarımı @tpsxx'in Mico uygulaması modülünden (@MonetCarlos'un “Origin V10” temasını temel alır).
+Durum çubuğu pili: @MonetCarlos'un “Origin Architecture” temasındaki iOS 16 pilinden; yuvarlak köşeli pil @模块盗贼'den alınmıştır.
+Durum çubuğu Wi-Fi: Coolapk @阿巴阿巴ovo.
+Diğer: “O14”, “一时间”, “幻想艺术家” ve başka temalardan yararlanılmıştır.
+
+Değişiklik günlüğü:
+10.12.2025:
+1. HyperOS 3 desteği eklendi.
+2. Diğer açık/koyu simgeler güncellendi.
+
+19.01.2025:
+1. Kontrol merkezinin gelişmiş malzeme arka planı için saydamlık ayarı eklendi (@Mari0us eğitimindeki kod temel alınmıştır).
+2. Kontrol merkezindeki bazı kutucuk simgeleri yeniden düzenlendi.
+3. Odak bildirimlerinin arka planı birleştirildi. El feneri arka planı için Sistem Arayüzü bileşeninin tersine mühendisliği gerekir (@Mari0us eğitimindeki kod temel alınmıştır).
+
+26.12.2024:
+1. “亭记” tema kodu kullanılarak koyu simgelerin sistemin koyu moduyla otomatik değişmesi sağlandı.
+
+21.11.2023:
+1. HyperOS 1.0 desteği eklendi. Kontrol merkezi dışındaki bölümler uyarlandı; artık gerek kalmayan eski genel düğme kodları kaldırıldı.
+2. Daha akıcı animasyonları ve sevilen iOS 17 tarzı widget'ları nedeniyle kilit ekranı “AP Derinlik Efektli Evcil Hayvan Adası” ile değiştirildi.""".trimIndent(),
+        "主题特色：多功能锁屏，锁屏液态玻璃效果，可以调整玻璃颜色，景深壁纸，空间壁纸，专辑壁纸，mini播放器和大封面播放器，可以隐藏指纹，高级材质效果。" to
+            "Tema özellikleri: Çok işlevli kilit ekranı, sıvı cam efekti ve ayarlanabilir cam rengi; derinlik efektli, uzamsal ve albüm duvar kâğıtları; mini oynatıcı ve büyük kapaklı oynatıcı; parmak izi simgesini gizleme ve gelişmiş malzeme efektleri.",
+        "设置索引：1.插入壁纸 2.壁纸相关 3.解锁偏好 4.超级开屏 5.百变刘海与灵动岛 6.日期时间 7.小组件 8.音乐 9.通知 10.底部卡片 11.控制中心 12.StandBy待机 13.双击黑屏 14.专注模式 15.小白条 16.快捷方式 17.超级胶囊 18.指纹 19.人脸识别 20.状态栏 21.更多 22.桌面时钟" to
+            "Ayarlar: 1. Duvar kâğıdı 2. Duvar kâğıdı seçenekleri 3. Kilit açma 4. Ekran açılışı 5. Çentik ve Dinamik Ada 6. Tarih ve saat 7. Widget'lar 8. Müzik 9. Bildirimler 10. Alt kartlar 11. Kontrol merkezi 12. StandBy 13. Çift dokunarak ekranı kapatma 14. Odak modu 15. Hareket çubuğu 16. Kısayollar 17. Süper Kapsül 18. Parmak izi 19. Yüz tanıma 20. Durum çubuğu 21. Diğer 22. Ana ekran saati",
+        "1.插入壁纸（注意：壁纸太大会导致锁屏黑屏或卡顿）" to
+            "1. Duvar kâğıdı ekle (çok büyük görseller kilit ekranında kararmaya veya takılmaya neden olabilir)",
+        "2.壁纸相关设置" to "2. Duvar kâğıdı seçenekleri",
+        "3.解锁偏好" to "3. Kilit açma tercihleri",
+        "4.超级开屏" to "4. Ekran açılış efekti",
+        "5.百变刘海与灵动岛" to "5. Çentik ve Dinamik Ada",
+        "6.日期时间设置" to "6. Tarih ve saat ayarları",
+        "7.小组件设置" to "7. Widget ayarları",
+        "插入壁纸（前景）" to "Ön plan duvar kâğıdı ekle",
+        "插入壁纸（背景）" to "Arka plan duvar kâğıdı ekle",
+        "公众号：suger苏哥主题" to "Resmî hesap: Suger Temaları",
+        "壁纸重力感应" to "Harekete duyarlı duvar kâğıdı",
+        "开启重力感应后壁纸会适当放大，并且无法调节景深系数" to
+            "Açıldığında duvar kâğıdı hafifçe büyür; derinlik seviyesi ayrıca ayarlanamaz.",
+        "3D增强" to "3D efekti güçlendir",
+        "重力方向相反" to "Ön ve arka planı ters yönde hareket ettir",
+        "合并前景到模糊层" to "Ön planı bulanık katmanla birleştir",
+        "重力壁纸放大动画" to "Hareketli duvar kâğıdı büyütme animasyonu",
+        "景深壁纸放大动画" to "Derinlik duvar kâğıdı büyütme animasyonu",
+        "壁纸由大缩小动画" to "Duvar kâğıdını küçülterek aç",
+        "亮屏壁纸模糊变高清" to "Ekran açılırken bulanıklıktan netliğe geç",
+        "双击屏幕两侧切换壁纸" to "Kenarlarına çift dokunarak duvar kâğıdını değiştir",
+        "文件夹壁纸自动切换" to "Klasördeki duvar kâğıtlarını otomatik değiştir",
+        "不使用自动切换" to "Otomatik değiştirme kapalı",
+        "每分钟自动切换" to "Her dakika değiştir",
+        "每小时自动切换" to "Her saat değiştir",
+        "每天自动切换" to "Her gün değiştir",
+        "轻微压暗壁纸" to "Duvar kâğıdını hafifçe karart",
+        "轻微压暗数值" to "Hafif karartma seviyesi",
+        "自动调暗壁纸" to "Duvar kâğıdını otomatik karart",
+        "不自动调暗壁纸" to "Otomatik karartma kapalı",
+        "深色模式下调暗壁纸" to "Koyu modda karart",
+        "日落后调暗壁纸" to "Gün batımından sonra karart",
+        "自动调暗壁纸数值" to "Otomatik karartma seviyesi",
+        "滑动解锁方案" to "Kaydırarak kilit açma yöntemi",
+        "全屏上滑较短距离解锁（快捷）" to "Ekranda kısa mesafe yukarı kaydır (hızlı)",
+        "全屏上滑较长距离解锁（防误触）" to "Ekranda uzun mesafe yukarı kaydır (yanlış dokunmayı önler)",
+        "从屏幕最底部上滑解锁（防误触）" to "Ekranın altından yukarı kaydır (yanlış dokunmayı önler)",
+        "上滑时壁纸变化" to "Yukarı kaydırırken duvar kâğıdı efekti",
+        "壁纸无变化" to "Değişiklik yok",
+        "壁纸整体模糊" to "Duvar kâğıdının tamamını bulanıklaştır",
+        "壁纸从底部往上模糊" to "Aşağıdan yukarı doğru bulanıklaştır",
+        "壁纸放大+模糊" to "Büyüt ve bulanıklaştır",
+        "上滑时UI变化" to "Yukarı kaydırırken arayüz efekti",
+        "仅移动" to "Yalnızca hareket ettir",
+        "移动+变透明" to "Hareket ettir ve saydamlaştır",
+        "上滑实时炫彩玻璃效果" to "Kaydırırken canlı cam efekti",
+        "开灯效果" to "Ekran açılış efekti",
+        "无效果" to "Efekt yok",
+        "全屏渐亮" to "Tüm ekranı yavaşça aydınlat",
+        "从中间渐亮" to "Ortadan başlayarak aydınlat",
+        "从电源键渐亮" to "Güç düğmesinden başlayarak aydınlat",
+        "圆形从中间放大" to "Ortadan büyüyen daire",
+        "圆形从电源键放大" to "Güç düğmesinden büyüyen daire",
+        "拉开门" to "Kapı açılma efekti",
+        "推开门" to "Kapıyı itme efekti",
+        "百变刘海" to "Özelleştirilebilir çentik",
+        "百变刘海开关" to "Özelleştirilebilir çentiği kullan",
+        "百变刘海样式" to "Çentik görünümü",
+        "灵动岛" to "Dinamik Ada",
+        "齐刘海" to "Geniş çentik",
+        "灵动大额头" to "Geniş Dinamik Ada",
+        "灵动岛：常态样式" to "Dinamik Ada: bekleme görünümü",
+        "无功能时的样式" to "Etkin bir özellik yokken gösterilecek görünüm",
+        "灵动岛：充电" to "Dinamik Ada: şarj",
+        "灵动岛：通知" to "Dinamik Ada: bildirimler",
+        "灵动岛：手电筒" to "Dinamik Ada: el feneri",
+        "灵动岛：音乐" to "Dinamik Ada: müzik",
+        "锁屏灵动岛充电功能开关" to "Şarj bilgisini kilit ekranındaki Dinamik Ada'da gösterir.",
+        "锁屏灵动岛通知弹窗功能开关" to "Bildirimleri kilit ekranındaki Dinamik Ada'da gösterir.",
+        "点亮手电筒时锁屏灵动岛显示动画效果" to "El feneri açıldığında Dinamik Ada'da bir animasyon gösterir.",
+        "锁屏灵动岛可交互音乐功能开关" to "Dinamik Ada'daki etkileşimli müzik denetimlerini açar.",
+        "灵动岛音乐频谱根据封面染色；注意：可能会影响锁屏流畅度，用小米音乐时可能无法染色" to
+            "Müzik görselleştiricisinin rengini albüm kapağına uyarlar. Kilit ekranı akıcılığını etkileyebilir ve Xiaomi Müzik'te çalışmayabilir.",
+        "锁屏灵动岛内是否显示歌名（歌词）；需要打开灵动岛音乐开关" to
+            "Dinamik Ada'da şarkı adını veya sözleri gösterir. Dinamik Ada müzik seçeneği açık olmalıdır.",
+        "灵动岛显示歌名（歌词）" to "Dinamik Ada'da şarkı adını veya sözleri göster",
+        "灵动岛长度" to "Dinamik Ada genişliği",
+        "灵动岛高度" to "Dinamik Ada yüksekliği",
+        "灵动岛距离屏幕顶部距离" to "Dinamik Ada'nın üst kenara uzaklığı",
+        "灵动岛x轴偏移" to "Dinamik Ada yatay konumu",
+        "输入范围：290-470，默认400. (tips:澎湃系统超级岛音乐岛参考长度:296)" to
+            "Aralık: 290–470; varsayılan: 400. HyperOS Süper Ada müzik görünümü için önerilen değer: 296.",
+        "输入范围：90-110，默认100. (tips:澎湃系统超级岛参考高度:94)" to
+            "Aralık: 90–110; varsayılan: 100. HyperOS Süper Ada için önerilen değer: 94.",
+        "修复点击一次切换两首歌的bug,仅澎湃OS3需要开启,非澎湃OS3禁止开启!" to
+            "Tek dokunuşta iki şarkı atlama sorununu düzeltir. Yalnızca HyperOS 3'te açın; diğer sürümlerde kapalı tutun.",
+        "音乐频谱染色" to "Müzik görselleştiricisini kapak rengine uyarla",
+        "澎湃系统" to "HyperOS",
+        "超级岛" to "Süper Ada",
+        "超级胶囊" to "Süper Kapsül",
+        "吐舌" to "Dil çıkarma",
+        "emoji小黄脸【吐舌】" to "Emoji sarı yüz (dil çıkarma)",
+        "高级设置" to "Gelişmiş ayarlar",
+        "右上角设置提示" to "Sağ üst ayar ipucu",
+        "锁屏元素动画" to "Kilit ekranı öğe animasyonları",
+        "最高:%s° 最低:%s°" to "En yüksek: %s°  En düşük: %s°",
+        "分钟可充满" to " dakikada tamamen şarj olur",
+        "分充满" to " dk içinde dolar",
+        "保持心情愉悦" to "Keyfini yüksek tut",
+        "永远相信美好的事情即将发生" to "Güzel şeylerin yakında olacağına hep inan",
         "自定义" to "Özelleştirme",
         "默认壁纸" to "Varsayılan duvar kâğıdı", "自定义壁纸" to "Özel duvar kâğıdı",
         "桌面壁纸" to "Ana ekran duvar kâğıdı", "文件夹壁纸" to "Klasördeki duvar kâğıdı", "内置壁纸" to "Hazır duvar kâğıdı",
@@ -169,39 +348,6 @@ object ThemeGlossary {
         "正在使用桌面壁纸" to "Ana ekran duvar kâğıdı kullanılıyor",
         "正在使用文件夹壁纸" to "Klasördeki duvar kâğıdı kullanılıyor",
         "正在使用内置壁纸" to "Hazır duvar kâğıdı kullanılıyor",
-        "专辑主体位置" to "Albüm görseli konumu", "内置小组件" to "Hazır widget'lar",
-        "关于作者" to "Yapımcı hakkında", "实验室功能" to "Deneysel özellikler",
-        "左下角功能" to "Sol alt köşe işlevi", "底部快捷功能颜色" to "Alt kısayol rengi",
-        "锁屏壁纸设置" to "Kilit ekranı duvar kâğıdı ayarları", "锁屏内容可读性增强" to "Kilit ekranı okunabilirliğini artır",
-        "景深上层壁纸" to "Derinlik efekti üst katmanı", "景深开关" to "Derinlik efekti",
-        "音乐封面自定义" to "Müzik kapağını özelleştir", "高级材质" to "Gelişmiş görünüm",
-        "自定义专辑壁纸" to "Özel albüm duvar kâğıdı", "自定义日期" to "Özel tarih",
-        "自定义桌面壁纸教程" to "Ana ekran duvar kâğıdını özelleştirme rehberi",
-        "选定图片应用到锁屏壁纸" to "Seçilen görseli kilit ekranına uygula",
-        "重新应用主题锁屏" to "Tema kilit ekranını yeniden uygula",
-        "双击打开快捷功能" to "Kısayolları açmak için çift dokunun",
-        "雙擊開啟快捷功能" to "Kısayolları açmak için çift dokunun",
-        "双击打开锁屏设置" to "Kilit ekranı ayarlarını açmak için çift dokunun",
-        "雙擊開啟鎖屏設定" to "Kilit ekranı ayarlarını açmak için çift dokunun",
-        "鎖屏設定" to "Kilit Ekranı Ayarları", "時間顏色" to "Saat rengi",
-        "時間顏色" to "Saat rengi", "冒号颜色" to "İki nokta rengi", "冒號顏色" to "İki nokta rengi",
-        "时钟长度" to "Saat yüksekliği", "時鐘長度" to "Saat yüksekliği", "长度" to "Yükseklik", "長度" to "Yükseklik",
-        "通知位置" to "Bildirim konumu", "通知字体颜色" to "Bildirim metni rengi",
-        "通知字體顏色" to "Bildirim metni rengi", "通知背景顏色" to "Bildirim arka planı rengi",
-        "設定字體顏色" to "Metin rengini ayarla", "我的设备" to "Cihazlarım",
-        "智能穿戴" to "Akıllı giyilebilir cihaz", "无线耳机" to "Kablosuz kulaklık",
-        "微信" to "WeChat", "支付宝" to "Alipay", "快捷支付" to "Hızlı ödeme",
-        "暂无音乐" to "Müzik çalmıyor", "条新消息" to " yeni mesaj",
-        "极速秒充" to "Ultra hızlı şarj", "正在充電 " to "Şarj ediliyor ",
-        "红" to "Kırmızı", "绿" to "Yeşil", "蓝" to "Mavi",
-        "空/双击进入自定义" to "Boş / özelleştirmek için çift dokunun",
-        "感谢您的支持和理解" to "Desteğiniz ve anlayışınız için teşekkürler.",
-        "关注公众号获取最新消息和主题进阶教程" to "Yeni duyurular ve gelişmiş tema rehberleri için yapımcıyı takip edin.",
-        "打开 主题壁纸➔我的➔混搭➔锁屏" to "Temalar > Profilim > Özelleştir > Kilit ekranı yolunu açın.",
-        "即可保留自定义桌面壁纸以及锁屏" to "Özel ana ekran ve kilit ekranı duvar kâğıtlarını korur.",
-        "可写日期代码，也可自定义文字，空格将不会显示" to "Tarih biçimi veya özel metin yazabilirsiniz; boşluklar gösterilmez.",
-        "如果文字或快捷方式看不清，建议开启" to "Metin veya kısayollar zor okunuyorsa açmanız önerilir.",
-        "请手动前往相册设置桌面壁纸后" to "Ana ekran duvar kâğıdını Galeri'den elle ayarladıktan sonra kullanın.",
         "时间设置" to "Saat ayarları", "日期设置" to "Tarih ayarları",
         "小组件设置" to "Widget ayarları", "更多设置" to "Diğer ayarlar",
         "最低" to "En düşük", "最高" to "En yüksek",
@@ -279,6 +425,45 @@ object ThemeGlossary {
         val chinese = if (number < 10) digits[number] else (if (number < 20) "" else digits[number / 10]) + "十" + digits[number % 10]
         chinese to number.toString()
     }
+
+    private val CHINESE_PIVOT_TERMS = linkedMapOf(
+        "息屏空间" to "always-on display area",
+        "萌宠动画" to "animated pet",
+        "运营商标" to "carrier logo",
+        "商标符号" to "carrier logo",
+        "雨量图" to "precipitation chart",
+        "悬浮球" to "floating button",
+        "唱片机" to "turntable player",
+        "报时" to "spoken time",
+        "横屏" to "landscape mode",
+        "光栅" to "lenticular",
+        "小米" to "Xiaomi",
+        "高斯模糊" to "Gaussian blur",
+        "显示方式" to "display mode",
+        "位置调整" to "position adjustment",
+        "大小调整" to "size adjustment",
+        "默认开启" to "enabled by default",
+        "默认关闭" to "disabled by default",
+        "开关" to "toggle",
+        "指纹" to "fingerprint",
+        "百变刘海" to "customizable notch",
+        "景深壁纸" to "depth-effect wallpaper",
+        "重力壁纸" to "motion-responsive wallpaper",
+        "壁纸重力感应" to "wallpaper motion sensing",
+        "澎湃系统" to "HyperOS",
+        "超级岛" to "Super Island",
+        "灵动岛" to "Dynamic Island",
+        "超级胶囊" to "Super Capsule",
+        "小白条" to "gesture bar",
+        "控制中心" to "Control Center",
+        "状态栏" to "status bar",
+        "锁屏" to "lock screen",
+        "小组件" to "widget",
+        "刘海" to "notch",
+        "胶囊" to "capsule",
+        "景深" to "depth effect",
+        "壁纸" to "wallpaper",
+    )
 
     private val TURKISH_DICTIONARY: Map<String, String> = mapOf(
         "正在快充" to "Hızlı şarj ediliyor",
@@ -650,18 +835,6 @@ object ThemeGlossary {
         "设计" to "Tasarım",
         "设计师" to "Tasarımcı",
         "版本" to "Sürüm",
-    )
-
-    private val CHINESE_PIVOT_TERMS = linkedMapOf(
-        "息屏空间" to "always-on display area", "萌宠动画" to "animated pet",
-        "运营商标" to "carrier logo", "商标符号" to "carrier logo",
-        "雨量图" to "precipitation chart", "悬浮球" to "floating button",
-        "唱片机" to "turntable player", "报时" to "spoken time",
-        "横屏" to "landscape mode", "光栅" to "lenticular", "小米" to "Xiaomi",
-        "高斯模糊" to "Gaussian blur", "显示方式" to "display mode",
-        "位置调整" to "position adjustment", "大小调整" to "size adjustment",
-        "默认开启" to "enabled by default", "默认关闭" to "disabled by default",
-        "开关" to "toggle", "指纹" to "fingerprint", "百变刘海" to "customizable notch",
     )
 
     private val ENGLISH_DICTIONARY: Map<String, String> = mapOf(

@@ -24,7 +24,10 @@ enum class ComponentCategory(val label: String) {
 data class MtzSecurityLimits(
     val maxArchiveBytes: Long = 256L * 1024 * 1024,
     val maxEntries: Int = 10_000,
-    val maxEntryBytes: Long = 128L * 1024 * 1024,
+    // Current HyperOS themes can legitimately contain a single, extensionless icons archive
+    // larger than 128 MiB. Keep the archive-wide expansion ceiling as the primary zip-bomb
+    // guard, while allowing those real Theme Manager packages to be inspected.
+    val maxEntryBytes: Long = 256L * 1024 * 1024,
     val maxExpandedBytes: Long = 512L * 1024 * 1024,
     val maxMetadataBytes: Long = 1024L * 1024,
     val maxCompressionRatio: Double = 250.0,
@@ -87,4 +90,3 @@ class UnsafeMtzException(
         UNSAFE_XML,
     }
 }
-

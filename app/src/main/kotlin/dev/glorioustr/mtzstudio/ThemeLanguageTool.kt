@@ -11,6 +11,9 @@ import com.google.mlkit.nl.translate.TranslatorOptions
 import com.google.mlkit.nl.translate.Translation
 import dev.glorioustr.mtzstudio.core.ThemeGlossary
 import dev.glorioustr.mtzstudio.core.ThemeTextLocalizer
+import dev.glorioustr.mtzstudio.core.ChineseTranslationSegmenter
+import dev.glorioustr.mtzstudio.core.ConversationalThemeGlossary
+import dev.glorioustr.mtzstudio.core.TranslationTextFilter
 import dev.glorioustr.mtzstudio.library.LibraryTheme
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
 import java.nio.file.Files
@@ -31,12 +34,45 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
             ?: TranslateLanguage.ENGLISH
         val output = library.newExportPath("${theme.displayName}-translated")
         val identifier = LanguageIdentification.getClient(
-            LanguageIdentificationOptions.Builder().setConfidenceThreshold(0.30f).build(),
+            LanguageIdentificationOptions.Builder().setConfidenceThreshold(0.45f).build(),
         )
         val translators = linkedMapOf<String, TranslatorSession>()
         val detectedLanguageCounts = linkedMapOf<String, Int>()
         val undetermined = linkedSetOf<String>()
         var uniqueTexts = 0
+        val original = library.translationSource(theme)
+        val apiSettings = AiTranslationSettingsStore(appContext).load()
+        val apiCandidates = linkedSetOf<String>()
+        val apiResult = if (apiSettings.isReady) {
+            diagnostics.record(
+                "theme_language_api_started",
+                "Bağlamsal API çevirisi hazırlanıyor",
+                mapOf("provider" to apiSettings.provider.title, "model" to apiSettings.model),
+            )
+            runCatching {
+                val scanned = ThemeTextLocalizer(
+                    targetLanguage = target,
+                    translateAllDisplayText = true,
+                    shouldTranslate = TranslationTextFilter::isCandidate,
+                ).collectCandidates(original)
+                scanned.forEach { candidate ->
+                    val text = candidate.trim()
+                    if (ThemeGlossary.resolve(text, target) == null &&
+                        ConversationalThemeGlossary.resolve(text, target) == null
+                    ) apiCandidates += text
+                }
+                ProfessionalThemeTranslator.fromSettings(appContext, apiSettings)!!.translate(apiCandidates, locale)
+            }.getOrElse { error ->
+                diagnostics.record(
+                    "theme_language_api_failed",
+                    "API çevirisi kullanılamadı; cihaz içi motora devam ediliyor",
+                    error = error,
+                )
+                ProfessionalThemeTranslator.Result(emptyMap(), listOf(error.message ?: "API translation failed"))
+            }
+        } else ProfessionalThemeTranslator.Result(emptyMap(), emptyList())
+        val apiTranslations = apiResult.translations
+        var apiTranslatedTexts = 0
 
         fun identifySource(text: String): String? {
             val scriptHint = when {
@@ -54,13 +90,23 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
         }
 
         fun translate(text: String): String {
-            val source = identifySource(text) ?: return text
+            if (!TranslationTextFilter.isCandidate(text)) return text
+            val conversational = ConversationalThemeGlossary.resolve(text, target)
+            val source = conversational?.sourceLanguage ?: identifySource(text) ?: return text
             detectedLanguageCounts[source] = (detectedLanguageCounts[source] ?: 0) + 1
             if (source == target) return text
 
             // Preserve the carefully curated Chinese theme vocabulary before neural translation.
             if (source == TranslateLanguage.CHINESE) {
                 ThemeGlossary.resolve(text, target)?.let { return it }
+            }
+
+            conversational?.translation?.let { return text.takeWhile(Char::isWhitespace) + it + text.takeLastWhile(Char::isWhitespace) }
+
+            apiTranslations[text.trim()]?.let { apiTranslation ->
+                apiTranslatedTexts++
+                val polished = ThemeGlossary.postProcessTranslation(apiTranslation, target)
+                return text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
             }
 
             val session = translators.getOrPut(source) {
@@ -91,7 +137,31 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                     mapOf("sourceLanguage" to source, "targetLanguage" to target),
                 )
             }
-            val translated = Tasks.await(session.translator.translate(text), 30, TimeUnit.SECONDS).trim()
+            fun translateWithModel(input: String, from: String, to: String): String {
+                val route = "$from>$to"
+                val routeSession = translators.getOrPut(route) {
+                    TranslatorSession(Translation.getClient(TranslatorOptions.Builder().setSourceLanguage(from).setTargetLanguage(to).build()))
+                }
+                if (!routeSession.modelReady) {
+                    Tasks.await(routeSession.translator.downloadModelIfNeeded(DownloadConditions.Builder().build()), 5, TimeUnit.MINUTES)
+                    routeSession.modelReady = true
+                }
+                return Tasks.await(routeSession.translator.translate(input), 30, TimeUnit.SECONDS).trim()
+            }
+
+            val translated = if (source == TranslateLanguage.CHINESE) {
+                ChineseTranslationSegmenter.translate(text.trim(), target) { clause ->
+                    if (target != TranslateLanguage.TURKISH) return@translate translateWithModel(clause, source, target)
+                    val englishSource = ThemeGlossary.prepareChineseForEnglishPivot(clause)
+                    val english = translateWithModel(englishSource, source, TranslateLanguage.ENGLISH)
+                    val pivot = if (english.isBlank() || ThemeGlossary.containsChinese(english)) ""
+                    else translateWithModel(english, TranslateLanguage.ENGLISH, target)
+                    if (pivot.isNotBlank() && !ThemeGlossary.containsChinese(pivot)) pivot
+                    else translateWithModel(clause, source, target)
+                }
+            } else {
+                Tasks.await(session.translator.translate(text), 30, TimeUnit.SECONDS).trim()
+            }
             uniqueTexts++
             if (uniqueTexts % 25 == 0) {
                 diagnostics.record(
@@ -110,10 +180,10 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                 "İç bileşenler dahil çok dilli tema metinleri taranıyor",
                 mapOf("sourceTheme" to theme.id.value, "targetLanguage" to target),
             )
-            val original = library.translationSource(theme)
             val result = ThemeTextLocalizer(
                 targetLanguage = target,
                 translateAllDisplayText = true,
+                shouldTranslate = TranslationTextFilter::isCandidate,
             ).rewrite(original, output, ::translate)
             require(result.translatedNodes > 0) {
                 "Hedef dilden farklı, desteklenen bir tema metni bulunamadı; tema değiştirilmedi (${result.skippedFiles.size} bölüm atlandı)."
@@ -130,6 +200,11 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                     "undeterminedTextCount" to undetermined.size,
                     "changedFiles" to result.changedFiles.joinToString(),
                     "translatedNodes" to result.translatedNodes,
+                    "apiEnabled" to apiSettings.enabled,
+                    "apiProvider" to apiSettings.provider.title,
+                    "apiModel" to apiSettings.model,
+                    "apiTranslatedTexts" to apiTranslatedTexts,
+                    "apiWarnings" to apiResult.warnings.joinToString(" | "),
                     "unresolvedTextCount" to result.unresolvedTexts.size,
                     "unresolvedTexts" to result.unresolvedTexts.take(40).joinToString(" | "),
                     "skippedFiles" to result.skippedFiles.distinct().joinToString(),

@@ -133,6 +133,9 @@ class ThemeTextLocalizerTest {
     @Test fun `optional real device fixture includes wallpaper settings in nested lockscreen`() {
         val fixture = System.getenv("MTZ_TRANSLATION_FIXTURE") ?: return
         val output = Files.createTempDirectory("real-theme-translation").resolve("output.mtz")
+        // Also exercise the production import limits. Some current themes contain a single
+        // extensionless icons component larger than the historical 128 MiB ceiling.
+        MtzParser().parse(Path.of(fixture))
         val unknown = sortedSetOf<String>()
         val result = ThemeTextLocalizer().rewrite(Path.of(fixture), output) {
             ThemeGlossary.resolve(it, "tr") ?: "Translated".also { _ -> unknown += it }

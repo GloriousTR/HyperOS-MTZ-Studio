@@ -56,6 +56,18 @@ object ThemeManagerContract {
                 "theme_remove_flags" to -1L,
             ),
         )
+
+    /** Exact local-apply contract used by Zyper after Themes can read the restored MTZ. */
+    fun localRestoredThemeRequest(themePath: String): LegacyTesterRequest =
+        LegacyTesterRequest(
+            action = "",
+            componentClassName = LEGACY_TESTER_COMPONENT,
+            stringExtras = linkedMapOf(
+                "theme_file_path" to themePath,
+                "api_called_from" to PACKAGE_NAME,
+            ),
+            longExtras = emptyMap(),
+        )
 }
 
 data class LegacyTesterRequest(

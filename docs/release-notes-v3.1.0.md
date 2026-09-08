@@ -1,26 +1,20 @@
 # HyperOS MTZ Studio v3.1.0
 
-Version 3.1.0 expands the Theme Language Tool beyond Chinese while preserving the reviewed Chinese translation quality and makes Vector/LSPosed setup easier to understand.
+v3.1.0 unifies MTZ creation, BAK conversion, multilingual translation and adaptive Xiaomi Themes integration.
 
-## What's new
+## Highlights
 
-- **Automatic source-language detection:** visible theme text is detected fragment by fragment and translated into the active MTZ Studio app language using supported on-device models.
-- **Chinese quality preserved:** the existing reviewed glossary and theme-specific rules still run before generic translation, retaining natural charging, weather, date and customization terminology.
-- **Multilingual MAML support:** safe display text written at runtime can be translated without changing predicates, variables, resource paths or executable behavior.
-- **Safe fallback:** uncertain or unsupported text is preserved instead of guessed. Detected languages and skipped fragments are recorded in Live Diagnostics.
-- **Editable recommended Xposed targets:** Vector/LSPosed now identifies Android System, System Framework and Themes as the app's recommended scopes. No fixed libxposed scope list is used, so the selection remains editable.
-- **Localized guidance:** the Theme Language Tool explanation is updated across all 20 bundled interface languages.
+- **BAK Converter:** supported Xiaomi Themes backups are reconstructed as portable MTZ packages and added directly to Studio. Shizuku/Shevery mode no longer requests root or replaces Theme Manager data.
+- **Optional conversion translation:** preserve the source language or translate supported visible text into the active app language.
+- **Direct Shizuku apply:** Apply starts without MTZ Studio’s redundant confirmation; Xiaomi’s required system surface may still appear briefly.
+- **Higher-quality translation:** reviewed Chinese terminology, multilingual XML/JSON/MAML coverage, translation memory, optional user-configured API providers and offline fallback.
+- **Clean organization:** complete themes stay in Themes, while font-only resources are routed to Fonts.
+- **Clear Xposed guidance:** Android System, System Framework and Themes are editable recommended targets.
+- **20 interface languages** with system-language, RTL and per-app language support.
+- **Rootless persistence assistance:** a no-Shizuku best-effort guard handles known ordered Xiaomi validation broadcasts; reboot recovery remains visible and user-driven rather than silently claiming success.
 
-## Existing features retained
+## Compatibility
 
-BAK Import, adaptive root/Shizuku/rootless access, MTZ composition, font-only package separation, modern `10.8.7.6+` Theme Manager integration and the verified Global workflows remain available without changing their established behavior.
+Root, Shizuku/Shevery and standard rootless capabilities are detected at runtime. Xiaomi controls final theme acceptance and application, so behavior can differ by ROM and Xiaomi Themes build. Unknown privileged surfaces are reported as unverified rather than guessed.
 
-## Notes
-
-Translation models are downloaded on first use for the source/target language pairs found in the theme. Images containing text, encrypted proprietary resources, unknown scripts and code expressions are intentionally left unchanged.
-
-Automatic Xiaomi Themes catalog access, BAK restore and native import/apply/delete still require verified root access. Xposed scope approval and root permission are separate requirements.
-
-## Upgrade
-
-v3.1.0 uses the stable signing key introduced with v2.1.0 and can update supported recent releases in place. Backing up the Studio library before a major upgrade is still recommended.
+v3.1.0 uses the stable signing key introduced with v2.1.0 and supports normal in-place upgrades from compatible recent releases.

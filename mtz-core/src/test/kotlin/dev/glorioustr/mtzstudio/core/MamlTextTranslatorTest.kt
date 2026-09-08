@@ -69,4 +69,25 @@ class MamlTextTranslatorTest {
             (document.getElementsByTagName("VariableCommand").item(0) as org.w3c.dom.Element).getAttribute("expression"),
         )
     }
+
+    @Test fun `compact Chinese weekday substring becomes localized branches`() {
+        val tool = MamlTextTranslator(doc("<Root/>"), "tr", ::translate)
+        val output = tool.expression("substr('日一二三四五六',#day,1)")
+
+        assertTrue(output.contains("eq(#day,0),'Paz'"), output)
+        assertTrue(output.contains("eq(#day,6),'Cmt'"), output)
+        assertFalse(output.contains("日一二三四五六"), output)
+    }
+
+    @Test fun `duplicate static string definitions map their displayed values without mutating logic`() {
+        val document = doc("""<Root><Var name="state" type="string" expression="ifelse(#a,'晴','阴')"/><Group><Var name="state" type="string" expression="ifelse(#b,'多云','晴')"/></Group></Root>""")
+        val tool = MamlTextTranslator(document, "tr", ::translate)
+
+        val output = tool.expression("@state")
+
+        assertTrue(output.contains("eqs(@state,'晴'),'Güneşli'"), output)
+        assertTrue(output.contains("eqs(@state,'阴'),'Bulutlu'"), output)
+        assertTrue(output.contains("eqs(@state,'多云'),'Parçalı Bulutlu'"), output)
+        assertEquals("ifelse(#a,'晴','阴')", (document.getElementsByTagName("Var").item(0) as org.w3c.dom.Element).getAttribute("expression"))
+    }
 }

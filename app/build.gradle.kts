@@ -76,8 +76,8 @@ dependencies {
     compileOnly("io.github.libxposed:api:101.0.0")
     implementation("io.github.libxposed:service:101.0.0")
     implementation("org.luckypray:dexkit:2.2.0")
-    // Text-only theme localization. Language models are downloaded by ML Kit only when the
-    // user explicitly runs the Theme Language Tool; no theme content is uploaded by Studio.
+    // Text-only theme localization. ML Kit remains the offline fallback; optional BYOK API
+    // translation sends only candidate text when the user explicitly enables a provider.
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.6")
     debugImplementation("androidx.compose.ui:ui-tooling")

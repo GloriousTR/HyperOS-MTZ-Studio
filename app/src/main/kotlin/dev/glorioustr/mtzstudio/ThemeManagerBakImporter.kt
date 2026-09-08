@@ -7,6 +7,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
 import java.util.UUID
+import dev.glorioustr.mtzstudio.library.ThemeLibrary
 
 data class ThemeManagerBakArchive(
     val source: File,
@@ -119,6 +120,42 @@ class ThemeManagerBakImporter(
             error("BAK geri yüklenemedi: ${result.output.takeLast(500)}")
         }
         diagnostics.record("bak_restore_completed", "Tema Yöneticisi BAK geri yüklemesi tamamlandı", mapOf("name" to archive.displayName))
+    }
+
+    /** Imports portable MTZ payloads embedded by Xiaomi/Studio backup writers into the Studio library. */
+    fun importEmbeddedThemes(archive: ThemeManagerBakArchive, library: ThemeLibrary): Int {
+        var imported = 0
+        RandomAccessFile(archive.source, "r").use { stream ->
+            stream.seek(archive.tarOffset)
+            val header = ByteArray(TAR_BLOCK)
+            while (stream.read(header) == TAR_BLOCK) {
+                val name = header.readTarPath()
+                if (name.isBlank()) break
+                val size = header.readOctal(124, 12)
+                require(size in 0..MAX_ENTRY_BYTES) { "BAK içerik boyutu sınırı aşıldı" }
+                val payloadStart = stream.filePointer
+                if (name.endsWith(".mtz", ignoreCase = true) && size > 4L) {
+                    val temp = File(context.cacheDir, "bak-mtz-${UUID.randomUUID()}.mtz")
+                    try {
+                        temp.outputStream().buffered().use { output ->
+                            var remaining = size
+                            val buffer = ByteArray(64 * 1024)
+                            while (remaining > 0) {
+                                val count = stream.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
+                                check(count > 0) { "BAK içindeki MTZ eksik" }
+                                output.write(buffer, 0, count)
+                                remaining -= count
+                            }
+                        }
+                        temp.inputStream().use { library.importTheme(it, name.substringAfterLast('/')) }
+                        imported++
+                    } finally { temp.delete() }
+                }
+                stream.seek(payloadStart + ((size + TAR_BLOCK - 1) / TAR_BLOCK) * TAR_BLOCK)
+            }
+        }
+        diagnostics.record("bak_embedded_mtz_import", "BAK içindeki taşınabilir MTZ dosyaları kitaplığa alındı", mapOf("count" to imported))
+        return imported
     }
 
     private fun inspect(file: File, displayName: String): ThemeManagerBakArchive {
