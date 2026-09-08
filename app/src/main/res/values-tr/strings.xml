@@ -1,4 +1,5 @@
 <resources>
+    <string name="tm_rootless_import_unavailable">Bu Xiaomi Temalar sürümü dış uygulamalar için doğrulanabilir bir MTZ içe aktarma yolu sunmuyor. Rootsuz otomatik uygulama kullanılamaz; Shizuku + BAK Converter’ı veya Xiaomi’nin kendi içe aktarma akışını kullanın. İncelenmesi için Live Diagnostics ekranından Temalar APK’sını paylaşabilirsiniz.</string>
     <string name="app_name">HyperOS MTZ Studio</string>
 
     <!-- Navigation & Destinations -->

@@ -323,10 +323,7 @@ class ThemeApplyCoordinator(
             "Bu Temalar sürümü dış MTZ dosyası için ilan edilmiş bir içe aktarma etkinliği sunmuyor; MTZ Dosya Yöneticisi klasöründe hazır bırakıldı",
             mapOf("version" to installedThemeManagerVersion()),
         )
-        return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/vnd.miui.mtz"
-        }
+        throw IllegalStateException(context.getString(R.string.tm_rootless_import_unavailable))
     }
 
     private fun prepareLegacyTester(theme: LibraryTheme): PreparedThemeApply {

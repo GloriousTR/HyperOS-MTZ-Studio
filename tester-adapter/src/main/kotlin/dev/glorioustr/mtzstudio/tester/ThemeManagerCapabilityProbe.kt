@@ -3,6 +3,7 @@ package dev.glorioustr.mtzstudio.tester
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 
 /**
@@ -16,6 +17,8 @@ data class ThemeManagerRuntimeProfile(
     val versionName: String?,
     val knownBehavior: ThemeManagerBehavior,
     val legacyTesterResolvable: Boolean,
+    /** True only when Themes itself advertises a public content-URI MTZ entry point. */
+    val publicMtzImportResolvable: Boolean,
     val splitApkCount: Int,
     val exportedThemeActivityCandidates: List<String>,
 )
@@ -23,7 +26,7 @@ data class ThemeManagerRuntimeProfile(
 class ThemeManagerCapabilityProbe(private val context: Context) {
     fun probe(installed: InstalledThemeManager): ThemeManagerRuntimeProfile {
         if (!installed.installed) {
-            return ThemeManagerRuntimeProfile(false, null, ThemeManagerBehavior.UNKNOWN, false, 0, emptyList())
+            return ThemeManagerRuntimeProfile(false, null, ThemeManagerBehavior.UNKNOWN, false, false, 0, emptyList())
         }
         val legacyTester = Intent(ThemeManagerContract.LEGACY_TESTER_ACTION).apply {
             component = ComponentName(ThemeManagerContract.PACKAGE_NAME, ThemeManagerContract.LEGACY_TESTER_COMPONENT)
@@ -31,6 +34,20 @@ class ThemeManagerCapabilityProbe(private val context: Context) {
         val resolvable = runCatching {
             context.packageManager.resolveActivity(legacyTester, PackageManager.MATCH_DEFAULT_ONLY) != null
         }.getOrDefault(false)
+        val publicMtzImport = listOf(
+            "application/vnd.miui.mtz",
+            "application/x-mtz",
+            "application/zip",
+            "application/octet-stream",
+        ).any { mimeType ->
+            runCatching {
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(Uri.parse("content://dev.glorioustr.mtzstudio.probe/theme.mtz"), mimeType)
+                    `package` = ThemeManagerContract.PACKAGE_NAME
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }.resolveActivity(context.packageManager) != null
+            }.getOrDefault(false)
+        }
         val splits = runCatching {
             context.packageManager.getApplicationInfo(ThemeManagerContract.PACKAGE_NAME, 0).splitSourceDirs?.size ?: 0
         }.getOrDefault(0)
@@ -57,6 +74,7 @@ class ThemeManagerCapabilityProbe(private val context: Context) {
             versionName = installed.versionName,
             knownBehavior = installed.behavior,
             legacyTesterResolvable = resolvable,
+            publicMtzImportResolvable = publicMtzImport,
             splitApkCount = splits,
             exportedThemeActivityCandidates = candidates,
         )

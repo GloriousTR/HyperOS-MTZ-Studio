@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import dev.glorioustr.mtzstudio.tester.InstalledThemeManager
 import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
 import dev.glorioustr.mtzstudio.tester.ThemeManagerContract
 import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
+import dev.glorioustr.mtzstudio.tester.ThemeManagerCapabilityProbe
 import dev.glorioustr.mtzstudio.tester.VerifiedThemeManagerApk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,8 +48,10 @@ internal fun ThemeManagerCompatibilityCard(
     openInput: (Uri) -> InputStream?,
 ) {
     val resources = LocalResources.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var installed by remember { mutableStateOf<InstalledThemeManager?>(null) }
+    var runtimeProfile by remember { mutableStateOf<dev.glorioustr.mtzstudio.tester.ThemeManagerRuntimeProfile?>(null) }
     var verifiedApk by remember { mutableStateOf<VerifiedThemeManagerApk?>(null) }
     var status by remember { mutableStateOf(resources.getString(R.string.tm_checking_version)) }
     var riskAccepted by remember { mutableStateOf(false) }
@@ -57,6 +61,7 @@ internal fun ThemeManagerCompatibilityCard(
         scope.launch {
             val detected = withContext(Dispatchers.IO) { inspector.inspect() }
             installed = detected
+            runtimeProfile = withContext(Dispatchers.IO) { ThemeManagerCapabilityProbe(context).probe(detected) }
             status = if (detected.isRecommended) {
                 resources.getString(R.string.tm_recommended_active)
             } else {
@@ -121,6 +126,15 @@ internal fun ThemeManagerCompatibilityCard(
                 )
                 if (!current.isRecommended) {
                     Text(current.behavior.explanation, style = MaterialTheme.typography.bodySmall)
+                }
+                runtimeProfile?.takeIf {
+                    current.installed && !it.legacyTesterResolvable && !it.publicMtzImportResolvable
+                }?.let {
+                    Text(
+                        stringResource(R.string.tm_rootless_import_unavailable),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
             if (installed?.isRecommended != true) Text(status, style = MaterialTheme.typography.bodySmall)

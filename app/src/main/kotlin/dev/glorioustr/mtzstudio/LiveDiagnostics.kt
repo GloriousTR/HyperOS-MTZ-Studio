@@ -370,14 +370,27 @@ class LiveDiagnosticsRecorder(private val context: Context) {
             "splitCount" to (applicationInfo.splitSourceDirs?.size ?: 0),
         ))
         try {
-            val command = """
-                set -eu
-                cp ${shellQuote(sourcePath)} ${shellQuote(temporary.toString())}
-                chmod 0644 ${shellQuote(temporary.toString())}
-                mv ${shellQuote(temporary.toString())} ${shellQuote(target.toString())}
-            """.trimIndent()
-            val result = PreferredPrivilegedCommandRunner(context).run(command, 90)
-            check(result.exitCode == 0) { "APK kopyalanamadı: ${result.output.take(240)}" }
+            // Android normally exposes an installed package's public source APK as world-readable.
+            // Prefer that public, no-root path so a diagnostic can be shared from stock devices.
+            // Split APKs are deliberately not silently merged: the base APK remains suitable for
+            // manifest/version analysis and the split count is included in the diagnostics.
+            val publicCopy = runCatching {
+                Files.copy(java.nio.file.Paths.get(sourcePath), temporary, StandardCopyOption.REPLACE_EXISTING)
+                Files.size(temporary)
+            }.getOrNull()
+            if (publicCopy == null || publicCopy <= 0L) {
+                Files.deleteIfExists(temporary)
+                val command = """
+                    set -eu
+                    cp ${shellQuote(sourcePath)} ${shellQuote(temporary.toString())}
+                    chmod 0644 ${shellQuote(temporary.toString())}
+                    mv ${shellQuote(temporary.toString())} ${shellQuote(target.toString())}
+                """.trimIndent()
+                val result = PreferredPrivilegedCommandRunner(context).run(command, 90)
+                check(result.exitCode == 0) { "APK kopyalanamadı: ${result.output.take(240)}" }
+            } else {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
+            }
             check(Files.isRegularFile(target) && Files.size(target) > 0) { "Dışa aktarılan APK okunamadı" }
             val archive = ThemeManagerInspector(context).inspectArchive(target.toString())
             check(archive.packageName == packageName) { "Dışa aktarılan dosya Xiaomi Temalar paketi değil" }
