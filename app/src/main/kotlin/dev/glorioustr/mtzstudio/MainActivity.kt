@@ -1272,7 +1272,10 @@ private fun StudioScreen(
                 rootlessMode = rootAccessAvailable == false,
                 onApplyTheme = { theme ->
                     if (!themeOperationRunning) {
-                        if (accessMode == StudioAccessMode.SHIZUKU) beginThemeApply(theme)
+                        // Rootless flows already prepare a safe public copy before handing the
+                        // operation to Xiaomi Themes. Do not ask for the same confirmation twice.
+                        // Root keeps the confirmation because it can mutate the private catalogue.
+                        if (rootAccessAvailable != true) beginThemeApply(theme)
                         else pendingApplyTheme = theme
                     }
                 },
