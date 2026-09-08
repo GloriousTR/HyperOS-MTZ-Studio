@@ -267,19 +267,38 @@ class ThemeApplyCoordinator(
             "${context.packageName}.files",
             source.toFile(),
         )
-        val directFileOpen = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(sourceUri, "application/octet-stream")
-            setPackage(THEME_MANAGER_PACKAGE)
-            clipData = ClipData.newRawUri("MTZ", sourceUri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        // Xiaomi changes the names of its internal local-theme screens between builds.  Never
+        // open a guessed explicit activity here: on 2.15.6.12-global the former
+        // MineResourceTabActivity no longer exists and causes an ActivityNotFoundException.
+        // An implicit file intent only proceeds when this installed Themes build advertises it.
+        val mimeTypes = listOf(
+            "application/vnd.miui.mtz",
+            "application/x-mtz",
+            "application/zip",
+            "application/octet-stream",
+        )
+        mimeTypes.forEach { mimeType ->
+            val directFileOpen = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(sourceUri, mimeType)
+                setPackage(THEME_MANAGER_PACKAGE)
+                clipData = ClipData.newRawUri("MTZ", sourceUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            if (directFileOpen.resolveActivity(context.packageManager) != null) {
+                diagnostics.record(
+                    "rootless_public_file_handoff",
+                    "Temalar uygulamasının ilan ettiği MTZ dosya açma yolu bulundu",
+                    mapOf("mimeType" to mimeType),
+                )
+                return directFileOpen
+            }
         }
-        if (directFileOpen.resolveActivity(context.packageManager) != null) return directFileOpen
 
-        val localLibrary = Intent().apply {
-            component = ComponentName(THEME_MANAGER_PACKAGE, THEME_MANAGER_MODERN_LOCAL_ACTIVITY)
-            putExtra("REQUEST_RESOURCE_CODE", "theme")
-        }
-        if (localLibrary.resolveActivity(context.packageManager) != null) return localLibrary
+        diagnostics.record(
+            "rootless_public_file_handoff_unavailable",
+            "Bu Temalar sürümü dış MTZ dosyası için ilan edilmiş bir içe aktarma etkinliği sunmuyor; Temalar ana ekranı açılacak",
+            mapOf("version" to installedThemeManagerVersion()),
+        )
         return checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
             "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
         }

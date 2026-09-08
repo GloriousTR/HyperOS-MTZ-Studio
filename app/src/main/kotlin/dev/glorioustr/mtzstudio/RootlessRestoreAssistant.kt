@@ -29,8 +29,6 @@ object RootlessRestoreAssistant {
     private const val NOTIFICATION_ID = 23101
     private const val THEME_MANAGER_PACKAGE = "com.android.thememanager"
     private const val LEGACY_TESTER_COMPONENT = "com.android.thememanager.ApplyThemeForScreenshot"
-    private const val MODERN_LOCAL_ACTIVITY =
-        "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity"
 
     fun remember(context: Context, prepared: PreparedThemeApply) {
         val path = prepared.manualImportPath.orEmpty()
@@ -107,7 +105,7 @@ object RootlessRestoreAssistant {
         val version = runCatching {
             context.packageManager.getPackageInfo(THEME_MANAGER_PACKAGE, 0).versionName
         }.getOrNull()
-        return if (ThemeManagerContract.behavior(version) == ThemeManagerBehavior.LOCAL_THEME_IMPORT) {
+        val legacyTester = if (ThemeManagerContract.behavior(version) == ThemeManagerBehavior.LOCAL_THEME_IMPORT) {
             Intent(ThemeManagerContract.LEGACY_TESTER_ACTION).apply {
                 component = ComponentName(THEME_MANAGER_PACKAGE, LEGACY_TESTER_COMPONENT)
                 putExtra("theme_file_path", path)
@@ -116,12 +114,16 @@ object RootlessRestoreAssistant {
                 putExtra("theme_remove_flags", -1L)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-        } else {
-            Intent().apply {
-                component = ComponentName(THEME_MANAGER_PACKAGE, MODERN_LOCAL_ACTIVITY)
-                putExtra("REQUEST_RESOURCE_CODE", "theme")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+        } else null
+        if (legacyTester?.resolveActivity(context.packageManager) != null) return legacyTester
+
+        // Do not reference a guessed Xiaomi internal activity.  Some Global releases, including
+        // 2.15.6.12, removed MineResourceTabActivity entirely.  Opening the package launcher is
+        // safe and lets the user complete any ROM-specific manual import from Downloads/MTZ Studio.
+        return checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
+            "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
+        }.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
 }

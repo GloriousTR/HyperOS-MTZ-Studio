@@ -115,6 +115,7 @@ class MainActivity : ComponentActivity() {
             "knownBehavior" to capabilityProfile.knownBehavior,
             "legacyTesterResolvable" to capabilityProfile.legacyTesterResolvable,
             "splitApkCount" to capabilityProfile.splitApkCount,
+            "exportedThemeActivityCandidates" to capabilityProfile.exportedThemeActivityCandidates.joinToString(),
         ))
         setContent {
             var appearance by remember { mutableStateOf(appearanceStore.load()) }
