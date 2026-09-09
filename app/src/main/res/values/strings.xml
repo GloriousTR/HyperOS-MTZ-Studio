@@ -398,4 +398,15 @@
     <string name="action_translate">Translate</string>
     <string name="shizuku_recommended_title">Shizuku required</string>
     <string name="shizuku_recommended_desc">Theme applying on a non-rooted device requires Shizuku or Shevery. Start the installed manager with Wireless debugging and grant MTZ Studio permission. If neither app is installed, Shevery is the recommended option.</string>
+    <string name="shizuku_tutorial_open">Visual setup guide</string>
+    <string name="shizuku_tutorial_title">Pair with a wireless debugging code</string>
+    <string name="shizuku_tutorial_intro">For Android 11 and newer. Keep the phone connected to Wi-Fi and use split screen so Settings and Shizuku/Shevery can remain visible together.</string>
+    <string name="shizuku_tutorial_step_1">Enable Developer options, then enable USB debugging and Wireless debugging.</string>
+    <string name="shizuku_tutorial_step_2">Open Wireless debugging and tap “Pair device with pairing code”. Keep the six-digit code on screen.</string>
+    <string name="shizuku_tutorial_step_3">Return to Shizuku/Shevery, choose pairing by code, enter the displayed code, and confirm.</string>
+    <string name="shizuku_tutorial_step_4">Tap Start in Shizuku/Shevery. Return to MTZ Studio and allow its Shizuku permission request.</string>
+    <string name="shizuku_tutorial_miui_tip">Xiaomi tip: also enable “USB debugging (Security settings)”. Pairing must be started again after a phone restart.</string>
+    <string name="shizuku_tutorial_open_settings">Open Developer options</string>
+    <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
+    <string name="shizuku_tutorial_close">Done</string>
 </resources>

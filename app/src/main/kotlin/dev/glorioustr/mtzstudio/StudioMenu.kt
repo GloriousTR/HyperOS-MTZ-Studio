@@ -1,6 +1,8 @@
 package dev.glorioustr.mtzstudio
 
 import android.net.Uri
+import android.content.Intent
+import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -73,6 +75,8 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -168,6 +172,7 @@ internal fun HomeMenuScreen(
     showThemeManagerVersionTool: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    var showShizukuTutorial by remember { mutableStateOf(false) }
     val rows = listOf(
         MenuSpec(
             StudioDestination.THEMES,
@@ -245,6 +250,14 @@ internal fun HomeMenuScreen(
                                 authorizationManagerName ?: "Shevery · GitHub",
                             )
                         }
+                        OutlinedButton(
+                            onClick = { showShizukuTutorial = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Filled.Info, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.shizuku_tutorial_open))
+                        }
                     }
                 }
             }
@@ -315,6 +328,83 @@ internal fun HomeMenuScreen(
         }
         item { Spacer(Modifier.height(20.dp)) }
     }
+
+    if (showShizukuTutorial) {
+        ShizukuPairingTutorialDialog(onDismiss = { showShizukuTutorial = false })
+    }
+}
+
+@Composable
+private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val steps = listOf(
+        stringResource(R.string.shizuku_tutorial_step_1),
+        stringResource(R.string.shizuku_tutorial_step_2),
+        stringResource(R.string.shizuku_tutorial_step_3),
+        stringResource(R.string.shizuku_tutorial_step_4),
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shizuku_tutorial_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    stringResource(R.string.shizuku_tutorial_intro),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                steps.forEachIndexed { index, step ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ) {
+                            Text(
+                                text = "${index + 1}",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Text(step, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                Text(
+                    stringResource(R.string.shizuku_tutorial_miui_tip),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.shizuku_tutorial_open_settings)) }
+                Button(
+                    onClick = { uriHandler.openUri(SHIZUKU_SETUP_GUIDE_URL) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.shizuku_tutorial_open_official))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.shizuku_tutorial_close)) }
+        },
+    )
 }
 
 @Composable
@@ -3058,6 +3148,7 @@ private val THEME_GALLERY_CATEGORIES = setOf(
 )
 
 private const val PROJECT_REPOSITORY_URL = "https://github.com/GloriousTR/HyperOS-MTZ-Studio"
+private const val SHIZUKU_SETUP_GUIDE_URL = "https://shizuku.rikka.app/guide/setup/"
 
 internal fun destinationFor(category: ComponentCategory): StudioDestination = when (category) {
     ComponentCategory.ICONS -> StudioDestination.ICONS

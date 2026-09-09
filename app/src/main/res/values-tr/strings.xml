@@ -398,4 +398,15 @@
     <string name="action_translate">Çeviri</string>
     <string name="shizuku_recommended_title">Shizuku gerekli</string>
     <string name="shizuku_recommended_desc">Rootsuz cihazda tema uygulamak için Shizuku veya Shevery gereklidir. Kurulu yöneticiyi Kablosuz hata ayıklama ile başlatın ve MTZ Studio’ya izin verin. İkisi de kurulu değilse önerilen seçenek Shevery’dir.</string>
+    <string name="shizuku_tutorial_open">Görsel kurulum rehberi</string>
+    <string name="shizuku_tutorial_title">Kablosuz hata ayıklama koduyla eşleştir</string>
+    <string name="shizuku_tutorial_intro">Android 11 ve üzeri içindir. Telefon Wi-Fi’ye bağlı olsun. Ayarlar ile Shizuku/Shevery’yi birlikte görebilmek için bölünmüş ekranı kullanabilirsiniz.</string>
+    <string name="shizuku_tutorial_step_1">Geliştirici seçeneklerini açın; ardından USB hata ayıklama ve Kablosuz hata ayıklama seçeneklerini etkinleştirin.</string>
+    <string name="shizuku_tutorial_step_2">Kablosuz hata ayıklama ekranına girip “Eşleme kodu ile cihaz eşle” seçeneğine dokunun. Bazı sürümlerde bu ad “Eşleştirme koduyla cihaz eşleştir” olabilir. Altı haneli kod ekranda açık kalsın.</string>
+    <string name="shizuku_tutorial_step_3">Shizuku/Shevery’ye dönün, kodla eşleştirmeyi seçin, ekrandaki kodu girip onaylayın.</string>
+    <string name="shizuku_tutorial_step_4">Shizuku/Shevery içinde Başlat’a dokunun. MTZ Studio’ya dönün ve istenen Shizuku iznini verin.</string>
+    <string name="shizuku_tutorial_miui_tip">Xiaomi notu: Temel eşleştirme için yukarıdaki menüler yeterlidir. Yalnızca yetki hatası yaşanırsa ve cihazınızda bulunuyorsa “USB hata ayıklama (Güvenlik ayarları)” seçeneğini etkinleştirin. Telefon yeniden başladığında hizmeti yeniden başlatmanız gerekir.</string>
+    <string name="shizuku_tutorial_open_settings">Geliştirici seçeneklerini aç</string>
+    <string name="shizuku_tutorial_open_official">Resmî resimli rehberi aç</string>
+    <string name="shizuku_tutorial_close">Tamam</string>
 </resources>

@@ -366,4 +366,15 @@
     <string name="about_contact_telegram">Contact @Glorioustr on Telegram</string>
     <string name="btn_report_problem_telegram">Report a problem on Telegram</string>
     <string name="diag_telegram_support_desc">Export the diagnostics package first, then attach it when contacting @Glorioustr.</string>
+    <string name="shizuku_tutorial_open">Visual setup guide</string>
+    <string name="shizuku_tutorial_title">Pair with a wireless debugging code</string>
+    <string name="shizuku_tutorial_intro">For Android 11 and newer. Keep the phone connected to Wi-Fi and use split screen so Settings and Shizuku/Shevery can remain visible together.</string>
+    <string name="shizuku_tutorial_step_1">Enable Developer options, then enable USB debugging and Wireless debugging.</string>
+    <string name="shizuku_tutorial_step_2">Open Wireless debugging and tap “Pair device with pairing code”. Keep the six-digit code on screen.</string>
+    <string name="shizuku_tutorial_step_3">Return to Shizuku/Shevery, choose pairing by code, enter the displayed code, and confirm.</string>
+    <string name="shizuku_tutorial_step_4">Tap Start in Shizuku/Shevery. Return to MTZ Studio and allow its Shizuku permission request.</string>
+    <string name="shizuku_tutorial_miui_tip">Xiaomi tip: the steps above are sufficient for normal pairing. Only if authorization fails and your device exposes it, enable “USB debugging (Security settings)”. Restart the service after every phone reboot.</string>
+    <string name="shizuku_tutorial_open_settings">Open Developer options</string>
+    <string name="shizuku_tutorial_close">Done</string>
+    <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
 </resources>
