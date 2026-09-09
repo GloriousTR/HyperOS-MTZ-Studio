@@ -276,7 +276,17 @@ class ThemePersistenceGuardService : Service() {
         }
 
         fun resumeIfArmed(context: Context) {
-            if (!context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)) return
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val validRecord = prefs.getBoolean(KEY_ENABLED, false) &&
+                !prefs.getString(KEY_THEME_NAME, null).isNullOrBlank() &&
+                !prefs.getString(KEY_APPLY_INTENT, null).isNullOrBlank()
+            if (!validRecord) {
+                // Versions before the component watcher only stored an "enabled" bit. Do not
+                // present that legacy flag as an armed watcher without a verified apply target.
+                prefs.edit().putBoolean(KEY_ENABLED, false).apply()
+                pause(context)
+                return
+            }
             start(context)
         }
 
