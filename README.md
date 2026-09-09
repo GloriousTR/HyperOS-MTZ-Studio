@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.1"><strong>Download v3.3.1</strong></a>
-  · <a href="docs/release-notes-v3.3.1.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.0"><strong>Download v3.4.0</strong></a>
+  · <a href="docs/release-notes-v3.4.0.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -27,11 +27,24 @@
 - **MTZ library:** safely imports, validates, previews and organizes complete themes, icons and fonts.
 - **BAK Converter:** converts supported Xiaomi Themes `.bak` archives directly into portable MTZ packages without replacing Xiaomi Themes data. Results appear immediately in the Studio library.
 - **Theme Language Tool:** detects visible theme text and translates it into the app language. Reviewed Chinese terminology, safe MAML handling, translation memory and optional user-configured API providers improve natural results.
+- **Background operations:** translation and cloud transfers continue while Studio is minimized, with live card and notification progress.
+- **Portable cloud backup:** stores the Studio library in a user-selected Google Drive, OneDrive or document-provider folder, with optional HTTPS WebDAV/Nextcloud support.
+- **Secure updates:** checks GitHub releases in the background, downloads newer APKs and verifies their checksum, package identity, version and signing certificate before opening Android's installer.
 - **Theme Composer:** combines a base theme with selected icons, lock screen, status bar, dialer, messages, launcher, AOD, font and wallpapers while preserving untouched components.
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
 
-## v3.3.1 highlights
+## v3.4.0 highlights
+
+- Added per-theme translation progress between the Apply and Translate/Delete controls.
+- Translation continues in a foreground background task and reports progress in Android notifications.
+- Replaced device-local “cloud” storage with a real persistent cloud-folder workflow for cross-device restore.
+- Added real HTTPS WebDAV/Nextcloud upload and restore; credentials are protected by Android Keystore.
+- Cloud backup and restore now continue when the app is minimized and report completion through notifications.
+- Added automatic GitHub update checks and secure APK downloading. Android still asks for final installation confirmation.
+- Updated all 20 interface languages for cloud folders and update notifications.
+
+## Existing capabilities
 
 - Shizuku/Shevery is now required for applying themes without root; unreliable standard-rootless Xiaomi hand-offs are no longer attempted.
 - Detects an installed Shizuku or Shevery manager and opens it directly when authorization is not ready.
@@ -84,11 +97,13 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.3.1.apk` and its checksum from the [v3.3.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.1).
+1. Download `MTZ_Studio_v3.4.0.apk` and its checksum from the [v3.4.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.0).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 
 v2.1.0 and later releases use the same stable signing key and normally support in-place upgrades. Older CI builds may require backup, uninstall and reinstall because they used a different certificate.
+
+From v3.4.0 onward, Studio checks the official GitHub release channel automatically. A downloaded update is installed only after checksum and signing-certificate verification and Android's system confirmation.
 
 ## Build
 
