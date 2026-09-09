@@ -6,7 +6,6 @@ import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -2301,7 +2299,6 @@ private fun ThemeActionDock(
             ) {
                 Text(stringResource(R.string.action_apply), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            TranslationProgressBar(translationProgress)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     onClick = onTranslate,
@@ -2309,7 +2306,23 @@ private fun ThemeActionDock(
                     shape = RoundedCornerShape(0.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    Text(stringResource(R.string.action_translate), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (translationProgress?.running == true) {
+                        CircularProgressIndicator(
+                            progress = { translationProgress.fraction },
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        text = if (translationProgress?.running == true) {
+                            "${stringResource(R.string.action_translate)} ${(translationProgress.fraction * 100).toInt()}%"
+                        } else {
+                            stringResource(R.string.action_translate)
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 Spacer(Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 TextButton(
@@ -2455,37 +2468,6 @@ private fun ThemeDetailsDialog(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TranslationProgressBar(progress: ThemeTranslationProgress?) {
-    val fraction = progress?.fraction ?: 1f
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(24.dp)
-            .padding(horizontal = 8.dp, vertical = 5.dp)
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(50)),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        if (progress?.running == true) {
-            Text(
-                text = "${(fraction * 100).toInt()}%",
-                modifier = Modifier.align(Alignment.Center),
-                color = if (fraction >= 0.48f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }

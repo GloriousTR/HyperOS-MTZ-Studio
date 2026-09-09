@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.0"><strong>Download v3.4.0</strong></a>
-  · <a href="docs/release-notes-v3.4.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.1"><strong>Download v3.4.1</strong></a>
+  · <a href="docs/release-notes-v3.4.1.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -34,9 +34,9 @@
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
 
-## v3.4.0 highlights
+## v3.4.1 highlights
 
-- Added per-theme translation progress between the Apply and Translate/Delete controls.
+- Translation progress is now shown compactly inside the Translate button; the separate bar between theme actions was removed.
 - Translation continues in a foreground background task and reports progress in Android notifications.
 - Replaced device-local “cloud” storage with a real persistent cloud-folder workflow for cross-device restore.
 - Added real HTTPS WebDAV/Nextcloud upload and restore; credentials are protected by Android Keystore.
@@ -97,7 +97,7 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.4.0.apk` and its checksum from the [v3.4.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.0).
+1. Download `MTZ_Studio_v3.4.1.apk` and its checksum from the [v3.4.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.1).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 
