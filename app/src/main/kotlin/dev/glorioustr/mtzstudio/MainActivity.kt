@@ -4,6 +4,7 @@ import android.Manifest
 import android.accounts.AccountManager
 import android.app.Activity
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -79,6 +80,20 @@ import java.io.OutputStream
 import java.nio.file.Path
 
 private const val MAX_SAFE_FULL_CATALOG_THEMES = 24
+private val SHIZUKU_MANAGER_PACKAGES = listOf(
+    "moe.shizuku.privileged.api",
+    "com.hamondev.shevery",
+)
+
+private data class AuthorizationManagerApp(val packageName: String, val displayName: String)
+
+private fun Context.installedAuthorizationManager(): AuthorizationManagerApp? =
+    SHIZUKU_MANAGER_PACKAGES.firstNotNullOfOrNull { packageName ->
+        runCatching {
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            AuthorizationManagerApp(packageName, packageManager.getApplicationLabel(info).toString())
+        }.getOrNull()
+    }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -281,6 +296,7 @@ private fun StudioScreen(
     // Keep this unknown until the asynchronous root/Shizuku probe finishes. Rendering STANDARD
     // here caused a misleading rootless card to flash briefly on rooted devices.
     var accessMode by remember { mutableStateOf<StudioAccessMode?>(null) }
+    var authorizationManager by remember { mutableStateOf(context.installedAuthorizationManager()) }
     val capabilities = StudioCapabilityPolicy(
         rootAvailable = rootAccessAvailable == true,
         themeManagerBehavior = themeManagerBehavior,
@@ -1180,6 +1196,17 @@ private fun StudioScreen(
         }
     }
 
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                authorizationManager = context.installedAuthorizationManager()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+
     androidx.compose.runtime.LaunchedEffect(Unit) {
         // The local library is always available, including while capability detection runs.
         reload()
@@ -1197,7 +1224,7 @@ private fun StudioScreen(
             when (mode) {
                 StudioAccessMode.ROOT -> "Rootlu tam erişim modu etkin"
                 StudioAccessMode.SHIZUKU -> "Shizuku gelişmiş rootsuz modu etkin"
-                StudioAccessMode.STANDARD -> "Standart rootsuz çalışma alanı etkin"
+                StudioAccessMode.STANDARD -> "Shizuku veya Shevery bağlantısı bekleniyor"
             },
             mapOf("root" to rootReady, "mode" to mode.name, "themeManagerBehavior" to themeManagerBehavior),
         )
@@ -1323,6 +1350,18 @@ private fun StudioScreen(
                         .onFailure { error -> status = resources.getString(R.string.bak_import_failed, error.message ?: "") }
                 },
                 onNavigate = { navigateTo(it) },
+                authorizationManagerName = authorizationManager?.displayName,
+                onOpenAuthorizationManager = {
+                    authorizationManager?.let { manager ->
+                        runCatching {
+                            val launchIntent = checkNotNull(context.packageManager.getLaunchIntentForPackage(manager.packageName))
+                            context.startActivity(launchIntent)
+                        }.onFailure { error ->
+                            status = resources.getString(R.string.privileged_permission_request_failed)
+                            diagnostics.record("authorization_manager_open_failed", "Shizuku uyumlu yönetici açılamadı", error = error)
+                        }
+                    }
+                },
                 showThemeManagerVersionTool = rootAccessAvailable == true && !modernThemeManagerMode,
                 modifier = contentModifier,
             )
@@ -1337,14 +1376,17 @@ private fun StudioScreen(
                 onShowAllDeviceThemes = ::requestFullThemeManagerCatalog,
                 showDeviceImport = rootAccessAvailable == true,
                 nativeCatalogMode = capabilities.usesNativeCatalog,
-                rootlessMode = rootAccessAvailable == false,
+                rootlessMode = accessMode == StudioAccessMode.STANDARD,
                 onApplyTheme = { theme ->
                     if (!themeOperationRunning) {
-                        // Rootless flows already prepare a safe public copy before handing the
-                        // operation to Xiaomi Themes. Do not ask for the same confirmation twice.
-                        // Root keeps the confirmation because it can mutate the private catalogue.
-                        if (rootAccessAvailable != true) beginThemeApply(theme)
-                        else pendingApplyTheme = theme
+                        when (accessMode) {
+                            StudioAccessMode.ROOT -> pendingApplyTheme = theme
+                            StudioAccessMode.SHIZUKU -> beginThemeApply(theme)
+                            StudioAccessMode.STANDARD, null -> {
+                                status = resources.getString(R.string.shizuku_recommended_desc)
+                                operationError = status
+                            }
+                        }
                     }
                 },
                 onTranslateTheme = ::localizeTheme,

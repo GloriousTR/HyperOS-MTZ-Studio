@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.2.0"><strong>Download v3.2.0</strong></a>
-  · <a href="docs/release-notes-v3.2.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.2.2"><strong>Download v3.2.2</strong></a>
+  · <a href="docs/release-notes-v3.2.2.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -28,15 +28,18 @@
 - **BAK Converter:** converts supported Xiaomi Themes `.bak` archives directly into portable MTZ packages without replacing Xiaomi Themes data. Results appear immediately in the Studio library.
 - **Theme Language Tool:** detects visible theme text and translates it into the app language. Reviewed Chinese terminology, safe MAML handling, translation memory and optional user-configured API providers improve natural results.
 - **Theme Composer:** combines a base theme with selected icons, lock screen, status bar, dialer, messages, launcher, AOD, font and wallpapers while preserving untouched components.
-- **Adaptive application:** chooses the safest available Root, Shizuku/Shevery or standard rootless route for the installed Xiaomi Themes family.
+- **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
 
-## v3.2.0 highlights
+## v3.2.2 highlights
 
+- Shizuku/Shevery is now required for applying themes without root; unreliable standard-rootless Xiaomi hand-offs are no longer attempted.
+- Detects an installed Shizuku or Shevery manager and opens it directly when authorization is not ready.
+- When neither manager is installed, Studio recommends Shevery and links to its official GitHub releases page.
+- Shizuku theme persistence monitoring can automatically restore the last protected theme after Xiaomi replaces its active components.
 - Direct **BAK → MTZ** reconstruction in Shizuku/Shevery mode; no root request and no destructive Theme Manager restore.
 - Optional translation during conversion, or preservation of the original theme language.
 - Converted themes are added straight to **Themes**; font-only packages remain under **Fonts**.
-- Standard rootless and Shizuku apply now start without MTZ Studio’s redundant second confirmation.
 - Expanded multilingual XML, JSON and safe MAML translation with optional BYOK API settings and offline fallback.
 - Editable Vector/LSPosed recommendations: **Android System**, **System Framework** and **Themes**.
 - 20 interface languages, RTL support, Material You/Liquid Glass styles and System/Light/Dark/AMOLED modes.
@@ -56,20 +59,20 @@
 | Mode | Available workflow |
 | --- | --- |
 | **Root** | Private Xiaomi Themes catalog access, supported native import/apply/delete, advanced diagnostics and compatible Xposed integration. |
-| **Shizuku / Shevery** | BAK Converter, Studio workspace and supported public/system-shell hand-offs without presenting shell access as root. |
-| **Standard rootless** | MTZ import, preview, translation, composition, export and supported Xiaomi Themes manual/public hand-off. |
+| **Shizuku / Shevery** | BAK Converter, authorized local import/apply, persistence monitoring and Studio tools without root. |
+| **No authorization service** | Local MTZ import, preview, translation, composition and export remain available; theme applying waits for Shizuku/Shevery. |
 
-Standard rootless mode also runs a best-effort persistence guard against known ordered Xiaomi validation broadcasts. It does not require Shizuku, but it cannot silently write private Theme Manager data or guarantee persistence on every ROM. After a reboot, Studio can offer a visible one-tap return to the last selected theme instead of applying it invisibly.
+On non-rooted devices, install and start Shizuku or [Shevery](https://github.com/HmnDev-Tech/shevery/releases) with Wireless debugging, then grant MTZ Studio permission. If either compatible manager is already installed, Studio opens that app instead of recommending another one.
 
 ## Compatibility
 
 | Xiaomi Themes family | Status |
 | --- | --- |
 | `2.15.5.46`, `3.0.4.32`, `3.0.5.6` | Verified Global contract |
-| `3.0.5.14` | Xiaomi temporary/composite behavior |
+| `3.0.5.14` | Shizuku BAK + local apply verified; legacy direct call remains temporary/composite |
 | `3.0.6.8` | Legacy tester activity removed |
 | `10.8.7.6+` | Native bridge when required runtime surfaces and privileges are present |
-| Other builds | Studio tools remain available; privileged behavior is not guessed |
+| Other builds | Runtime activity probing is used; Shizuku imports to the library and safely opens Xiaomi Themes when direct apply is unavailable |
 
 Modern root integration requires an active Vector/LSPosed-compatible environment and appropriate scopes. MTZ Studio recommends Android System (`android`), System Framework (`system`) and Themes (`com.android.thememanager`) while keeping the list editable.
 
@@ -78,7 +81,7 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.2.0.apk` and its checksum from the [v3.2.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.2.0).
+1. Download `MTZ_Studio_v3.2.2.apk` and its checksum from the [v3.2.2 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.2.2).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 

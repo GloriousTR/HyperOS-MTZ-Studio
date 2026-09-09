@@ -98,14 +98,22 @@ class ThemeApplyCoordinator(
                 }.takeIf { it.resolveActivity(context.packageManager) != null }
                 diagnostics.record(
                     "rootless_local_apply_ready",
-                    "Tema Xiaomi'nin yerel uygulama geçidine hazırlandı",
-                    mapOf("restoredPath" to restoredThemePath, "caller" to THEME_MANAGER_PACKAGE),
+                    if (testerIntent != null) {
+                        "Tema Xiaomi'nin yerel uygulama geçidine hazırlandı"
+                    } else {
+                        "Tema kitaplığa aktarıldı; bu Temalar sürümünde doğrudan uygulama geçidi olmadığı için güvenli ana ekran açılacak"
+                    },
+                    mapOf(
+                        "restoredPath" to restoredThemePath,
+                        "caller" to THEME_MANAGER_PACKAGE,
+                        "directApplyAvailable" to (testerIntent != null),
+                    ),
                 )
                 return PreparedThemeApply(
                     themeId = theme.id.value,
                     themeName = themeName,
                     stagedPath = "",
-                    intent = testerIntent ?: publicThemeManagerIntent(theme.archive.source),
+                    intent = testerIntent ?: safeThemeManagerLauncherIntent(),
                     protocol = ThemeApplyProtocol.ROOTLESS_BACKUP_RESTORE,
                     manualImportPath = restoredThemePath,
                 )
@@ -325,6 +333,11 @@ class ThemeApplyCoordinator(
         )
         throw IllegalStateException(context.getString(R.string.tm_rootless_import_unavailable))
     }
+
+    private fun safeThemeManagerLauncherIntent(): Intent =
+        checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
+            "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
+        }
 
     private fun prepareLegacyTester(theme: LibraryTheme): PreparedThemeApply {
         val stagedPath = "$THEME_MANAGER_STAGING_ROOT/${UUID.randomUUID()}.mtz"

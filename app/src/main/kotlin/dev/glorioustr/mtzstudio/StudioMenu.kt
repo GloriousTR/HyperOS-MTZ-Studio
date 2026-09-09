@@ -163,6 +163,8 @@ internal fun HomeMenuScreen(
     bakImporting: Boolean,
     onAddBak: () -> Unit,
     onNavigate: (StudioDestination) -> Unit,
+    authorizationManagerName: String? = null,
+    onOpenAuthorizationManager: () -> Unit = {},
     showThemeManagerVersionTool: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -179,7 +181,7 @@ internal fun HomeMenuScreen(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (accessMode == StudioAccessMode.STANDARD || accessMode == StudioAccessMode.SHIZUKU) {
+        if (accessMode == StudioAccessMode.SHIZUKU) {
             item {
                 StudioCard(Modifier.fillMaxWidth()) {
                     Row(
@@ -190,12 +192,12 @@ internal fun HomeMenuScreen(
                         MenuIconBox(Icons.Filled.Lock, Color(0xFF2E7D32))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(
-                                stringResource(if (accessMode == StudioAccessMode.SHIZUKU) R.string.shizuku_mode_title else R.string.rootless_mode_title),
+                                stringResource(R.string.shizuku_mode_title),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Text(
-                                stringResource(if (accessMode == StudioAccessMode.SHIZUKU) R.string.shizuku_mode_desc else R.string.rootless_mode_desc),
+                                stringResource(R.string.shizuku_mode_desc),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -206,23 +208,41 @@ internal fun HomeMenuScreen(
         }
         if (accessMode == StudioAccessMode.STANDARD) {
             item {
+                val uriHandler = LocalUriHandler.current
                 StudioCard(Modifier.fillMaxWidth()) {
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        MenuIconBox(Icons.Filled.VerifiedUser, Color(0xFF1565C0))
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            MenuIconBox(Icons.Filled.VerifiedUser, Color(0xFF1565C0))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(
+                                    if (authorizationManagerName == null) "Shevery" else stringResource(R.string.shizuku_recommended_title),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    stringResource(R.string.shizuku_recommended_desc),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = {
+                                if (authorizationManagerName != null) onOpenAuthorizationManager()
+                                else uriHandler.openUri(SHEVERY_RELEASES_URL)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text(
-                                stringResource(R.string.shizuku_recommended_title),
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                stringResource(R.string.shizuku_recommended_desc),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall,
+                                authorizationManagerName ?: "Shevery · GitHub",
                             )
                         }
                     }
@@ -447,7 +467,7 @@ internal fun ThemesScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 StudioCard(Modifier.fillMaxWidth()) {
                     Text(
-                        stringResource(R.string.rootless_mode_desc),
+                        stringResource(R.string.shizuku_recommended_desc),
                         modifier = Modifier.padding(12.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
@@ -2118,6 +2138,8 @@ private fun ThemeGalleryCard(
         )
     }
 }
+
+private const val SHEVERY_RELEASES_URL = "https://github.com/HmnDev-Tech/shevery/releases"
 
 @Composable
 private fun ThemeActionDock(

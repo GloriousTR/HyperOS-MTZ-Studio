@@ -24,6 +24,8 @@
         <package android:name="org.matrix.vector.manager" />
         <package android:name="com.android.thememanager" />
         <package android:name="com.software41.appshare" />
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="com.hamondev.shevery" />
     </queries>
 
     <application
