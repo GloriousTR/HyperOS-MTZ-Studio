@@ -609,7 +609,7 @@ private fun StudioScreen(
 
     fun launchPreparedTheme(prepared: PreparedThemeApply) {
         try {
-            if (prepared.operation == ThemeManagerOperation.APPLY) {
+            if (prepared.operation == ThemeManagerOperation.APPLY && accessMode == StudioAccessMode.STANDARD) {
                 runCatching { ThemePersistenceGuardService.start(context.applicationContext) }
                     .onFailure { diagnostics.record("theme_guard_start_failed", "Yerel tema koruması başlatılamadı", error = it) }
             }
@@ -1144,6 +1144,9 @@ private fun StudioScreen(
             withContext(Dispatchers.Main) {
                 accessMode = mode
                 rootAccessAvailable = mode == StudioAccessMode.ROOT
+                if (mode != StudioAccessMode.STANDARD) {
+                    ThemePersistenceGuardService.disable(context.applicationContext)
+                }
             }
         }
     }
@@ -1154,6 +1157,9 @@ private fun StudioScreen(
         val mode = withContext(Dispatchers.IO) { privilegedRunner.accessModeSilently() }
         accessMode = mode
         rootAccessAvailable = mode == StudioAccessMode.ROOT
+        if (mode != StudioAccessMode.STANDARD) {
+            ThemePersistenceGuardService.disable(context.applicationContext)
+        }
         val rootReady = mode == StudioAccessMode.ROOT
         diagnostics.record(
             "privilege_mode_selected",

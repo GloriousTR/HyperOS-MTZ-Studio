@@ -78,5 +78,11 @@ class ThemePersistenceGuardService : Service() {
             if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)
             context.getSharedPreferences("theme-persistence", Context.MODE_PRIVATE).edit().putBoolean("enabled", true).apply()
         }
+
+        /** Shizuku and root routes do not need this best-effort Standard-mode receiver. */
+        fun disable(context: Context) {
+            context.stopService(Intent(context, ThemePersistenceGuardService::class.java))
+            context.getSharedPreferences("theme-persistence", Context.MODE_PRIVATE).edit().putBoolean("enabled", false).apply()
+        }
     }
 }
