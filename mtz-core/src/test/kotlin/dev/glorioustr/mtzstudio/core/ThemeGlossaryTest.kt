@@ -5,6 +5,12 @@ import kotlin.test.*
 class ThemeGlossaryTest {
 
     @Test
+    fun `chinese segmenter retains whitespace-only clauses without crashing`() {
+        assertEquals(" ", ChineseTranslationSegmenter.translate(" ", "tr") { error("must not translate whitespace") })
+        assertEquals("\n", ChineseTranslationSegmenter.translate("\n", "tr") { error("must not translate whitespace") })
+    }
+
+    @Test
     fun `resolves weather conditions accurately without literal mistranslations`() {
         assertEquals("Güneşli", ThemeGlossary.resolve("晴", "tr"))
         assertEquals("Güneşli", ThemeGlossary.resolve("晴天", "tr"))

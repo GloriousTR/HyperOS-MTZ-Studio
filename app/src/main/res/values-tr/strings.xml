@@ -393,4 +393,6 @@
     <string name="theme_language_tool_complete">Çevrilebilen metinler mevcut temaya kaydedildi. Değişiklikleri görmek için temayı yeniden uygulayın. Görsellere gömülü yazılar ve işlevsel ifadeler değişmez.</string>
     <string name="theme_language_tool_failed">Tema metinleri çevrilemedi: %1$s</string>
     <string name="action_translate">Çeviri</string>
+    <string name="shizuku_recommended_title">Shizuku önerilir</string>
+    <string name="shizuku_recommended_desc">Rootsuz cihazlarda daha güvenilir uygulama için Shizuku’yu Kablosuz hata ayıklama ile başlatın ve MTZ Studio’ya izin verin. Shizuku + BAK Converter yolu, root olmadan temayı yerel Tema kitaplığına aktarabilir.</string>
 </resources>

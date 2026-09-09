@@ -13,7 +13,12 @@ object ChineseTranslationSegmenter {
             clause.setLength(0)
             val leading = value.takeWhile(Char::isWhitespace)
             val trailing = value.takeLastWhile(Char::isWhitespace)
-            val core = value.substring(leading.length, value.length - trailing.length)
+            // A one-character whitespace-only clause is both leading and trailing whitespace.
+            // Do not subtract it twice: that previously produced substring(1, 0) and cancelled
+            // the entire theme conversion instead of simply retaining the separator.
+            val coreStart = leading.length
+            val coreEnd = (value.length - trailing.length).coerceAtLeast(coreStart)
+            val core = value.substring(coreStart, coreEnd)
             output.append(leading)
             output.append(if (ThemeGlossary.containsChinese(core)) ThemeGlossary.resolve(core, targetLanguage) ?: translateClause(core) else core)
             output.append(trailing)

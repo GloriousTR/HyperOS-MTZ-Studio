@@ -204,6 +204,31 @@ internal fun HomeMenuScreen(
                 }
             }
         }
+        if (accessMode == StudioAccessMode.STANDARD) {
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        MenuIconBox(Icons.Filled.VerifiedUser, Color(0xFF1565C0))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                stringResource(R.string.shizuku_recommended_title),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.shizuku_recommended_desc),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         item {
             StudioCard(Modifier.fillMaxWidth()) {
                 MenuHeader(
