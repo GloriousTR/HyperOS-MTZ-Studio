@@ -14,7 +14,7 @@ on:
       tag_name:
         description: 'Release tag, or signed artifact label for a private test build'
         required: false
-        default: 'v3.2.1-test9'
+        default: 'v3.2.1-test10'
       release_name:
         description: 'Release Title'
         required: false

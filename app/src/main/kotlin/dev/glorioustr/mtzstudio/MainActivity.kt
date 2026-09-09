@@ -581,9 +581,7 @@ private fun StudioScreen(
                     studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
                 }
             }
-            if (prepared.operation == ThemeManagerOperation.APPLY &&
-                prepared.protocol.name.startsWith("ROOTLESS_")
-            ) {
+            if (prepared.operation == ThemeManagerOperation.APPLY) {
                 // Applying a full theme recreates the activity on some HyperOS builds. The
                 // asynchronous access probe can still be pending when the result is delivered,
                 // so do not let a transient null UI state skip persistence arming.
@@ -591,7 +589,7 @@ private fun StudioScreen(
                     val confirmedMode = accessMode ?: withContext(Dispatchers.IO) {
                         privilegedRunner.accessModeSilently()
                     }
-                    if (confirmedMode == StudioAccessMode.SHIZUKU) runCatching {
+                    if (confirmedMode == StudioAccessMode.SHIZUKU || confirmedMode == StudioAccessMode.ROOT) runCatching {
                         ThemePersistenceGuardService.arm(context.applicationContext, prepared)
                     }.onFailure {
                         diagnostics.record(
@@ -637,6 +635,13 @@ private fun StudioScreen(
         try {
             preparedApply = prepared
             persistPreparedApply(prepared)
+            if (prepared.operation == ThemeManagerOperation.APPLY &&
+                (accessMode == StudioAccessMode.SHIZUKU || accessMode == StudioAccessMode.ROOT)
+            ) {
+                // Xiaomi Themes does not reliably return a result on every build. Arm before
+                // leaving Studio so monitoring still starts when that external screen remains open.
+                ThemePersistenceGuardService.arm(context.applicationContext, prepared)
+            }
             diagnostics.record(
                 "theme_activity_launching",
                 "Temalar etkinliği başlatılıyor",
@@ -1168,7 +1173,7 @@ private fun StudioScreen(
                 rootAccessAvailable = mode == StudioAccessMode.ROOT
                 when (mode) {
                     StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
-                    StudioAccessMode.ROOT -> ThemePersistenceGuardService.disable(context.applicationContext)
+                    StudioAccessMode.ROOT -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
                     StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
                 }
             }
@@ -1183,7 +1188,7 @@ private fun StudioScreen(
         rootAccessAvailable = mode == StudioAccessMode.ROOT
         when (mode) {
             StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
-            StudioAccessMode.ROOT -> ThemePersistenceGuardService.disable(context.applicationContext)
+            StudioAccessMode.ROOT -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
             StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
         }
         val rootReady = mode == StudioAccessMode.ROOT
