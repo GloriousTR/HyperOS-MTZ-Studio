@@ -582,17 +582,25 @@ private fun StudioScreen(
                 }
             }
             if (prepared.operation == ThemeManagerOperation.APPLY &&
-                accessMode == StudioAccessMode.SHIZUKU &&
                 prepared.protocol.name.startsWith("ROOTLESS_")
             ) {
-                runCatching { ThemePersistenceGuardService.arm(context.applicationContext, prepared) }
-                    .onFailure {
+                // Applying a full theme recreates the activity on some HyperOS builds. The
+                // asynchronous access probe can still be pending when the result is delivered,
+                // so do not let a transient null UI state skip persistence arming.
+                scope.launch {
+                    val confirmedMode = accessMode ?: withContext(Dispatchers.IO) {
+                        privilegedRunner.accessModeSilently()
+                    }
+                    if (confirmedMode == StudioAccessMode.SHIZUKU) runCatching {
+                        ThemePersistenceGuardService.arm(context.applicationContext, prepared)
+                    }.onFailure {
                         diagnostics.record(
                             "theme_watch_arm_failed",
                             "Shizuku tema izleyicisi etkinleştirilemedi",
                             error = it,
                         )
                     }
+                }
             }
         }
     }
