@@ -75,6 +75,7 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -344,45 +345,68 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
         stringResource(R.string.shizuku_tutorial_step_3),
         stringResource(R.string.shizuku_tutorial_step_4),
     )
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.shizuku_tutorial_title)) },
-        text = {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 28.dp)
+                .widthIn(max = 560.dp)
+                .heightIn(max = 720.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+        ) {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(24.dp),
             ) {
                 Text(
-                    stringResource(R.string.shizuku_tutorial_intro),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
+                    stringResource(R.string.shizuku_tutorial_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
                 )
-                steps.forEachIndexed { index, step ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                Spacer(Modifier.height(14.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.shizuku_tutorial_intro),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    steps.forEachIndexed { index, step ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Text(
-                                text = "${index + 1}",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                fontWeight = FontWeight.Bold,
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ) {
+                                Text(
+                                    text = "${index + 1}",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                            Text(step, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         }
-                        Text(step, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                     }
+                    Text(
+                        stringResource(R.string.shizuku_tutorial_miui_tip),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-                Text(
-                    stringResource(R.string.shizuku_tutorial_miui_tip),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                Spacer(Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = {
                         runCatching {
@@ -391,6 +415,7 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.shizuku_tutorial_open_settings)) }
+                Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = { uriHandler.openUri(SHIZUKU_SETUP_GUIDE_URL) },
                     modifier = Modifier.fillMaxWidth(),
@@ -399,12 +424,13 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.shizuku_tutorial_open_official))
                 }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                ) { Text(stringResource(R.string.shizuku_tutorial_close)) }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.shizuku_tutorial_close)) }
-        },
-    )
+        }
+    }
 }
 
 @Composable
