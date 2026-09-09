@@ -218,9 +218,9 @@
     <!-- Cloud Account Dialog -->
     <string name="cloud_dialog_title">Connect Cloud Account</string>
     <string name="cloud_dialog_subtitle">Choose a cloud service provider to sync your theme backups</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">Cloud folder (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Select a Google account configured on this device</string>
+    <string name="cloud_google_desc">Select a persistent folder from Google Drive, OneDrive or another document provider</string>
     <string name="cloud_webdav_desc">Connect to a private cloud server with URL and password</string>
     <string name="cloud_account_email_label">Google Account Email</string>
     <string name="cloud_server_url_label">WebDAV Server URL</string>
@@ -410,4 +410,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="shizuku_tutorial_close">Done</string>
+    <string name="app_update_channel">App updates</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">The update was downloaded and verified. Tap to install.</string>
 </resources>

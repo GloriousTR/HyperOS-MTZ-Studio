@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Importa um arquivo de backup .zip anteriormente exportado do armazenamento do dispositivo para a biblioteca de aplicativos.</string>
     <string name="cloud_dialog_title">Conectar Conta em Nuvem</string>
     <string name="cloud_dialog_subtitle">Escolha um provedor de serviços em nuvem para sincronizar os backups do tema</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">Pasta na nuvem (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Selecione uma conta do Google configurada neste dispositivo</string>
+    <string name="cloud_google_desc">Escolha uma pasta permanente no Google Drive, OneDrive ou outro provedor de arquivos</string>
     <string name="cloud_webdav_desc">Conectar-se a um servidor de nuvem privado com URL e senha</string>
     <string name="cloud_account_email_label">E-mail de Conta do Google</string>
     <string name="cloud_server_url_label">WebDAV URL do servidor</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">Atualizações do aplicativo</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">A atualização foi baixada e verificada. Toque para instalar.</string>
 </resources>

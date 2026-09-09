@@ -199,9 +199,9 @@
     <string name="local_restore_desc">從您的裝置存儲中進口以前出口的 .zip 備份檔案到應用圖書館.</string>
     <string name="cloud_dialog_title">聯繫雲端帳戶</string>
     <string name="cloud_dialog_subtitle">選擇雲端服務提供商同步主題備份</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">雲端資料夾（Google Drive、OneDrive…）</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">在這個裝置上設定的 Google 帳戶</string>
+    <string name="cloud_google_desc">從 Google Drive、OneDrive 或其他檔案提供者選擇永久資料夾</string>
     <string name="cloud_webdav_desc">使用URL和密碼連接到私人雲端伺服器</string>
     <string name="cloud_account_email_label">谷歌帳戶電子郵件</string>
     <string name="cloud_server_url_label">WebDAV 伺服器的URL</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">應用程式更新</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">更新已下載並驗證。輕觸即可安裝。</string>
 </resources>

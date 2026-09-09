@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Tài nhập một tệp sao lưu .zip đã được xuất khẩu trước đó từ bộ nhớ thiết bị của bạn vào thư viện ứng dụng.</string>
     <string name="cloud_dialog_title">Kết nối tài khoản đám mây</string>
     <string name="cloud_dialog_subtitle">Chọn một nhà cung cấp dịch vụ đám mây để đồng bộ hóa các bản sao lưu chủ đề của bạn</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">Thư mục đám mây (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Chọn một tài khoản Google được cấu hình trên thiết bị này</string>
+    <string name="cloud_google_desc">Chọn thư mục cố định từ Google Drive, OneDrive hoặc nhà cung cấp tệp khác</string>
     <string name="cloud_webdav_desc">Kết nối với một máy chủ đám mây riêng với URL và mật khẩu</string>
     <string name="cloud_account_email_label">Email tài khoản Google</string>
     <string name="cloud_server_url_label">WebDAV URL máy chủ</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">Cập nhật ứng dụng</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">Bản cập nhật đã được tải xuống và xác minh. Nhấn để cài đặt.</string>
 </resources>

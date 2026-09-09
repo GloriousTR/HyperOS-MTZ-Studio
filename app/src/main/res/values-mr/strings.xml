@@ -199,9 +199,9 @@
     <string name="local_restore_desc">आपल्या डिव्हाइस स्टोरेजमधून आधी निर्यात केलेली .zip बॅकअप फाइल अॅप्लिकेशन लायब्ररीमध्ये आयात करते.</string>
     <string name="cloud_dialog_title">क्लाउड खाते कनेक्ट करा</string>
     <string name="cloud_dialog_subtitle">थीम बॅकअप समक्रमित करण्यासाठी क्लाउड सेवा प्रदाता निवडा</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">क्लाउड फोल्डर (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">या डिव्हाइसवर कॉन्फिगर केलेले Google खाते निवडा</string>
+    <string name="cloud_google_desc">Google Drive, OneDrive किंवा दुसऱ्या फाइल प्रदात्यामधून कायमस्वरूपी फोल्डर निवडा</string>
     <string name="cloud_webdav_desc">URL व पासवर्डसह खाजगी क्लाउड सर्व्हरशी कनेक्ट करा</string>
     <string name="cloud_account_email_label">Google खाते ईमेल</string>
     <string name="cloud_server_url_label">WebDAV सर्व्हर URL</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">ॲप अपडेट</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">अपडेट डाउनलोड आणि सत्यापित झाले. स्थापित करण्यासाठी टॅप करा.</string>
 </resources>

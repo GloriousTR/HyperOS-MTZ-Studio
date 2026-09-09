@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Importiert eine zuvor ausgeführte .zip-Backupdatei aus Ihrem Gerätsspeicher in die Anwendungsbibliothek.</string>
     <string name="cloud_dialog_title">Verbinden Sie Cloud-Account</string>
     <string name="cloud_dialog_subtitle">Wählen Sie einen Cloud-Dienstleister aus , um Ihre Themen-Backups zu synchronisieren</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">Cloud-Ordner (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Wählen Sie ein auf diesem Gerät konfiguriertes Google-Konto aus</string>
+    <string name="cloud_google_desc">Wählen Sie einen dauerhaften Ordner in Google Drive, OneDrive oder einem anderen Dateidienst</string>
     <string name="cloud_webdav_desc">Verbinden Sie sich mit einem privaten Cloud-Server mit URL und Passwort</string>
     <string name="cloud_account_email_label">E-Mail für das Google-Konto</string>
     <string name="cloud_server_url_label">WebDAV URL des Servers</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">App-Updates</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">Das Update wurde heruntergeladen und geprüft. Zum Installieren tippen.</string>
 </resources>

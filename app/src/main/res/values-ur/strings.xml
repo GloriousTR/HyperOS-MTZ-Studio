@@ -199,9 +199,9 @@
     <string name="local_restore_desc">آپ کے آلہ اسٹوریج سے پہلے برآمد شدہ .zip بیک اپ فائل کو ایپلی کیشن لائبریری میں درآمد کرتا ہے۔</string>
     <string name="cloud_dialog_title">کلاؤڈ اکاؤنٹ کو مربوط کریں</string>
     <string name="cloud_dialog_subtitle">اپنے تھیم بیک اپ کو مطابقت پذیر کرنے کے لئے کلاؤڈ سروس فراہم کنندہ کا انتخاب کریں</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">کلاؤڈ فولڈر (Google Drive، OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">اس آلہ پر ترتیب شدہ گوگل اکاؤنٹ منتخب کریں</string>
+    <string name="cloud_google_desc">Google Drive، OneDrive یا کسی دوسرے فائل فراہم کنندہ سے مستقل فولڈر منتخب کریں</string>
     <string name="cloud_webdav_desc">یو آر ایل اور پاس ورڈ کے ساتھ نجی کلاؤڈ سرور سے رابطہ قائم کریں</string>
     <string name="cloud_account_email_label">گوگل اکاؤنٹ ای میل</string>
     <string name="cloud_server_url_label">WebDAV سرور یو آر ایل</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">ایپ اپ ڈیٹس</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">اپ ڈیٹ ڈاؤن لوڈ اور تصدیق ہو گئی ہے۔ انسٹال کرنے کے لیے ٹیپ کریں۔</string>
 </resources>

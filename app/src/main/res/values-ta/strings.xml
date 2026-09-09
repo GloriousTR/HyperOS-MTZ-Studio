@@ -199,9 +199,9 @@
     <string name="local_restore_desc">உங்கள் சாதன சேமிப்பகத்திலிருந்து முன்பு ஏற்றுமதி செய்யப்பட்ட .zip காப்பு கோப்பை பயன்பாட்டு நூலகத்திற்கு இறக்குமதி செய்கிறது.</string>
     <string name="cloud_dialog_title">Cloud கணக்கை இணைக்கவும்</string>
     <string name="cloud_dialog_subtitle">உங்கள் கருப்பொருள் காப்புப் பிரதிகளை ஒத்திசைக்க ஒரு மேக சேவை வழங்குநரைத் தேர்ந்தெடுக்கவும்</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">மேகக் கோப்புறை (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">இந்த சாதனத்தில் உள்ளமைக்கப்பட்ட Google கணக்கைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="cloud_google_desc">Google Drive, OneDrive அல்லது வேறு கோப்பு வழங்குநரிலிருந்து நிரந்தரக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</string>
     <string name="cloud_webdav_desc">URL மற்றும் கடவுச்சொல்லுடன் தனியார் மேகக்கணி சேவையகத்துடன் இணைக்கவும்</string>
     <string name="cloud_account_email_label">Google கணக்கு மின்னஞ்சல்</string>
     <string name="cloud_server_url_label">WebDAV சேவையக URL</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">செயலி புதுப்பிப்புகள்</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">புதுப்பிப்பு பதிவிறக்கப்பட்டு சரிபார்க்கப்பட்டது. நிறுவ தட்டவும்.</string>
 </resources>

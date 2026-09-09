@@ -1,7 +1,6 @@
 package dev.glorioustr.mtzstudio
 
 import android.Manifest
-import android.accounts.AccountManager
 import android.app.Activity
 import android.content.ClipData
 import android.content.Context
@@ -98,6 +97,7 @@ private fun Context.installedAuthorizationManager(): AuthorizationManagerApp? =
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppUpdateScheduler.schedule(applicationContext)
         val library = ThemeLibrary(applicationContext)
         val backupManager = StudioBackupManager(applicationContext)
         val composer = MtzComposer()
@@ -263,6 +263,8 @@ private fun StudioScreen(
     var lastResult by remember { mutableStateOf<CompositionResult?>(null) }
     val selections = remember { mutableStateMapOf<ComponentCategory, UiSelection>() }
     val diagnosticState by diagnostics.state.collectAsState()
+    val translationProgress by ThemeTranslationProgressStore.state.collectAsState()
+    val cloudTransferState by CloudTransferStore.state.collectAsState()
     val themeProtectionState by ThemeProtectionServiceClient.state.collectAsState()
     var destination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
     var returnDestination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
@@ -383,35 +385,32 @@ private fun StudioScreen(
         }
     }
 
-    val googleAccountPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-            if (!accountName.isNullOrBlank()) {
+    val cloudFolderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
                 val account = CloudAccount(
                     provider = CloudProvider.GOOGLE_DRIVE,
-                    accountName = accountName,
+                    accountName = resources.getString(R.string.cloud_provider_google),
+                    treeUri = uri.toString(),
                     isConnected = true,
                 )
                 cloudAccountStore.save(account)
-                cloudAccount = account
-                backupStatus = resources.getString(R.string.status_cloud_connected, accountName)
+                cloudAccount = cloudAccountStore.load()
+                backupStatus = resources.getString(R.string.status_cloud_connected, cloudAccount.accountName)
+            }.onFailure { error ->
+                backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
             }
         }
     }
 
     val onChooseGoogleAccount: () -> Unit = {
-        val intent = AccountManager.newChooseAccountIntent(
-            null,
-            null,
-            arrayOf("com.google"),
-            null,
-            null,
-            null,
-            null
-        )
-        googleAccountPickerLauncher.launch(intent)
+        cloudFolderPickerLauncher.launch(null)
     }
 
     suspend fun loadLibrarySnapshot(): Boolean {
@@ -435,25 +434,57 @@ private fun StudioScreen(
     fun localizeTheme(theme: LibraryTheme) {
         if (themeOperationRunning) return
         themeOperationRunning = true
-        scope.launch {
-            status = resources.getString(R.string.theme_language_tool_working)
-            runCatching {
-                withContext(Dispatchers.IO) { themeLanguageTool.translateTextToSystemLanguage(theme) }
-            }.onSuccess { localized ->
-                // Keep a portable copy alongside other Studio-generated MTZ files.
-                MtzPublicExporter.exportToPublicDownloads(context, localized.archive.source, localized.displayName)
-                loadLibrarySnapshot()
-                destination = StudioDestination.THEMES
-                status = resources.getString(R.string.theme_language_tool_complete)
-                operationError = status
-            }.onFailure { error ->
-                status = resources.getString(
-                    R.string.theme_language_tool_failed,
-                    error.message ?: error::class.simpleName,
-                )
-                operationError = status
+        status = resources.getString(R.string.theme_language_tool_working)
+        ThemeTranslationService.start(
+            context,
+            theme.id.value,
+            theme.archive.metadata?.name ?: theme.displayName,
+        )
+    }
+
+    androidx.compose.runtime.LaunchedEffect(translationProgress) {
+        when {
+            translationProgress.running -> {
+                themeOperationRunning = true
+                status = resources.getString(R.string.theme_language_tool_working) +
+                    if (translationProgress.total > 0) " ${translationProgress.processed}/${translationProgress.total}" else ""
             }
-            themeOperationRunning = false
+            translationProgress.completed -> {
+                themeOperationRunning = false
+                if (translationProgress.error == null) {
+                    loadLibrarySnapshot()
+                    destination = StudioDestination.THEMES
+                    status = resources.getString(R.string.theme_language_tool_complete)
+                } else {
+                    status = resources.getString(R.string.theme_language_tool_failed, translationProgress.error)
+                    operationError = status
+                }
+            }
+        }
+    }
+
+    var handledCloudCompletion by rememberSaveable { mutableStateOf(0L) }
+    androidx.compose.runtime.LaunchedEffect(cloudTransferState) {
+        if (cloudTransferState.running) {
+            backupStatus = resources.getString(
+                if (cloudTransferState.operation == CloudTransferOperation.BACKUP) R.string.status_backup_preparing
+                else R.string.status_restore_preparing,
+            )
+        } else if (cloudTransferState.completed && cloudTransferState.completionId != handledCloudCompletion) {
+            handledCloudCompletion = cloudTransferState.completionId
+            if (cloudTransferState.error != null) {
+                backupStatus = resources.getString(R.string.status_backup_failed, cloudTransferState.error)
+            } else if (cloudTransferState.operation == CloudTransferOperation.BACKUP) {
+                cloudAccount = cloudAccountStore.load()
+                backupStatus = resources.getString(R.string.status_cloud_upload_success, cloudAccount.provider.displayName)
+            } else {
+                loadLibrarySnapshot()
+                backupStatus = resources.getString(
+                    R.string.status_restore_success,
+                    cloudTransferState.themeCount,
+                    cloudTransferState.fileCount,
+                )
+            }
         }
     }
 
@@ -679,6 +710,14 @@ private fun StudioScreen(
             clearPreparedApply()
             diagnostics.record("theme_activity_launch_failed", "Temalar etkinliği başlatılamadı", error = error)
             throw error
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            rootlessNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -1377,6 +1416,7 @@ private fun StudioScreen(
                 showDeviceImport = rootAccessAvailable == true,
                 nativeCatalogMode = capabilities.usesNativeCatalog,
                 rootlessMode = accessMode == StudioAccessMode.STANDARD,
+                translationProgress = translationProgress,
                 onApplyTheme = { theme ->
                     if (!themeOperationRunning) {
                         when (accessMode) {
@@ -1452,8 +1492,12 @@ private fun StudioScreen(
                 onSelectGoogleDrive = onChooseGoogleAccount,
                 onConnectCloud = { account ->
                     cloudAccountStore.save(account)
-                    cloudAccount = account
-                    backupStatus = resources.getString(R.string.status_cloud_connected, account.accountName)
+                    cloudAccount = cloudAccountStore.load()
+                    backupStatus = if (cloudAccount.isConnected) {
+                        resources.getString(R.string.status_cloud_connected, account.accountName)
+                    } else {
+                        resources.getString(R.string.status_backup_failed, "Geçerli bir HTTPS WebDAV adresi gerekli")
+                    }
                 },
                 onDisconnectCloud = {
                     cloudAccountStore.disconnect()
@@ -1461,44 +1505,12 @@ private fun StudioScreen(
                     backupStatus = resources.getString(R.string.status_cloud_disconnected)
                 },
                 onBackupCloud = {
-                    scope.launch {
-                        backupStatus = resources.getString(R.string.status_cloud_uploading, cloudAccount.provider.displayName)
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                cloudAccountStore.openCloudBackupOutputStream().use { output ->
-                                    backupManager.create(output)
-                                }
-                            }
-                        }.onSuccess { summary ->
-                            cloudAccountStore.recordBackup()
-                            cloudAccount = cloudAccountStore.load()
-                            backupStatus = resources.getString(R.string.status_cloud_upload_success, cloudAccount.provider.displayName)
-                        }.onFailure { error ->
-                            backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
-                        }
-                    }
+                    CloudTransferService.startBackup(context)
                 },
                 onRestoreCloud = {
-                    scope.launch {
-                        if (!cloudAccountStore.hasCloudBackup()) {
-                            backupStatus = resources.getString(R.string.status_cloud_no_backup, cloudAccount.provider.displayName)
-                            return@launch
-                        }
-                        backupStatus = resources.getString(R.string.status_cloud_downloading, cloudAccount.provider.displayName)
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                cloudAccountStore.openCloudBackupInputStream()?.use { input ->
-                                    backupManager.restore(input)
-                                } ?: error(resources.getString(R.string.status_cloud_no_backup, cloudAccount.provider.displayName))
-                            }
-                        }.onSuccess { summary ->
-                            reload()
-                            backupStatus = resources.getString(R.string.status_restore_success, summary.themeCount, summary.fileCount)
-                        }.onFailure { error ->
-                            backupStatus = resources.getString(R.string.status_restore_failed, error.message ?: error::class.simpleName)
-                        }
-                    }
+                    CloudTransferService.startRestore(context)
                 },
+                cloudTransferRunning = cloudTransferState.running,
                 onBackupLocal = {
                     backupLauncher.launch("hyperos-mtz-studio-backup-${System.currentTimeMillis()}.zip")
                 },

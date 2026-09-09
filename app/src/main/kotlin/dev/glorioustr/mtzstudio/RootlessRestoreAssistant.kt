@@ -141,5 +141,6 @@ class RootlessRestoreBootReceiver : BroadcastReceiver() {
             runCatching { ThemePersistenceGuardService.resumeIfArmed(context.applicationContext) }
         }
         RootlessRestoreAssistant.notifyAfterRestart(context.applicationContext, action)
+        AppUpdateScheduler.schedule(context.applicationContext, checkNow = action == Intent.ACTION_MY_PACKAGE_REPLACED)
     }
 }

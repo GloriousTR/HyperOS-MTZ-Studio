@@ -199,9 +199,9 @@
     <string name="local_restore_desc">يستورد ملف النسخ الاحتياطي .zip الذي تم تصديره من قبل من مخزن الجهاز الخاص بك إلى مكتبة التطبيقات.</string>
     <string name="cloud_dialog_title">إرباط حساب السحابة</string>
     <string name="cloud_dialog_subtitle">اختر مزود خدمة السحابة لمزامنة نسخ النسخ الاحتياطية الخاصة بك</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">مجلد سحابي (Google Drive، OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">حدد حساب جوجل الذي تم تشكيله على هذا الجهاز</string>
+    <string name="cloud_google_desc">اختر مجلدًا دائمًا من Google Drive أو OneDrive أو موفر ملفات آخر</string>
     <string name="cloud_webdav_desc">التواصل مع خادم سحابة خاصة باستخدام عنوان URL وكلمة المرور</string>
     <string name="cloud_account_email_label">رسالة بريد إلكتروني حساب جوجل</string>
     <string name="cloud_server_url_label">WebDAV عنوان عنوان الخادم</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">تحديثات التطبيق</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">تم تنزيل التحديث والتحقق منه. اضغط للتثبيت.</string>
 </resources>

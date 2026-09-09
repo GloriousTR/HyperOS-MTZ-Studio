@@ -31,7 +31,11 @@ object MtzToBakConverter {
         else @Suppress("DEPRECATION") info.signatures.orEmpty().map { it.toCharsString() }
         val installer = if (Build.VERSION.SDK_INT >= 30) runCatching { pm.getInstallSourceInfo(PACKAGE).installingPackageName.orEmpty() }.getOrDefault("")
         else @Suppress("DEPRECATION") pm.getInstallerPackageName(PACKAGE).orEmpty()
-        return DeviceInfo(info.longVersionCode, Build.VERSION.SDK_INT, installer, signatures)
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
+        return DeviceInfo(versionCode, Build.VERSION.SDK_INT, installer, signatures)
     }
 
     fun convert(source: File, output: File, device: DeviceInfo): File {

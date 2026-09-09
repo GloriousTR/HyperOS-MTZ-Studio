@@ -6,6 +6,7 @@ import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -574,6 +576,7 @@ internal fun ThemesScreen(
     showDeviceImport: Boolean = true,
     nativeCatalogMode: Boolean = false,
     rootlessMode: Boolean = false,
+    translationProgress: ThemeTranslationProgress = ThemeTranslationProgress(),
     onApplyTheme: (LibraryTheme) -> Unit,
     onTranslateTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
@@ -645,6 +648,7 @@ internal fun ThemesScreen(
             ThemeGalleryCard(
                 theme = theme,
                 isActive = theme.id.value == activeThemeId,
+                translationProgress = translationProgress.takeIf { it.themeId == theme.id.value },
                 onOpenDetails = { detailsTheme = theme },
                 onApplyTheme = onApplyTheme,
                 onTranslateTheme = onTranslateTheme,
@@ -658,6 +662,7 @@ internal fun ThemesScreen(
         ThemeDetailsDialog(
             theme = theme,
             isActive = theme.id.value == activeThemeId,
+            translationProgress = translationProgress.takeIf { it.themeId == theme.id.value },
             onDismiss = { detailsTheme = null },
             onApply = {
                 detailsTheme = null
@@ -1463,6 +1468,7 @@ internal fun BackupRestoreScreen(
     onRestoreCloud: () -> Unit,
     onBackupLocal: () -> Unit,
     onRestoreLocal: () -> Unit,
+    cloudTransferRunning: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -1541,6 +1547,7 @@ internal fun BackupRestoreScreen(
                             }
                             Button(
                                 onClick = onBackupCloud,
+                                enabled = !cloudTransferRunning,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1652,6 +1659,7 @@ internal fun BackupRestoreScreen(
                             )
                             Button(
                                 onClick = onRestoreCloud,
+                                enabled = !cloudTransferRunning,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Icon(Icons.Filled.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1921,6 +1929,7 @@ private fun CloudConnectDialog(
                                         provider = CloudProvider.WEBDAV,
                                         accountName = if (username.isBlank()) "nextcloud.user" else username.trim(),
                                         serverUrl = serverUrl.trim(),
+                                        password = password,
                                         isConnected = true,
                                     )
                                     onConnectWebDav(account)
@@ -2219,6 +2228,7 @@ internal fun AppearanceScreen(
 private fun ThemeGalleryCard(
     theme: LibraryTheme,
     isActive: Boolean,
+    translationProgress: ThemeTranslationProgress?,
     onOpenDetails: () -> Unit,
     onApplyTheme: (LibraryTheme) -> Unit,
     onTranslateTheme: (LibraryTheme) -> Unit,
@@ -2258,6 +2268,7 @@ private fun ThemeGalleryCard(
             overflow = TextOverflow.Ellipsis,
         )
         ThemeActionDock(
+            translationProgress = translationProgress,
             onApply = { onApplyTheme(theme) },
             onTranslate = { onTranslateTheme(theme) },
             onDelete = { onDeleteTheme(theme) },
@@ -2272,6 +2283,7 @@ private fun ThemeActionDock(
     onApply: () -> Unit,
     onTranslate: () -> Unit,
     onDelete: () -> Unit,
+    translationProgress: ThemeTranslationProgress? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -2289,6 +2301,7 @@ private fun ThemeActionDock(
             ) {
                 Text(stringResource(R.string.action_apply), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            TranslationProgressBar(translationProgress)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     onClick = onTranslate,
@@ -2317,6 +2330,7 @@ private fun ThemeActionDock(
 private fun ThemeDetailsDialog(
     theme: LibraryTheme,
     isActive: Boolean,
+    translationProgress: ThemeTranslationProgress?,
     onDismiss: () -> Unit,
     onApply: () -> Unit,
     onTranslate: () -> Unit,
@@ -2431,11 +2445,47 @@ private fun ThemeDetailsDialog(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        ThemeActionDock(onApply = onApply, onTranslate = onTranslate, onDelete = onDelete)
+                        ThemeActionDock(
+                            onApply = onApply,
+                            onTranslate = onTranslate,
+                            onDelete = onDelete,
+                            translationProgress = translationProgress,
+                        )
                         TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TranslationProgressBar(progress: ThemeTranslationProgress?) {
+    val fraction = progress?.fraction ?: 1f
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(24.dp)
+            .padding(horizontal = 8.dp, vertical = 5.dp)
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(50)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(fraction)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.primary),
+        )
+        if (progress?.running == true) {
+            Text(
+                text = "${(fraction * 100).toInt()}%",
+                modifier = Modifier.align(Alignment.Center),
+                color = if (fraction >= 0.48f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }

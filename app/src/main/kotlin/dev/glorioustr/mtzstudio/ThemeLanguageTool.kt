@@ -27,7 +27,10 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
 
     private data class TranslatorSession(val translator: Translator, var modelReady: Boolean = false)
 
-    fun translateTextToSystemLanguage(theme: LibraryTheme): LibraryTheme {
+    fun translateTextToSystemLanguage(
+        theme: LibraryTheme,
+        onProgress: (processed: Int, total: Int) -> Unit = { _, _ -> },
+    ): LibraryTheme {
         val locale = appContext.resources.configuration.locales[0] ?: Locale.getDefault()
         val target = translateLanguage(locale.toLanguageTag())
             ?: translateLanguage(locale.language)
@@ -41,6 +44,14 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
         val undetermined = linkedSetOf<String>()
         var uniqueTexts = 0
         val original = library.translationSource(theme)
+        val allCandidates = ThemeTextLocalizer(
+            targetLanguage = target,
+            translateAllDisplayText = true,
+            shouldTranslate = TranslationTextFilter::isCandidate,
+        ).collectCandidates(original).map(String::trim).filter(String::isNotBlank).distinct()
+        val totalCandidates = allCandidates.size.coerceAtLeast(1)
+        val reportedCandidates = linkedSetOf<String>()
+        onProgress(0, totalCandidates)
         val apiSettings = AiTranslationSettingsStore(appContext).load()
         val apiCandidates = linkedSetOf<String>()
         val apiResult = if (apiSettings.isReady) {
@@ -50,12 +61,7 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                 mapOf("provider" to apiSettings.provider.title, "model" to apiSettings.model),
             )
             runCatching {
-                val scanned = ThemeTextLocalizer(
-                    targetLanguage = target,
-                    translateAllDisplayText = true,
-                    shouldTranslate = TranslationTextFilter::isCandidate,
-                ).collectCandidates(original)
-                scanned.forEach { candidate ->
+                allCandidates.forEach { candidate ->
                     val text = candidate.trim()
                     if (ThemeGlossary.resolve(text, target) == null &&
                         ConversationalThemeGlossary.resolve(text, target) == null
@@ -90,26 +96,28 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
         }
 
         fun translate(text: String): String {
-            if (!TranslationTextFilter.isCandidate(text)) return text
-            val conversational = ConversationalThemeGlossary.resolve(text, target)
-            val source = conversational?.sourceLanguage ?: identifySource(text) ?: return text
-            detectedLanguageCounts[source] = (detectedLanguageCounts[source] ?: 0) + 1
-            if (source == target) return text
+            val candidate = text.trim()
+            try {
+                if (!TranslationTextFilter.isCandidate(text)) return text
+                val conversational = ConversationalThemeGlossary.resolve(text, target)
+                val source = conversational?.sourceLanguage ?: identifySource(text) ?: return text
+                detectedLanguageCounts[source] = (detectedLanguageCounts[source] ?: 0) + 1
+                if (source == target) return text
 
             // Preserve the carefully curated Chinese theme vocabulary before neural translation.
-            if (source == TranslateLanguage.CHINESE) {
-                ThemeGlossary.resolve(text, target)?.let { return it }
-            }
+                if (source == TranslateLanguage.CHINESE) {
+                    ThemeGlossary.resolve(text, target)?.let { return it }
+                }
 
-            conversational?.translation?.let { return text.takeWhile(Char::isWhitespace) + it + text.takeLastWhile(Char::isWhitespace) }
+                conversational?.translation?.let { return text.takeWhile(Char::isWhitespace) + it + text.takeLastWhile(Char::isWhitespace) }
 
-            apiTranslations[text.trim()]?.let { apiTranslation ->
-                apiTranslatedTexts++
-                val polished = ThemeGlossary.postProcessTranslation(apiTranslation, target)
-                return text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
-            }
+                apiTranslations[text.trim()]?.let { apiTranslation ->
+                    apiTranslatedTexts++
+                    val polished = ThemeGlossary.postProcessTranslation(apiTranslation, target)
+                    return text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
+                }
 
-            val session = translators.getOrPut(source) {
+                val session = translators.getOrPut(source) {
                 TranslatorSession(
                     Translation.getClient(
                         TranslatorOptions.Builder()
@@ -119,7 +127,7 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                     ),
                 )
             }
-            if (!session.modelReady) {
+                if (!session.modelReady) {
                 diagnostics.record(
                     "theme_language_model_loading",
                     "Yerel çeviri dil modeli hazırlanıyor",
@@ -137,7 +145,7 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                     mapOf("sourceLanguage" to source, "targetLanguage" to target),
                 )
             }
-            fun translateWithModel(input: String, from: String, to: String): String {
+                fun translateWithModel(input: String, from: String, to: String): String {
                 val route = "$from>$to"
                 val routeSession = translators.getOrPut(route) {
                     TranslatorSession(Translation.getClient(TranslatorOptions.Builder().setSourceLanguage(from).setTargetLanguage(to).build()))
@@ -149,7 +157,7 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
                 return Tasks.await(routeSession.translator.translate(input), 30, TimeUnit.SECONDS).trim()
             }
 
-            val translated = if (source == TranslateLanguage.CHINESE) {
+                val translated = if (source == TranslateLanguage.CHINESE) {
                 ChineseTranslationSegmenter.translate(text.trim(), target) { clause ->
                     if (target != TranslateLanguage.TURKISH) return@translate translateWithModel(clause, source, target)
                     val englishSource = ThemeGlossary.prepareChineseForEnglishPivot(clause)
@@ -162,16 +170,21 @@ internal class ThemeLanguageTool(context: Context, private val library: ThemeLib
             } else {
                 Tasks.await(session.translator.translate(text), 30, TimeUnit.SECONDS).trim()
             }
-            uniqueTexts++
-            if (uniqueTexts % 25 == 0) {
+                uniqueTexts++
+                if (uniqueTexts % 25 == 0) {
                 diagnostics.record(
                     "theme_language_progress",
                     "Tema metinleri çevriliyor",
                     mapOf("uniqueTexts" to uniqueTexts, "detectedLanguages" to detectedLanguageCounts.keys.joinToString()),
                 )
             }
-            val polished = ThemeGlossary.postProcessTranslation(translated, target)
-            return text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
+                val polished = ThemeGlossary.postProcessTranslation(translated, target)
+                return text.takeWhile(Char::isWhitespace) + polished + text.takeLastWhile(Char::isWhitespace)
+            } finally {
+                if (candidate.isNotBlank() && reportedCandidates.add(candidate)) {
+                    onProgress(reportedCandidates.size.coerceAtMost(totalCandidates), totalCandidates)
+                }
+            }
         }
 
         try {

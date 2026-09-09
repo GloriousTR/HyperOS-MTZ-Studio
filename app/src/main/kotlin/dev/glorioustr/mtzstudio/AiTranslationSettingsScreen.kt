@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,10 +50,12 @@ import java.util.Locale
 @Composable
 internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val scope = rememberCoroutineScope()
     val store = remember { AiTranslationSettingsStore(context) }
     val initial = remember { store.load() }
-    val turkish = remember { (context.resources.configuration.locales[0] ?: Locale.getDefault()).language == "tr" }
+    val currentLocale = configuration.locales[0] ?: Locale.getDefault()
+    val turkish = currentLocale.language == "tr"
     fun label(tr: String, en: String) = if (turkish) tr else en
     var enabled by remember { mutableStateOf(initial.enabled) }
     var provider by remember { mutableStateOf(initial.provider) }
@@ -129,7 +132,7 @@ internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(enabled = !busy, onClick = {
-                scope.launch { busy = true; status = runCatching { withContext(Dispatchers.IO) { ProfessionalThemeTranslator(settings(true)).testConnection(context.resources.configuration.locales[0]) } }.fold({ label("Bağlantı başarılı: ", "Connection successful: ") + it }, { it.message ?: label("Bağlantı başarısız", "Connection failed") }); busy = false }
+                scope.launch { busy = true; status = runCatching { withContext(Dispatchers.IO) { ProfessionalThemeTranslator(settings(true)).testConnection(currentLocale) } }.fold({ label("Bağlantı başarılı: ", "Connection successful: ") + it }, { it.message ?: label("Bağlantı başarısız", "Connection failed") }); busy = false }
             }, modifier = Modifier.weight(1f)) { Text(if (busy) label("Deneniyor…", "Testing…") else label("Bağlantıyı dene", "Test connection")) }
             Button(onClick = {
                 runCatching { require(!enabled || storedKey || apiKey.isNotBlank()) { label("API anahtarı gerekli", "API key is required") }; store.save(settings(), apiKey.takeIf(String::isNotBlank)) }

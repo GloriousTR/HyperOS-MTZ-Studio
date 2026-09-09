@@ -218,9 +218,9 @@
     <!-- Cloud Account Dialog -->
     <string name="cloud_dialog_title">Bulut Hesabı Bağla</string>
     <string name="cloud_dialog_subtitle">Tema yedeklerinizi senkronize etmek için bir bulut sağlayıcısı seçin</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">Bulut klasörü (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Cihazınızda kayıtlı Google hesabını seçerek bağlanın</string>
+    <string name="cloud_google_desc">Google Drive, OneDrive veya başka bir sağlayıcıdan kalıcı bir klasör seçin</string>
     <string name="cloud_webdav_desc">Özel bulut sunucusu adresi ve şifre ile bağlanın</string>
     <string name="cloud_account_email_label">Google Hesap E-postası</string>
     <string name="cloud_server_url_label">WebDAV Sunucu Adresi</string>
@@ -410,4 +410,7 @@
     <string name="shizuku_tutorial_open_official">Resmî resimli rehberi aç</string>
     <string name="shizuku_tutorial_open_video">Videolu anlatımı aç</string>
     <string name="shizuku_tutorial_close">Tamam</string>
+    <string name="app_update_channel">Uygulama güncellemeleri</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">Güncelleme indirildi ve doğrulandı. Kurmak için dokunun.</string>
 </resources>

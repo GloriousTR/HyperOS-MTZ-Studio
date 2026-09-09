@@ -1,17 +1,28 @@
-﻿package dev.glorioustr.mtzstudio
+package dev.glorioustr.mtzstudio
 
 import android.content.Context
-import java.io.InputStream
-import java.io.OutputStream
+import android.net.Uri
+import android.provider.DocumentsContract
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 
 enum class CloudProvider(val displayName: String) {
-    GOOGLE_DRIVE("Google Drive"),
+    GOOGLE_DRIVE("Cloud folder"),
     WEBDAV("WebDAV / Nextcloud"),
 }
 
@@ -19,31 +30,35 @@ data class CloudAccount(
     val provider: CloudProvider = CloudProvider.GOOGLE_DRIVE,
     val accountName: String = "",
     val serverUrl: String = "",
+    val password: String = "",
+    val treeUri: String = "",
     val isConnected: Boolean = false,
     val lastBackupTime: String? = null,
 )
 
+/** Real remote storage backed by a persisted cloud-folder URI or a WebDAV endpoint. */
 class CloudAccountStore(private val context: Context) {
     private val prefs = context.getSharedPreferences("cloud_account_prefs", Context.MODE_PRIVATE)
-    private val cloudStagingDir: Path = context.filesDir.toPath().resolve("cloud-sync-storage")
-
-    init {
-        Files.createDirectories(cloudStagingDir)
-    }
+    private val resolver = context.contentResolver
 
     fun load(): CloudAccount {
-        val isConnected = prefs.getBoolean("is_connected", false)
-        val providerName = prefs.getString("provider", CloudProvider.GOOGLE_DRIVE.name) ?: CloudProvider.GOOGLE_DRIVE.name
-        val provider = runCatching { CloudProvider.valueOf(providerName) }.getOrDefault(CloudProvider.GOOGLE_DRIVE)
-        val accountName = prefs.getString("account_name", "").orEmpty()
+        val provider = runCatching {
+            CloudProvider.valueOf(prefs.getString("provider", CloudProvider.GOOGLE_DRIVE.name).orEmpty())
+        }.getOrDefault(CloudProvider.GOOGLE_DRIVE)
+        val treeUri = prefs.getString("tree_uri", "").orEmpty()
         val serverUrl = prefs.getString("server_url", "").orEmpty()
-        val lastBackupTime = prefs.getString("last_backup_time", null)
+        val connected = prefs.getBoolean("is_connected", false) && when (provider) {
+            CloudProvider.GOOGLE_DRIVE -> treeUri.isNotBlank() && hasPersistedPermission(Uri.parse(treeUri))
+            CloudProvider.WEBDAV -> serverUrl.startsWith("https://", ignoreCase = true)
+        }
         return CloudAccount(
             provider = provider,
-            accountName = accountName,
+            accountName = prefs.getString("account_name", "").orEmpty(),
             serverUrl = serverUrl,
-            isConnected = isConnected,
-            lastBackupTime = lastBackupTime,
+            password = decryptSecret(prefs.getString("password_encrypted", "").orEmpty()),
+            treeUri = treeUri,
+            isConnected = connected,
+            lastBackupTime = prefs.getString("last_backup_time", null),
         )
     }
 
@@ -53,6 +68,8 @@ class CloudAccountStore(private val context: Context) {
             .putString("provider", account.provider.name)
             .putString("account_name", account.accountName)
             .putString("server_url", account.serverUrl)
+            .putString("password_encrypted", encryptSecret(account.password))
+            .putString("tree_uri", account.treeUri)
             .putString("last_backup_time", account.lastBackupTime)
             .apply()
     }
@@ -63,23 +80,159 @@ class CloudAccountStore(private val context: Context) {
     }
 
     fun disconnect() {
-        prefs.edit()
-            .putBoolean("is_connected", false)
-            .apply()
+        prefs.edit().putBoolean("is_connected", false).apply()
     }
 
-    fun openCloudBackupOutputStream(): OutputStream {
-        val cloudFile = cloudStagingDir.resolve("cloud-backup-latest.zip")
-        return Files.newOutputStream(cloudFile)
+    fun uploadBackup(source: Path) {
+        val account = requireConnected()
+        when (account.provider) {
+            CloudProvider.GOOGLE_DRIVE -> {
+                val target = findOrCreateCloudFile(Uri.parse(account.treeUri))
+                resolver.openOutputStream(target, "wt")?.use { output ->
+                    Files.newInputStream(source).use { input -> input.copyTo(output) }
+                } ?: error("Cloud backup file could not be opened for writing")
+            }
+            CloudProvider.WEBDAV -> uploadWebDav(account, source)
+        }
     }
 
-    fun hasCloudBackup(): Boolean {
-        val cloudFile = cloudStagingDir.resolve("cloud-backup-latest.zip")
-        return Files.isRegularFile(cloudFile) && Files.size(cloudFile) > 0
+    fun downloadBackup(target: Path): Boolean {
+        val account = requireConnected()
+        Files.createDirectories(target.parent)
+        return when (account.provider) {
+            CloudProvider.GOOGLE_DRIVE -> {
+                val source = findCloudFile(Uri.parse(account.treeUri)) ?: return false
+                resolver.openInputStream(source)?.use { input ->
+                    Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING)
+                } ?: return false
+                Files.size(target) > 0
+            }
+            CloudProvider.WEBDAV -> downloadWebDav(account, target)
+        }
     }
 
-    fun openCloudBackupInputStream(): InputStream? {
-        val cloudFile = cloudStagingDir.resolve("cloud-backup-latest.zip")
-        return if (hasCloudBackup()) Files.newInputStream(cloudFile) else null
+    private fun requireConnected(): CloudAccount = load().also {
+        check(it.isConnected) { "Cloud storage permission is missing; reconnect the cloud folder" }
+    }
+
+    private fun hasPersistedPermission(uri: Uri): Boolean = resolver.persistedUriPermissions.any {
+        it.uri == uri && it.isReadPermission && it.isWritePermission
+    }
+
+    private fun findOrCreateCloudFile(treeUri: Uri): Uri = findCloudFile(treeUri)
+        ?: DocumentsContract.createDocument(
+            resolver,
+            DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri)),
+            "application/zip",
+            BACKUP_FILE_NAME,
+        )
+        ?: error("Cloud backup file could not be created")
+
+    private fun findCloudFile(treeUri: Uri): Uri? {
+        val parentId = DocumentsContract.getTreeDocumentId(treeUri)
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        val projection = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+        )
+        resolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+            val nameColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            while (cursor.moveToNext()) {
+                if (cursor.getString(nameColumn) == BACKUP_FILE_NAME) {
+                    return DocumentsContract.buildDocumentUriUsingTree(treeUri, cursor.getString(idColumn))
+                }
+            }
+        }
+        return null
+    }
+
+    private fun uploadWebDav(account: CloudAccount, source: Path) {
+        val connection = openWebDav(account, "PUT").apply {
+            doOutput = true
+            setFixedLengthStreamingMode(Files.size(source))
+        }
+        try {
+            connection.outputStream.use { output -> Files.newInputStream(source).use { it.copyTo(output) } }
+            check(connection.responseCode in 200..299) { "WebDAV upload failed: HTTP ${connection.responseCode}" }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun downloadWebDav(account: CloudAccount, target: Path): Boolean {
+        val connection = openWebDav(account, "GET")
+        return try {
+            when (connection.responseCode) {
+                HttpURLConnection.HTTP_NOT_FOUND -> false
+                in 200..299 -> {
+                    connection.inputStream.use { Files.copy(it, target, StandardCopyOption.REPLACE_EXISTING) }
+                    Files.size(target) > 0
+                }
+                else -> error("WebDAV download failed: HTTP ${connection.responseCode}")
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun openWebDav(account: CloudAccount, method: String): HttpURLConnection {
+        val encodedName = URLEncoder.encode(BACKUP_FILE_NAME, Charsets.UTF_8.name()).replace("+", "%20")
+        return (URL(account.serverUrl.trimEnd('/') + "/" + encodedName).openConnection() as HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = 20_000
+            readTimeout = 120_000
+            setRequestProperty(
+                "Authorization",
+                "Basic " + Base64.encodeToString(
+                    "${account.accountName}:${account.password}".toByteArray(Charsets.UTF_8),
+                    Base64.NO_WRAP,
+                ),
+            )
+        }
+    }
+
+    private fun encryptSecret(secret: String): String {
+        if (secret.isEmpty()) return ""
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+        val encrypted = cipher.doFinal(secret.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(cipher.iv + encrypted, Base64.NO_WRAP)
+    }
+
+    private fun decryptSecret(encoded: String): String {
+        if (encoded.isEmpty()) return ""
+        return runCatching {
+            val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+            require(bytes.size > GCM_IV_BYTES)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                secretKey(),
+                GCMParameterSpec(128, bytes.copyOfRange(0, GCM_IV_BYTES)),
+            )
+            String(cipher.doFinal(bytes.copyOfRange(GCM_IV_BYTES, bytes.size)), Charsets.UTF_8)
+        }.getOrDefault("")
+    }
+
+    private fun secretKey(): SecretKey {
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        (store.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
+            init(
+                KeyGenParameterSpec.Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .build(),
+            )
+        }.generateKey()
+    }
+
+    companion object {
+        const val BACKUP_FILE_NAME = "hyperos-mtz-studio-backup-latest.zip"
+        private const val KEY_ALIAS = "mtz_studio_cloud_secret"
+        private const val GCM_IV_BYTES = 12
     }
 }

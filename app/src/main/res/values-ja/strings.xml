@@ -199,9 +199,9 @@
     <string name="local_restore_desc">デバイスのストレージからアプリケーションライブラリに以前に輸出された .zip バックアップファイルをインポートします.</string>
     <string name="cloud_dialog_title">クラウドアカウントを接続する</string>
     <string name="cloud_dialog_subtitle">テーマバックアップを同期するクラウドサービスプロバイダーを選択</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">クラウドフォルダー（Google Drive、OneDrive…）</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">このデバイスで設定したGoogleアカウントを選択</string>
+    <string name="cloud_google_desc">Google Drive、OneDrive、または別のファイルプロバイダーから永続フォルダーを選択します</string>
     <string name="cloud_webdav_desc">URLとパスワードでプライベートクラウドサーバーに接続する</string>
     <string name="cloud_account_email_label">Google アカウントのメール</string>
     <string name="cloud_server_url_label">WebDAV サーバのURL</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">アプリの更新</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">更新をダウンロードして検証しました。タップしてインストールします。</string>
 </resources>

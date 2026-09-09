@@ -199,9 +199,9 @@
     <string name="local_restore_desc">మీ పరికర నిల్వ నుండి గతంలో ఎగుమతి చేయబడిన .zip బ్యాకప్ ఫైల్ను అప్లికేషన్ లైబ్రరీకి దిగుమతి చేస్తుంది.</string>
     <string name="cloud_dialog_title">క్లౌడ్ ఖాతాను కనెక్ట్ చేయండి</string>
     <string name="cloud_dialog_subtitle">మీ థీమ్ బ్యాకప్లను సమకాలీకరించడానికి క్లౌడ్ సర్వీస్ ప్రొవైడర్ను ఎంచుకోండి</string>
-    <string name="cloud_provider_google">Google Drive</string>
+    <string name="cloud_provider_google">క్లౌడ్ ఫోల్డర్ (Google Drive, OneDrive…)</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">ఈ పరికరంలో కాన్ఫిగర్ చేయబడిన Google ఖాతాను ఎంచుకోండి</string>
+    <string name="cloud_google_desc">Google Drive, OneDrive లేదా మరొక ఫైల్ ప్రొవైడర్ నుండి శాశ్వత ఫోల్డర్‌ను ఎంచుకోండి</string>
     <string name="cloud_webdav_desc">URL మరియు పాస్వర్డ్తో ప్రైవేట్ క్లౌడ్ సర్వర్కు కనెక్ట్ అవ్వండి</string>
     <string name="cloud_account_email_label">గూగుల్ ఖాతా ఇమెయిల్</string>
     <string name="cloud_server_url_label">WebDAV సర్వర్ URL</string>
@@ -378,4 +378,7 @@
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
+    <string name="app_update_channel">యాప్ నవీకరణలు</string>
+    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_text">నవీకరణ డౌన్‌లోడ్ చేసి ధృవీకరించబడింది. ఇన్‌స్టాల్ చేయడానికి నొక్కండి.</string>
 </resources>
