@@ -363,4 +363,7 @@
     <string name="action_translate">अनुवाद</string>
     <string name="shizuku_recommended_title">Shizuku recommended</string>
     <string name="shizuku_recommended_desc">For a more reliable rootless apply flow, start Shizuku with Wireless debugging and grant MTZ Studio permission. The Shizuku + BAK Converter path can import to the local Themes library without root.</string>
+    <string name="about_contact_telegram">Contact @Glorioustr on Telegram</string>
+    <string name="btn_report_problem_telegram">Report a problem on Telegram</string>
+    <string name="diag_telegram_support_desc">Export the diagnostics package first, then attach it when contacting @Glorioustr.</string>
 </resources>

@@ -81,6 +81,7 @@
     <string name="about_repository_badge">TOPLULUK TARAFINDAN GELİŞTİRİLİR</string>
     <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub deposunu aç</string>
+    <string name="about_contact_telegram">Telegram’da @Glorioustr’a ulaş</string>
     <string name="theme_active_badge">Etkin</string>
     <string name="theme_active_explanation">MTZ Studio tarafından en son uygulanan tema.</string>
     <string name="theme_source_created">Oluşturulan</string>
@@ -283,6 +284,8 @@
     <string name="diag_interrupted_session">Kesilmiş oturum: %1$s</string>
     <string name="diag_orphan_staging">Korunan yarım import: %1$d dosya · %2$s</string>
     <string name="btn_export_diagnostics">Tanılama paketini dışa aktar</string>
+    <string name="btn_report_problem_telegram">Telegram’dan sorun bildir</string>
+    <string name="diag_telegram_support_desc">Önce tanılama paketini dışa aktarın, ardından @Glorioustr’a gönderirken mesaja ekleyin.</string>
     <string name="diag_export_failed">Tanılama dışa aktarılamadı: %1$s</string>
     <string name="diag_recent_events">Son olaylar</string>
     <string name="diag_phase_staging_created">Geçici alan hazır</string>

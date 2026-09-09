@@ -81,6 +81,7 @@
     <string name="about_repository_badge">COMMUNITY-DRIVEN DEVELOPMENT</string>
     <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Open GitHub repository</string>
+    <string name="about_contact_telegram">Contact @Glorioustr on Telegram</string>
     <string name="theme_active_badge">Active</string>
     <string name="theme_active_explanation">The theme most recently applied by MTZ Studio.</string>
     <string name="theme_source_created">Created</string>
@@ -283,6 +284,8 @@
     <string name="diag_interrupted_session">Interrupted session: %1$s</string>
     <string name="diag_orphan_staging">Protected incomplete import: %1$d files · %2$s</string>
     <string name="btn_export_diagnostics">Export diagnostics package</string>
+    <string name="btn_report_problem_telegram">Report a problem on Telegram</string>
+    <string name="diag_telegram_support_desc">Export the diagnostics package first, then attach it when contacting @Glorioustr.</string>
     <string name="diag_export_failed">Failed to export diagnostics: %1$s</string>
     <string name="diag_recent_events">Recent events</string>
     <string name="diag_phase_staging_created">Staging area ready</string>

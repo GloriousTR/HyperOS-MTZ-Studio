@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ internal fun LiveDiagnosticsCard(
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
+    val uriHandler = LocalUriHandler.current
     val state by recorder.state.collectAsState()
     val scope = rememberCoroutineScope()
     var actionStatus by remember { mutableStateOf<String?>(null) }
@@ -110,6 +112,16 @@ internal fun LiveDiagnosticsCard(
                     },
                 ) { Text(stringResource(R.string.btn_export_diagnostics)) }
 
+                OutlinedButton(
+                    onClick = { uriHandler.openUri(DEVELOPER_TELEGRAM_URL) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.btn_report_problem_telegram)) }
+                Text(
+                    stringResource(R.string.diag_telegram_support_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
                 Text(
                     stringResource(R.string.diag_themes_apk_desc),
                     style = MaterialTheme.typography.bodySmall,
@@ -145,6 +157,8 @@ internal fun LiveDiagnosticsCard(
         }
     }
 }
+
+internal const val DEVELOPER_TELEGRAM_URL = "https://t.me/Glorioustr"
 
 private fun formatDiagnosticBytes(bytes: Long): String = when {
     bytes >= 1024L * 1024 * 1024 -> "%.2f GB".format(bytes / (1024.0 * 1024 * 1024))

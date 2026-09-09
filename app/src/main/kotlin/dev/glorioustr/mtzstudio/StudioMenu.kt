@@ -2512,6 +2512,14 @@ internal fun AboutScreen(modifier: Modifier = Modifier) {
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.about_open_github))
                     }
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri(DEVELOPER_TELEGRAM_URL) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.Call, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.about_contact_telegram))
+                    }
                 }
             }
         }
