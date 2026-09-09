@@ -36,6 +36,8 @@
 - Shizuku/Shevery is now required for applying themes without root; unreliable standard-rootless Xiaomi hand-offs are no longer attempted.
 - Detects an installed Shizuku or Shevery manager and opens it directly when authorization is not ready.
 - When neither manager is installed, Studio recommends Shevery and links to its official GitHub releases page.
+- Includes a numbered Wireless debugging pairing guide and links to Shizuku's official illustrated instructions.
+- Lets users export diagnostics and contact [@Glorioustr](https://t.me/Glorioustr) from the same screen.
 - Shizuku theme persistence monitoring can automatically restore the last protected theme after Xiaomi replaces its active components.
 - Direct **BAK → MTZ** reconstruction in Shizuku/Shevery mode; no root request and no destructive Theme Manager restore.
 - Optional translation during conversion, or preservation of the original theme language.
@@ -62,7 +64,7 @@
 | **Shizuku / Shevery** | BAK Converter, authorized local import/apply, persistence monitoring and Studio tools without root. |
 | **No authorization service** | Local MTZ import, preview, translation, composition and export remain available; theme applying waits for Shizuku/Shevery. |
 
-On non-rooted devices, install and start Shizuku or [Shevery](https://github.com/HmnDev-Tech/shevery/releases) with Wireless debugging, then grant MTZ Studio permission. If either compatible manager is already installed, Studio opens that app instead of recommending another one.
+On non-rooted devices, install and start Shizuku or [Shevery](https://github.com/HmnDev-Tech/shevery/releases) with Wireless debugging, then grant MTZ Studio permission. If either compatible manager is already installed, Studio opens that app instead of recommending another one. The in-app setup card follows the [official illustrated Shizuku guide](https://shizuku.rikka.app/guide/setup/).
 
 ## Compatibility
 
