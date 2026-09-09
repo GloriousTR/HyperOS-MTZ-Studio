@@ -408,5 +408,6 @@
     <string name="shizuku_tutorial_miui_tip">Xiaomi notu: Temel eşleştirme için yukarıdaki menüler yeterlidir. Yalnızca yetki hatası yaşanırsa ve cihazınızda bulunuyorsa “USB hata ayıklama (Güvenlik ayarları)” seçeneğini etkinleştirin. Telefon yeniden başladığında hizmeti yeniden başlatmanız gerekir.</string>
     <string name="shizuku_tutorial_open_settings">Geliştirici seçeneklerini aç</string>
     <string name="shizuku_tutorial_open_official">Resmî resimli rehberi aç</string>
+    <string name="shizuku_tutorial_open_video">Videolu anlatımı aç</string>
     <string name="shizuku_tutorial_close">Tamam</string>
 </resources>

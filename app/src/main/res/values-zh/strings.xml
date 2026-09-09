@@ -377,4 +377,5 @@
     <string name="shizuku_tutorial_open_settings">Open Developer options</string>
     <string name="shizuku_tutorial_close">Done</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
+    <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
 </resources>

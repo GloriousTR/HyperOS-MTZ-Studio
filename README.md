@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.0"><strong>Download v3.3.0</strong></a>
-  · <a href="docs/release-notes-v3.3.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.1"><strong>Download v3.3.1</strong></a>
+  · <a href="docs/release-notes-v3.3.1.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -31,12 +31,13 @@
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
 
-## v3.3.0 highlights
+## v3.3.1 highlights
 
 - Shizuku/Shevery is now required for applying themes without root; unreliable standard-rootless Xiaomi hand-offs are no longer attempted.
 - Detects an installed Shizuku or Shevery manager and opens it directly when authorization is not ready.
 - When neither manager is installed, Studio recommends Shevery and links to its official GitHub releases page.
 - Includes a numbered Wireless debugging pairing guide with permanently visible setup actions and a direct link to Shizuku's official illustrated instructions.
+- Adds an in-app video tutorial button that opens the shared Shizuku/Shevery setup video directly.
 - Lets users export diagnostics and contact [@Glorioustr](https://t.me/Glorioustr) from the same screen.
 - Shizuku theme persistence monitoring can automatically restore the last protected theme after Xiaomi replaces its active components.
 - Direct **BAK → MTZ** reconstruction in Shizuku/Shevery mode; no root request and no destructive Theme Manager restore.
@@ -83,7 +84,7 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.3.0.apk` and its checksum from the [v3.3.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.0).
+1. Download `MTZ_Studio_v3.3.1.apk` and its checksum from the [v3.3.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.3.1).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 

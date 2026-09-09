@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
@@ -423,6 +424,15 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
                     Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.shizuku_tutorial_open_official))
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { uriHandler.openUri(SHIZUKU_VIDEO_TUTORIAL_URL) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.shizuku_tutorial_open_video))
                 }
                 TextButton(
                     onClick = onDismiss,
@@ -3175,6 +3185,7 @@ private val THEME_GALLERY_CATEGORIES = setOf(
 
 private const val PROJECT_REPOSITORY_URL = "https://github.com/GloriousTR/HyperOS-MTZ-Studio"
 private const val SHIZUKU_SETUP_GUIDE_URL = "https://shizuku.rikka.app/guide/setup/"
+private const val SHIZUKU_VIDEO_TUTORIAL_URL = "https://www.youtube.com/shorts/pnHNdU6LppA"
 
 internal fun destinationFor(category: ComponentCategory): StudioDestination = when (category) {
     ComponentCategory.ICONS -> StudioDestination.ICONS
