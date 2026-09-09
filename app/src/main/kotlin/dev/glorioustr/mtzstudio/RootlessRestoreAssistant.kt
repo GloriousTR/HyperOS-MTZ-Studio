@@ -25,6 +25,7 @@ object RootlessRestoreAssistant {
     private const val KEY_ENABLED = "enabled"
     private const val KEY_THEME_NAME = "theme-name"
     private const val KEY_THEME_PATH = "theme-path"
+    private const val KEY_APPLY_INTENT = "apply-intent"
     private const val CHANNEL_ID = "rootless-restore"
     private const val NOTIFICATION_ID = 23101
     private const val THEME_MANAGER_PACKAGE = "com.android.thememanager"
@@ -37,6 +38,7 @@ object RootlessRestoreAssistant {
             .putBoolean(KEY_ENABLED, true)
             .putString(KEY_THEME_NAME, prepared.themeName)
             .putString(KEY_THEME_PATH, path)
+            .putString(KEY_APPLY_INTENT, prepared.intent.toUri(Intent.URI_INTENT_SCHEME))
             .apply()
         LiveDiagnosticsRecorder.get(context).record(
             "rootless_restore_saved",
@@ -60,7 +62,10 @@ object RootlessRestoreAssistant {
             )
             return
         }
-        val intent = themeManagerIntent(context, path)
+        val savedIntent = prefs.getString(KEY_APPLY_INTENT, null)?.let { uri ->
+            runCatching { Intent.parseUri(uri, Intent.URI_INTENT_SCHEME) }.getOrNull()
+        }?.takeIf { it.resolveActivity(context.packageManager) != null }
+        val intent = savedIntent ?: themeManagerIntent(context, path)
         if (intent.resolveActivity(context.packageManager) == null) {
             LiveDiagnosticsRecorder.get(context).record(
                 "rootless_restore_themes_unavailable",
@@ -132,8 +137,8 @@ class RootlessRestoreBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
-        if (context.getSharedPreferences("theme-persistence", Context.MODE_PRIVATE).getBoolean("enabled", false)) {
-            runCatching { ThemePersistenceGuardService.start(context.applicationContext) }
+        if (SheveryBackupRestorer.state() == SheveryBackupRestorer.State.READY) {
+            runCatching { ThemePersistenceGuardService.resumeIfArmed(context.applicationContext) }
         }
         RootlessRestoreAssistant.notifyAfterRestart(context.applicationContext, action)
     }

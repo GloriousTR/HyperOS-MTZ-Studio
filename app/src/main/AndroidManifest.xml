@@ -57,11 +57,10 @@
             android:directBootAware="true"
             android:exported="false"
             android:foregroundServiceType="specialUse"
-            android:process=":theme_guard"
             android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Keeps a user-selected local Xiaomi theme from being reverted by OEM validation broadcasts" />
+                android:value="Monitors user-approved Xiaomi theme components through Shizuku and alerts when they are replaced" />
         </service>
 
         <receiver

@@ -309,6 +309,7 @@ private fun StudioScreen(
             .putString("pending-manual-path", prepared.manualImportPath)
             .putString("pending-operation", prepared.operation.name)
             .putString("pending-local-id", prepared.themeManagerLocalId)
+            .putString("pending-intent-uri", prepared.intent.toUri(Intent.URI_INTENT_SCHEME))
             .apply()
     }
 
@@ -319,7 +320,10 @@ private fun StudioScreen(
             themeId = themeId,
             themeName = themeName,
             stagedPath = studioState.getString("pending-staged-path", "").orEmpty(),
-            intent = Intent(),
+            intent = Intent.parseUri(
+                studioState.getString("pending-intent-uri", null) ?: return@runCatching null,
+                Intent.URI_INTENT_SCHEME,
+            ),
             protocol = ThemeApplyProtocol.valueOf(
                 studioState.getString("pending-protocol", ThemeApplyProtocol.LEGACY_TESTER.name).orEmpty(),
             ),
@@ -340,6 +344,7 @@ private fun StudioScreen(
             .remove("pending-manual-path")
             .remove("pending-operation")
             .remove("pending-local-id")
+            .remove("pending-intent-uri")
             .remove("pending-started-at")
             .apply()
     }
@@ -576,6 +581,19 @@ private fun StudioScreen(
                     studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
                 }
             }
+            if (prepared.operation == ThemeManagerOperation.APPLY &&
+                accessMode == StudioAccessMode.SHIZUKU &&
+                prepared.protocol.name.startsWith("ROOTLESS_")
+            ) {
+                runCatching { ThemePersistenceGuardService.arm(context.applicationContext, prepared) }
+                    .onFailure {
+                        diagnostics.record(
+                            "theme_watch_arm_failed",
+                            "Shizuku tema izleyicisi etkinleştirilemedi",
+                            error = it,
+                        )
+                    }
+            }
         }
     }
 
@@ -609,10 +627,6 @@ private fun StudioScreen(
 
     fun launchPreparedTheme(prepared: PreparedThemeApply) {
         try {
-            if (prepared.operation == ThemeManagerOperation.APPLY && accessMode == StudioAccessMode.STANDARD) {
-                runCatching { ThemePersistenceGuardService.start(context.applicationContext) }
-                    .onFailure { diagnostics.record("theme_guard_start_failed", "Yerel tema koruması başlatılamadı", error = it) }
-            }
             preparedApply = prepared
             persistPreparedApply(prepared)
             diagnostics.record(
@@ -1144,8 +1158,10 @@ private fun StudioScreen(
             withContext(Dispatchers.Main) {
                 accessMode = mode
                 rootAccessAvailable = mode == StudioAccessMode.ROOT
-                if (mode != StudioAccessMode.STANDARD) {
-                    ThemePersistenceGuardService.disable(context.applicationContext)
+                when (mode) {
+                    StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
+                    StudioAccessMode.ROOT -> ThemePersistenceGuardService.disable(context.applicationContext)
+                    StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
                 }
             }
         }
@@ -1157,8 +1173,10 @@ private fun StudioScreen(
         val mode = withContext(Dispatchers.IO) { privilegedRunner.accessModeSilently() }
         accessMode = mode
         rootAccessAvailable = mode == StudioAccessMode.ROOT
-        if (mode != StudioAccessMode.STANDARD) {
-            ThemePersistenceGuardService.disable(context.applicationContext)
+        when (mode) {
+            StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
+            StudioAccessMode.ROOT -> ThemePersistenceGuardService.disable(context.applicationContext)
+            StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
         }
         val rootReady = mode == StudioAccessMode.ROOT
         diagnostics.record(
