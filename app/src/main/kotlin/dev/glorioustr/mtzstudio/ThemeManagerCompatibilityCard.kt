@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,7 @@ internal fun ThemeManagerCompatibilityCard(
     var status by remember { mutableStateOf(resources.getString(R.string.tm_checking_version)) }
     var riskAccepted by remember { mutableStateOf(false) }
     var showConfirmation by remember { mutableStateOf(false) }
+    val cyanAccent = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFF006A78) else Color(0xFF00DAF3)
 
     fun openRecommendedDownload() {
         runCatching {
@@ -140,7 +142,7 @@ internal fun ThemeManagerCompatibilityCard(
                     modifier = Modifier.size(42.dp).clip(RoundedCornerShape(50)).background(Color(0xFF00BCD4).copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF00DAF3), modifier = Modifier.size(24.dp))
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = cyanAccent, modifier = Modifier.size(24.dp))
                 }
                 Text(stringResource(R.string.tm_card_title), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                 Surface(
@@ -167,7 +169,7 @@ internal fun ThemeManagerCompatibilityCard(
                     } else if (current.installed) {
                         stringResource(R.string.tm_device_installed_incompatible, current.versionName ?: stringResource(R.string.tm_version_unknown))
                     } else stringResource(R.string.tm_device_not_found),
-                    color = if (current.isRecommended) Color(0xFF00DAF3) else MaterialTheme.colorScheme.error,
+                    color = if (current.isRecommended) cyanAccent else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
                 )

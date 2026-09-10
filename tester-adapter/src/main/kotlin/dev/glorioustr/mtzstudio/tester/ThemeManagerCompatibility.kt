@@ -1,7 +1,7 @@
 package dev.glorioustr.mtzstudio.tester
 
 object ThemeManagerContract {
-    const val RECOMMENDED_VERSION = "2.15.5.46"
+    const val RECOMMENDED_VERSION = "3.0.5.6"
     const val PACKAGE_NAME = "com.android.thememanager"
     const val LEGACY_TESTER_ACTION = "com.android.thememanager.support3.0"
     const val LEGACY_TESTER_COMPONENT = "com.android.thememanager.ApplyThemeForScreenshot"

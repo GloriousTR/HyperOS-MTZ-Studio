@@ -8,12 +8,17 @@ import kotlin.test.assertTrue
 class ThemeManagerCompatibilityTest {
     @Test
     fun `recommended version is recognized with global suffix`() {
-        assertEquals("2.15.5.46", ThemeManagerContract.canonicalVersion("2.15.5.46-global"))
-        assertEquals(ThemeManagerBehavior.LOCAL_THEME_IMPORT, ThemeManagerContract.behavior("2.15.5.46-global"))
+        assertEquals("3.0.5.6", ThemeManagerContract.RECOMMENDED_VERSION)
+        assertEquals("3.0.5.6", ThemeManagerContract.canonicalVersion("3.0.5.6-global"))
+        assertEquals(ThemeManagerBehavior.LOCAL_THEME_IMPORT, ThemeManagerContract.behavior("3.0.5.6-global"))
     }
 
     @Test
     fun `known global versions map to observed tester behavior`() {
+        assertEquals(
+            ThemeManagerBehavior.LOCAL_THEME_IMPORT,
+            ThemeManagerContract.behavior("2.15.5.46-global"),
+        )
         assertEquals(
             ThemeManagerBehavior.LOCAL_THEME_IMPORT,
             ThemeManagerContract.behavior("3.0.4.32-global"),

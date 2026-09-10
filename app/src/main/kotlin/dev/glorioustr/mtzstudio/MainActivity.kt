@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -1391,12 +1392,27 @@ private fun StudioScreen(
             CenterAlignedTopAppBar(
                 title = {
                     if (destination in primaryDestinations) {
-                        Image(
-                            painter = painterResource(R.drawable.logo_banner),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier.height(44.dp),
-                            contentScale = ContentScale.Fit,
-                        )
+                        if (MaterialTheme.colorScheme.background.luminance() > 0.5f) {
+                            Surface(
+                                shape = RoundedCornerShape(13.dp),
+                                color = Color(0xFF111722),
+                                shadowElevation = 2.dp,
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.logo_banner),
+                                    contentDescription = stringResource(R.string.app_name),
+                                    modifier = Modifier.height(44.dp).padding(horizontal = 7.dp, vertical = 3.dp),
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        } else {
+                            Image(
+                                painter = painterResource(R.drawable.logo_banner),
+                                contentDescription = stringResource(R.string.app_name),
+                                modifier = Modifier.height(44.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                        }
                     } else {
                         Text(stringResource(destination.titleRes))
                     }
