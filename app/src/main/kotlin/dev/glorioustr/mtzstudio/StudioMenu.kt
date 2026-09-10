@@ -288,7 +288,7 @@ internal fun StudioPanelScreen(
                     QuickActionCard(stringResource(R.string.mtz_import_title), if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.panel_mtz_short), Icons.Filled.Download, Color(0xFF0066FF), onAddMtz, Modifier.weight(1f), !importing)
                     QuickActionCard(stringResource(R.string.bak_import_title), if (bakImporting) stringResource(R.string.bak_import_inspecting) else stringResource(R.string.panel_bak_short), Icons.Filled.Restore, Color(0xFF7000FF), onAddBak, Modifier.weight(1f), showBakImport && !bakImporting)
                 }
-                QuickActionCard(stringResource(R.string.panel_cloud_sync), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.fillMaxWidth())
+                QuickActionCard(stringResource(R.string.dest_backup), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.fillMaxWidth())
             }
         }
         item { Spacer(Modifier.height(20.dp)) }
@@ -632,12 +632,6 @@ internal fun StudioOverlayMenu(
             descriptionRes = R.string.theme_language_tool_desc,
         ),
         OverlayMenuItem(
-            destination = StudioDestination.BACKUP,
-            icon = Icons.Filled.CloudUpload,
-            color = Color(0xFF3F7FD9),
-            descriptionRes = R.string.overlay_backup_desc,
-        ),
-        OverlayMenuItem(
             destination = StudioDestination.DIAGNOSTICS,
             icon = Icons.Filled.MonitorHeart,
             color = Color(0xFF607D8B),
@@ -725,7 +719,6 @@ internal fun StudioToolsScreen(
     val items = listOf(
         OverlayMenuItem(StudioDestination.APPEARANCE, Icons.Filled.Palette, Color(0xFF5C6BC0), R.string.overlay_appearance_desc),
         OverlayMenuItem(StudioDestination.AI_TRANSLATION, Icons.Filled.AutoFixHigh, Color(0xFFFF8A3D), R.string.theme_language_tool_desc),
-        OverlayMenuItem(StudioDestination.BACKUP, Icons.Filled.CloudUpload, Color(0xFF3F7FD9), R.string.overlay_backup_desc),
         OverlayMenuItem(StudioDestination.DIAGNOSTICS, Icons.Filled.MonitorHeart, Color(0xFF607D8B), R.string.overlay_diagnostics_desc),
         OverlayMenuItem(StudioDestination.THEME_PROTECTION, Icons.Filled.Security, Color(0xFF2E7D32), R.string.overlay_theme_protection_desc),
     ).filter { showThemeProtection || it.destination != StudioDestination.THEME_PROTECTION }
