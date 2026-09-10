@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.1"><strong>Download v3.4.1</strong></a>
-  · <a href="docs/release-notes-v3.4.1.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.5.0"><strong>Download v3.5.0</strong></a>
+  · <a href="docs/release-notes-v3.5.0.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -34,15 +34,16 @@
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
 
-## v3.4.1 highlights
+## v3.5.0 highlights
 
-- Translation progress is now shown compactly inside the Translate button; the separate bar between theme actions was removed.
+- Translation progress is shown as a taller live percentage bar inside the Translate button.
 - Translation continues in a foreground background task and reports progress in Android notifications.
-- Replaced device-local “cloud” storage with account-backed Google Drive app-data storage for cross-device restore.
+- Google Drive backup now uses private account-backed app-data storage for reliable restore after reinstalling or changing devices.
 - Added real HTTPS WebDAV/Nextcloud upload and restore; credentials are protected by Android Keystore.
 - Cloud backup and restore now continue when the app is minimized and report completion through notifications.
-- Added automatic GitHub update checks and secure APK downloading. Android still asks for final installation confirmation.
-- Updated all 20 interface languages for cloud folders and update notifications.
+- Added foreground GitHub update checks and secure APK downloading. Android still asks for final installation confirmation.
+- The AI provider list now opens downward from its selector and remains scrollable on smaller screens.
+- Reordered the app menu so update checking sits directly above About, with About at the bottom.
 
 ## Existing capabilities
 
@@ -97,7 +98,7 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.4.1.apk` and its checksum from the [v3.4.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.4.1).
+1. Download `MTZ_Studio_v3.5.0.apk` and its checksum from the [v3.5.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.5.0).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 

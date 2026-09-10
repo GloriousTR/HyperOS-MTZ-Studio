@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,7 +101,12 @@ internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
                 Text(label("Sağlayıcı ve model", "Provider and model"), fontWeight = FontWeight.Bold)
                 Column {
                     OutlinedButton(onClick = { providerMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(provider.title) }
-                    DropdownMenu(expanded = providerMenu, onDismissRequest = { providerMenu = false }) {
+                    DropdownMenu(
+                        expanded = providerMenu,
+                        onDismissRequest = { providerMenu = false },
+                        modifier = Modifier.heightIn(max = 360.dp),
+                        offset = DpOffset(0.dp, 4.dp),
+                    ) {
                         AiProvider.entries.forEach { option -> DropdownMenuItem(text = { Text(option.title) }, onClick = {
                             provider = option; model = store.loadModel(option); models = option.suggestedModels; apiKey = ""; storedKey = store.loadApiKey(option).isNotBlank(); providerMenu = false
                         }) }
