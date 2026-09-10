@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -29,13 +30,13 @@ internal fun StudioCard(
     }
 
     val colors = MaterialTheme.colorScheme
+    val lightSurface = colors.background.luminance() > 0.5f
     val glassBase = Brush.linearGradient(
-        colors = listOf(
-            colors.primary.copy(alpha = 0.20f),
-            colors.surfaceContainerHigh.copy(alpha = 0.74f),
-            colors.secondary.copy(alpha = 0.16f),
-            colors.surfaceContainer.copy(alpha = 0.78f),
-        ),
+        colors = if (lightSurface) {
+            listOf(Color(0xFFD0DCE8), Color(0xFFD8D8E5), Color(0xFFD2D8E5))
+        } else {
+            listOf(Color(0xFF182B3F), Color(0xFF302D42), Color(0xFF222C3D))
+        },
     )
     val glassEdge = Brush.linearGradient(
         colors = listOf(
