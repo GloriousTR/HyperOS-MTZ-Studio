@@ -14,11 +14,11 @@ on:
       tag_name:
         description: 'Release tag, or signed artifact label for a private test build'
         required: false
-        default: 'v4.1.0'
+        default: 'v4.1.1'
       release_name:
         description: 'Release Title'
         required: false
-        default: 'HyperOS MTZ Studio v4.1.0'
+        default: 'HyperOS MTZ Studio v4.1.1'
 
 permissions:
   contents: write
@@ -75,10 +75,8 @@ jobs:
           mkdir -p release-artifacts
           TAG="${{ steps.release_meta.outputs.tag }}"
           cp app/build/outputs/apk/release/app-release.apk "release-artifacts/MTZ_Studio_${TAG}.apk"
-          cp requirements/Xiaomi_Themes_3.0.5.6-global.apk release-artifacts/Xiaomi_Themes_3.0.5.6-global.apk
           cd release-artifacts
           sha256sum "MTZ_Studio_${TAG}.apk" > "MTZ_Studio_${TAG}.apk.sha256"
-          sha256sum Xiaomi_Themes_3.0.5.6-global.apk > Xiaomi_Themes_3.0.5.6-global.apk.sha256
           ls -la
 
       - name: Upload Signed Test Artifact

@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.0"><strong>Download v4.1.0 APK</strong></a>
-  · <a href="docs/release-notes-v4.1.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.1"><strong>Download v4.1.1 APK</strong></a>
+  · <a href="docs/release-notes-v4.1.1.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -61,14 +61,14 @@ Studio does not rely only on a fixed Xiaomi Themes version allowlist. At runtime
 
 The recovery action downloads the verified Xiaomi Themes `3.0.5.6-global` package directly through Android Download Manager:
 
-- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.1.0/Xiaomi_Themes_3.0.5.6-global.apk)
-- [SHA-256 checksum](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.1.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
+- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk)
+- [SHA-256 checksum](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
 
 Xiaomi can change the final application screen and theme-acceptance behaviour depending on the ROM. Studio verifies capabilities and outcomes at runtime whenever possible, but a Xiaomi confirmation screen may still appear.
 
 ## Install
 
-1. Download `MTZ_Studio_v4.1.0.apk` from the [v4.1.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.0).
+1. Download `MTZ_Studio_v4.1.1.apk` from the [v4.1.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.1).
 2. Back up an important Studio library before upgrading from an older build.
 3. Install the APK, open Studio and let it detect the available access mode.
 4. On non-rooted devices, grant the requested Shizuku/Shevery authorization before applying themes.

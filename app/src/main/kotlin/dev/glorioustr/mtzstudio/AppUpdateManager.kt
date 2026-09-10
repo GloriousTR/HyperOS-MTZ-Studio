@@ -128,8 +128,8 @@ internal class AppUpdateManager(private val context: Context) {
             val asset = assets.getJSONObject(index)
             val name = asset.getString("name")
             val url = asset.getString("browser_download_url")
-            if (name.endsWith(".apk")) apkUrl = url
-            if (name.endsWith(".apk.sha256")) checksumUrl = url
+            if (name.startsWith("MTZ_Studio_") && name.endsWith(".apk")) apkUrl = url
+            if (name.startsWith("MTZ_Studio_") && name.endsWith(".apk.sha256")) checksumUrl = url
         }
         val downloadUrl = requireNotNull(apkUrl) { "Release APK is missing" }
         val expectedHash = requireNotNull(checksumUrl) { "Release checksum is missing" }
