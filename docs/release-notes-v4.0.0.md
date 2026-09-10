@@ -18,4 +18,5 @@ v4.0.0 introduces a redesigned workspace that keeps the established Root and Shi
 - Android 8.0 or newer.
 - Root mode uses the detected root manager when available.
 - Shizuku or Shevery is required for supported non-root theme-application workflows.
-- Xiaomi Themes compatibility still depends on the installed ROM and Themes package; Studio reports the detected status before import.
+- Xiaomi Themes compatibility is decided at runtime from the installed package's resolvable `ApplyThemeForScreenshot` activity, not from a fixed version allowlist. The warning appears only when that activity is unavailable.
+- The compatibility recovery button downloads the verified Xiaomi Themes `3.0.5.6-global` APK directly from this GitHub release through Android's download manager; it no longer opens an external download site.

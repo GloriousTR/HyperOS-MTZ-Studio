@@ -1,7 +1,10 @@
 package dev.glorioustr.mtzstudio
 
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -61,12 +64,9 @@ internal fun ThemeManagerCompatibilityCard(
     openInput: (Uri) -> InputStream?,
     allowRootDowngrade: Boolean,
 ) {
-    // APKMirror's version page requires an extra tap.  This is its stable download-start route
-    // for the verified universal 3.0.5.6-global package, so the browser immediately starts the
-    // download without MTZ Studio ever handling or installing a third-party system APK itself.
+    val recommendedApkName = "Xiaomi_Themes_3.0.5.6-global.apk"
     val recommendedDownloadUrl =
-        "https://www.apkmirror.com/apk/xiaomi-inc/miui-theme-app/xiaomi-themes-3-0-5-6-global-release/" +
-            "xiaomi-themes-3-0-5-6-global-android-apk-download/download/?key=e5010769a82e6509e696d27f7b61561b9b8db5fd"
+        "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/$recommendedApkName"
     val resources = LocalResources.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -80,12 +80,18 @@ internal fun ThemeManagerCompatibilityCard(
 
     fun openRecommendedDownload() {
         runCatching {
-            context.startActivity(
-                Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(recommendedDownloadUrl),
-                ),
-            )
+            val request = DownloadManager.Request(Uri.parse(recommendedDownloadUrl))
+                .setTitle(recommendedApkName)
+                .setDescription("Xiaomi Themes ${ThemeManagerContract.RECOMMENDED_VERSION}")
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, recommendedApkName)
+            val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            manager.enqueue(request)
+        }.onSuccess {
+            status = "Xiaomi Themes ${ThemeManagerContract.RECOMMENDED_VERSION} indiriliyor…"
+        }.onFailure { error ->
+            status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
         }
     }
 
@@ -93,8 +99,9 @@ internal fun ThemeManagerCompatibilityCard(
         scope.launch {
             val detected = withContext(Dispatchers.IO) { inspector.inspect() }
             installed = detected
-            runtimeProfile = withContext(Dispatchers.IO) { ThemeManagerCapabilityProbe(context).probe(detected) }
-            status = if (detected.isRecommended) {
+            val profile = withContext(Dispatchers.IO) { ThemeManagerCapabilityProbe(context).probe(detected) }
+            runtimeProfile = profile
+            status = if (profile.legacyTesterResolvable) {
                 resources.getString(R.string.tm_recommended_active)
             } else {
                 resources.getString(R.string.tm_recommendation_notice, ThemeManagerContract.RECOMMENDED_VERSION)
@@ -133,6 +140,7 @@ internal fun ThemeManagerCompatibilityCard(
     }
 
     StudioCard(Modifier.fillMaxWidth()) {
+        val applyActivityAvailable = runtimeProfile?.legacyTesterResolvable == true
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -151,7 +159,11 @@ internal fun ThemeManagerCompatibilityCard(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ) {
                     Text(
-                        stringResource(if (installed?.isRecommended == true) R.string.tm_profile_active else R.string.tm_profile_checking),
+                        stringResource(
+                            if (runtimeProfile == null) R.string.tm_profile_checking
+                            else if (applyActivityAvailable) R.string.tm_profile_active
+                            else R.string.tm_profile_checking,
+                        ),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelSmall,
@@ -159,21 +171,21 @@ internal fun ThemeManagerCompatibilityCard(
                 }
             }
             installed?.let { current ->
-                val rootlessImportUnavailable = runtimeProfile?.let {
-                    current.installed && !it.legacyTesterResolvable && !it.publicMtzImportResolvable
-                } == true
-                val needsRecommendedVersion = current.installed && !current.isRecommended
+                val applyActivityUnavailable = runtimeProfile != null && current.installed && !applyActivityAvailable
                 Text(
-                    if (current.installed && current.isRecommended) {
-                        stringResource(R.string.tm_panel_version_approved, current.versionName ?: ThemeManagerContract.RECOMMENDED_VERSION)
-                    } else if (current.installed) {
-                        stringResource(R.string.tm_device_installed_incompatible, current.versionName ?: stringResource(R.string.tm_version_unknown))
-                    } else stringResource(R.string.tm_device_not_found),
-                    color = if (current.isRecommended) cyanAccent else MaterialTheme.colorScheme.error,
+                    if (!current.installed) stringResource(R.string.tm_device_not_found)
+                    else if (applyActivityAvailable) stringResource(
+                        R.string.tm_device_installed_compatible,
+                        current.versionName ?: stringResource(R.string.tm_version_unknown),
+                    ) else stringResource(
+                        R.string.tm_device_installed_incompatible,
+                        current.versionName ?: stringResource(R.string.tm_version_unknown),
+                    ),
+                    color = if (applyActivityAvailable) cyanAccent else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                if (current.isRecommended) {
+                if (applyActivityAvailable) {
                     Text(
                         stringResource(R.string.tm_panel_compatible_desc),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -196,10 +208,8 @@ internal fun ThemeManagerCompatibilityCard(
                         )
                     }
                 }
-                if (needsRecommendedVersion) {
+                if (applyActivityUnavailable) {
                     Text(current.behavior.explanation, style = MaterialTheme.typography.bodySmall)
-                }
-                if (rootlessImportUnavailable) {
                     Text(
                         stringResource(R.string.tm_rootless_import_unavailable),
                         color = MaterialTheme.colorScheme.error,
@@ -207,19 +217,18 @@ internal fun ThemeManagerCompatibilityCard(
                     )
                 }
 
-                // All modes receive an explicit recovery route.  The version test tells users
-                // why a Xiaomi internal apply screen cannot be opened; the capability probe
-                // catches builds that advertise no usable external MTZ import surface at all.
-                if (needsRecommendedVersion || rootlessImportUnavailable) {
+                // Compatibility is determined only from the runtime-resolvable Xiaomi apply
+                // activity. Version names remain diagnostic information, not an allowlist.
+                if (applyActivityUnavailable) {
                     OutlinedButton(onClick = ::openRecommendedDownload) {
                         Text("Themes ${ThemeManagerContract.RECOMMENDED_VERSION} APK indir")
                     }
                 }
             }
-            if (installed?.isRecommended != true) Text(status, style = MaterialTheme.typography.bodySmall)
+            if (runtimeProfile != null && !applyActivityAvailable) Text(status, style = MaterialTheme.typography.bodySmall)
 
             val current = installed
-            if (allowRootDowngrade && current != null && current.installed && !current.isRecommended) {
+            if (allowRootDowngrade && current != null && current.installed && runtimeProfile != null && !applyActivityAvailable) {
                 OutlinedButton(
                     onClick = {
                         apkPicker.launch(
