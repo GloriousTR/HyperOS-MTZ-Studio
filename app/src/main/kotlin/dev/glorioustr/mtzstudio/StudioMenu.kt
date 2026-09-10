@@ -101,6 +101,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -126,10 +127,13 @@ import dev.glorioustr.mtzstudio.composer.CompositionResult
 import dev.glorioustr.mtzstudio.core.ComponentCategory
 import dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
 import dev.glorioustr.mtzstudio.library.LibraryTheme
+import dev.glorioustr.mtzstudio.shevery.SheveryAccess
+import dev.glorioustr.mtzstudio.shevery.SheveryAuthorizationStatus
 import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
 import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
 import java.io.InputStream
 import java.nio.file.Path
+import kotlinx.coroutines.delay
 
 internal enum class StudioDestination(
     @StringRes val titleRes: Int,
@@ -178,9 +182,9 @@ internal fun StudioPanelScreen(
     allowRootDowngrade: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var showShizukuTutorial by remember { mutableStateOf(false) }
-    val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    var showShizukuTutorial by remember { mutableStateOf(ShizukuSetupSession.isActive(context)) }
+    val uriHandler = LocalUriHandler.current
     val wirelessDebuggingEnabled = remember(accessMode) {
         runCatching { Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1 }.getOrDefault(false)
     }
@@ -276,7 +280,10 @@ internal fun StudioPanelScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(authorizationManagerName ?: "Shevery · GitHub")
                         }
-                        OutlinedButton(onClick = { showShizukuTutorial = true }, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = {
+                            ShizukuSetupSession.start(context)
+                            showShizukuTutorial = true
+                        }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Filled.Info, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.shizuku_tutorial_open))
@@ -354,7 +361,15 @@ internal fun MtzImportScreen(
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.mtz_import_single_button))
                     }
-                    OutlinedButton(onClick = onSelectMultiple, enabled = !importing, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Button(
+                        onClick = onSelectMultiple,
+                        enabled = !importing,
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.mtz_import_multiple_button))
@@ -389,6 +404,100 @@ internal fun MtzImportScreen(
         }
         item { Spacer(Modifier.height(20.dp)) }
     }
+}
+
+@Composable
+internal fun MtzBatchPickerDialog(
+    documents: List<MtzFolderDocument>,
+    selectedUris: Set<Uri>,
+    onToggle: (Uri) -> Unit,
+    onImport: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text(
+                    stringResource(R.string.mtz_batch_picker_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    stringResource(R.string.mtz_batch_picker_desc, selectedUris.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(documents, key = { it.uri.toString() }) { document ->
+                        val checked = document.uri in selectedUris
+                        val enabled = checked || selectedUris.size < 5
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable(enabled = enabled) { onToggle(document.uri) },
+                            color = if (checked) MaterialTheme.colorScheme.secondaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = checked,
+                                    onCheckedChange = { onToggle(document.uri) },
+                                    enabled = enabled,
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        document.displayName,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    document.sizeBytes?.let { size ->
+                                        Text(
+                                            formatMtzFileSize(size),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Button(
+                    onClick = onImport,
+                    enabled = selectedUris.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                ) {
+                    Icon(Icons.Filled.Download, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.mtz_batch_import_button, selectedUris.size))
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        }
+    }
+}
+
+private fun formatMtzFileSize(sizeBytes: Long): String = when {
+    sizeBytes >= 1024L * 1024L -> "%.1f MB".format(sizeBytes / (1024f * 1024f))
+    sizeBytes >= 1024L -> "%.1f KB".format(sizeBytes / 1024f)
+    else -> "$sizeBytes B"
 }
 
 private fun hyperOsVersionLabel(): String {
@@ -436,7 +545,8 @@ internal fun HomeMenuScreen(
     allowRootDowngrade: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    var showShizukuTutorial by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var showShizukuTutorial by remember { mutableStateOf(ShizukuSetupSession.isActive(context)) }
     val rows = listOf(
         MenuSpec(
             StudioDestination.THEMES,
@@ -515,7 +625,10 @@ internal fun HomeMenuScreen(
                             )
                         }
                         OutlinedButton(
-                            onClick = { showShizukuTutorial = true },
+                            onClick = {
+                                ShizukuSetupSession.start(context)
+                                showShizukuTutorial = true
+                            },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Icon(Icons.Filled.Info, contentDescription = null)
@@ -599,16 +712,91 @@ internal fun HomeMenuScreen(
     }
 }
 
+private enum class ShizukuSetupStep {
+    INSTALL_MANAGER,
+    UNSUPPORTED_ANDROID,
+    ENABLE_DEVELOPER_OPTIONS,
+    ENABLE_WIRELESS_DEBUGGING,
+    START_SERVICE,
+    GRANT_PERMISSION,
+    READY,
+}
+
 @Composable
 private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val steps = listOf(
-        stringResource(R.string.shizuku_tutorial_step_1),
-        stringResource(R.string.shizuku_tutorial_step_2),
-        stringResource(R.string.shizuku_tutorial_step_3),
-        stringResource(R.string.shizuku_tutorial_step_4),
-    )
+    val access = remember { SheveryAccess(context.applicationContext) }
+    var authorizationStatus by remember { mutableStateOf(access.status()) }
+    var managerPackage by remember { mutableStateOf<String?>(null) }
+    var managerName by remember { mutableStateOf<String?>(null) }
+    var developerOptionsEnabled by remember { mutableStateOf(false) }
+    var wirelessDebuggingEnabled by remember { mutableStateOf(false) }
+
+    fun refreshState() {
+        authorizationStatus = access.status()
+        val manager = listOf(
+            "moe.shizuku.privileged.api",
+            "com.hamondev.shevery",
+        ).firstNotNullOfOrNull { packageName ->
+            runCatching {
+                val info = context.packageManager.getApplicationInfo(packageName, 0)
+                packageName to context.packageManager.getApplicationLabel(info).toString()
+            }.getOrNull()
+        }
+        managerPackage = manager?.first
+        managerName = manager?.second
+        developerOptionsEnabled = runCatching {
+            Settings.Global.getInt(context.contentResolver, "development_settings_enabled", 0) == 1
+        }.getOrDefault(false)
+        wirelessDebuggingEnabled = runCatching {
+            Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+        }.getOrDefault(false)
+    }
+
+    val setupStep = when {
+        authorizationStatus == SheveryAuthorizationStatus.ROOT_READY ||
+            authorizationStatus == SheveryAuthorizationStatus.ADB_READY -> ShizukuSetupStep.READY
+        managerPackage == null -> ShizukuSetupStep.INSTALL_MANAGER
+        authorizationStatus == SheveryAuthorizationStatus.PERMISSION_REQUIRED -> ShizukuSetupStep.GRANT_PERMISSION
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.R -> ShizukuSetupStep.UNSUPPORTED_ANDROID
+        !developerOptionsEnabled -> ShizukuSetupStep.ENABLE_DEVELOPER_OPTIONS
+        !wirelessDebuggingEnabled -> ShizukuSetupStep.ENABLE_WIRELESS_DEBUGGING
+        else -> ShizukuSetupStep.START_SERVICE
+    }
+
+    LaunchedEffect(Unit) {
+        ShizukuSetupSession.start(context)
+        while (true) {
+            refreshState()
+            if (authorizationStatus == SheveryAuthorizationStatus.ROOT_READY ||
+                authorizationStatus == SheveryAuthorizationStatus.ADB_READY
+            ) {
+                ShizukuSetupSession.complete(context)
+            }
+            delay(750)
+        }
+    }
+
+    fun openDeveloperSettings(wirelessPage: Boolean) {
+        val wirelessIntent = Intent("android.settings.WIRELESS_DEBUGGING_SETTINGS")
+        val intent = if (wirelessPage && wirelessIntent.resolveActivity(context.packageManager) != null) {
+            wirelessIntent
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+        }
+        runCatching { context.startActivity(intent) }
+    }
+
+    val primaryInstruction = when (setupStep) {
+        ShizukuSetupStep.INSTALL_MANAGER -> stringResource(R.string.shizuku_recommended_desc)
+        ShizukuSetupStep.UNSUPPORTED_ANDROID -> stringResource(R.string.shizuku_tutorial_intro)
+        ShizukuSetupStep.ENABLE_DEVELOPER_OPTIONS -> stringResource(R.string.shizuku_tutorial_step_1)
+        ShizukuSetupStep.ENABLE_WIRELESS_DEBUGGING -> stringResource(R.string.shizuku_tutorial_step_2)
+        ShizukuSetupStep.START_SERVICE -> stringResource(R.string.shizuku_tutorial_step_3)
+        ShizukuSetupStep.GRANT_PERMISSION -> stringResource(R.string.shevery_dialog_text)
+        ShizukuSetupStep.READY -> stringResource(R.string.panel_system_rights_ready)
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -638,29 +826,38 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        stringResource(R.string.shizuku_tutorial_intro),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    steps.forEachIndexed { index, step ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        color = if (setupStep == ShizukuSetupStep.READY) {
+                            Color(0xFF00BFA5).copy(alpha = 0.16f)
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                        },
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                when (setupStep) {
+                                    ShizukuSetupStep.INSTALL_MANAGER -> "Shevery"
+                                    ShizukuSetupStep.UNSUPPORTED_ANDROID -> "Android 11+"
+                                    ShizukuSetupStep.ENABLE_DEVELOPER_OPTIONS -> stringResource(R.string.shizuku_tutorial_open_settings)
+                                    ShizukuSetupStep.ENABLE_WIRELESS_DEBUGGING -> stringResource(R.string.panel_wireless_debugging)
+                                    ShizukuSetupStep.START_SERVICE -> managerName ?: stringResource(R.string.shizuku_recommended_title)
+                                    ShizukuSetupStep.GRANT_PERMISSION -> stringResource(R.string.shevery_btn_grant)
+                                    ShizukuSetupStep.READY -> stringResource(R.string.panel_shizuku_active)
+                                },
+                                color = if (setupStep == ShizukuSetupStep.READY) Color(0xFF00897B) else MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(primaryInstruction, style = MaterialTheme.typography.bodyMedium)
+                            if (setupStep == ShizukuSetupStep.START_SERVICE) {
                                 Text(
-                                    text = "${index + 1}",
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    fontWeight = FontWeight.Bold,
+                                    stringResource(R.string.shizuku_tutorial_step_4),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
                                 )
                             }
-                            Text(step, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     Text(
@@ -671,16 +868,37 @@ private fun ShizukuPairingTutorialDialog(onDismiss: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(16.dp))
-                OutlinedButton(
+                Button(
                     onClick = {
-                        runCatching {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+                        when (setupStep) {
+                            ShizukuSetupStep.INSTALL_MANAGER -> uriHandler.openUri(SHEVERY_RELEASES_URL)
+                            ShizukuSetupStep.UNSUPPORTED_ANDROID,
+                            ShizukuSetupStep.ENABLE_DEVELOPER_OPTIONS -> openDeveloperSettings(false)
+                            ShizukuSetupStep.ENABLE_WIRELESS_DEBUGGING -> openDeveloperSettings(true)
+                            ShizukuSetupStep.START_SERVICE -> {
+                                val launchIntent = managerPackage?.let(context.packageManager::getLaunchIntentForPackage)
+                                if (launchIntent != null) context.startActivity(launchIntent)
+                            }
+                            ShizukuSetupStep.GRANT_PERMISSION -> runCatching { access.requestPermission(52046) }
+                            ShizukuSetupStep.READY -> onDismiss()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.shizuku_tutorial_open_settings)) }
+                ) {
+                    Text(
+                        when (setupStep) {
+                            ShizukuSetupStep.INSTALL_MANAGER -> "Shevery · GitHub"
+                            ShizukuSetupStep.UNSUPPORTED_ANDROID,
+                            ShizukuSetupStep.ENABLE_DEVELOPER_OPTIONS,
+                            ShizukuSetupStep.ENABLE_WIRELESS_DEBUGGING -> stringResource(R.string.shizuku_tutorial_open_settings)
+                            ShizukuSetupStep.START_SERVICE -> stringResource(R.string.panel_manage_service)
+                            ShizukuSetupStep.GRANT_PERMISSION -> stringResource(R.string.shevery_btn_grant)
+                            ShizukuSetupStep.READY -> stringResource(R.string.shizuku_tutorial_close)
+                        },
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
-                Button(
+                OutlinedButton(
                     onClick = { uriHandler.openUri(SHIZUKU_SETUP_GUIDE_URL) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {

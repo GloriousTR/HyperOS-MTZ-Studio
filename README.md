@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.2"><strong>v4.0.2 APK indir</strong></a>
-  · <a href="docs/release-notes-v4.0.2.md">Sürüm notları</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.0"><strong>v4.1.0 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.1.0.md">Sürüm notları</a>
   · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
@@ -61,14 +61,14 @@ Studio yalnızca sabit bir Temalar sürüm listesine güvenmez. Eski Global sür
 
 Bu seçenek, doğrulanmış Xiaomi Themes `3.0.5.6-global` paketini uygulama içinden Android İndirme Yöneticisiyle doğrudan indirir:
 
-- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.2/Xiaomi_Themes_3.0.5.6-global.apk)
-- [SHA-256 doğrulama dosyası](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.2/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
+- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.1.0/Xiaomi_Themes_3.0.5.6-global.apk)
+- [SHA-256 doğrulama dosyası](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.1.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
 
 Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre değiştirebilir. Studio, uygulama sonuçlarını ve uyumluluğu mümkün olduğunda çalışma anında doğrular; manuel Xiaomi onayı yine görünebilir.
 
 ## Kurulum
 
-1. [v4.0.2 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.2) sayfasından `MTZ_Studio_v4.0.2.apk` dosyasını indirin.
+1. [v4.1.0 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.0) sayfasından `MTZ_Studio_v4.1.0.apk` dosyasını indirin.
 2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
 3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
 4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.

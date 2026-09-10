@@ -53,6 +53,7 @@ internal fun SheveryAuthorizationGate(runner: PreferredPrivilegedCommandRunner, 
             }
             checking = false
             if (ready) {
+                ShizukuSetupSession.complete(context)
                 runner.dismissAuthorizationFailure()
                 showPermissionDialog = false
                 currentOnAuthorized()

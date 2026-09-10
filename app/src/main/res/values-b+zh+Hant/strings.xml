@@ -376,6 +376,7 @@
     <string name="shizuku_tutorial_miui_tip">Xiaomi tip: the steps above are sufficient for normal pairing. Only if authorization fails and your device exposes it, enable “USB debugging (Security settings)”. Restart the service after every phone reboot.</string>
     <string name="shizuku_tutorial_open_settings">Open Developer options</string>
     <string name="shizuku_tutorial_close">Done</string>
+    <string name="shizuku_setup_return_notification">Return to MTZ Studio setup</string>
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">應用程式更新</string>
@@ -452,4 +453,9 @@
     <string name="mtz_import_complete_title">Import completed</string>
     <string name="mtz_import_result">Imported: %1$d · Failed: %2$d</string>
     <string name="mtz_import_too_many">You can select up to 5 MTZ files at once.</string>
+    <string name="mtz_import_folder_empty">No MTZ files were found in the selected folder.</string>
+    <string name="mtz_import_folder_error">The selected folder could not be read: %1$s</string>
+    <string name="mtz_batch_picker_title">Select MTZ files</string>
+    <string name="mtz_batch_picker_desc">Choose up to 5 files using the checkboxes. Selected: %1$d/5</string>
+    <string name="mtz_batch_import_button">Import selected (%1$d)</string>
 </resources>

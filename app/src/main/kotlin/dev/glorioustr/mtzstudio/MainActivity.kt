@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -317,6 +318,8 @@ private fun StudioScreen(
     var mtzImportSucceeded by remember { mutableIntStateOf(0) }
     var mtzImportFailed by remember { mutableIntStateOf(0) }
     var mtzImportCurrentName by remember { mutableStateOf<String?>(null) }
+    var mtzBatchDocuments by remember { mutableStateOf<List<MtzFolderDocument>?>(null) }
+    var mtzBatchSelection by remember { mutableStateOf<Set<Uri>>(emptySet()) }
     var operationError by remember { mutableStateOf<String?>(null) }
     var showUpdateCheckResult by remember { mutableStateOf(false) }
     var dismissedUpdateEventId by rememberSaveable { mutableStateOf(0L) }
@@ -1259,11 +1262,32 @@ private fun StudioScreen(
         importMtzDocuments(listOfNotNull(uri))
     }
 
-    // Xiaomi's document provider handles ACTION_OPEN_DOCUMENT as a single-pick flow on some
-    // HyperOS builds even when EXTRA_ALLOW_MULTIPLE is present. ACTION_GET_CONTENT is routed
-    // through the system's multi-selection UI more reliably on those builds.
-    val multipleMtzPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        importMtzDocuments(uris.distinct())
+    val mtzFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri ->
+        checkingImportAccess = false
+        if (treeUri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                treeUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { findMtzDocuments(context, treeUri) }
+            }.onSuccess { documents ->
+                if (documents.isEmpty()) {
+                    operationError = resources.getString(R.string.mtz_import_folder_empty)
+                } else {
+                    mtzBatchSelection = emptySet()
+                    mtzBatchDocuments = documents
+                }
+            }.onFailure { error ->
+                operationError = resources.getString(
+                    R.string.mtz_import_folder_error,
+                    error.message ?: error::class.simpleName,
+                )
+            }
+        }
     }
 
     val bakPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -1640,7 +1664,7 @@ private fun StudioScreen(
                 onSelectMultiple = {
                     checkingImportAccess = true
                     diagnostics.recordPickerLaunched()
-                    runCatching { multipleMtzPicker.launch("*/*") }
+                    runCatching { mtzFolderPicker.launch(null) }
                         .onFailure { checkingImportAccess = false }
                 },
                 modifier = contentModifier,
@@ -1980,6 +2004,32 @@ private fun StudioScreen(
         )
     }
 
+    mtzBatchDocuments?.let { documents ->
+        MtzBatchPickerDialog(
+            documents = documents,
+            selectedUris = mtzBatchSelection,
+            onToggle = { uri ->
+                mtzBatchSelection = if (uri in mtzBatchSelection) {
+                    mtzBatchSelection - uri
+                } else if (mtzBatchSelection.size < 5) {
+                    mtzBatchSelection + uri
+                } else {
+                    mtzBatchSelection
+                }
+            },
+            onImport = {
+                val selected = documents.map { it.uri }.filter { it in mtzBatchSelection }
+                mtzBatchDocuments = null
+                mtzBatchSelection = emptySet()
+                importMtzDocuments(selected)
+            },
+            onDismiss = {
+                mtzBatchDocuments = null
+                mtzBatchSelection = emptySet()
+            },
+        )
+    }
+
     operationError?.let { message ->
         AlertDialog(
             onDismissRequest = { operationError = null },
@@ -2027,4 +2077,43 @@ private fun StudioScreen(
             },
         )
     }
+}
+
+internal data class MtzFolderDocument(
+    val uri: Uri,
+    val displayName: String,
+    val sizeBytes: Long?,
+)
+
+private fun findMtzDocuments(context: Context, treeUri: Uri): List<MtzFolderDocument> {
+    val resolver = context.contentResolver
+    val treeDocumentId = DocumentsContract.getTreeDocumentId(treeUri)
+    val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocumentId)
+    val columns = arrayOf(
+        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+        DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+        DocumentsContract.Document.COLUMN_MIME_TYPE,
+        DocumentsContract.Document.COLUMN_SIZE,
+    )
+    return resolver.query(childrenUri, columns, null, null, null)?.use { cursor ->
+        val idIndex = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+        val nameIndex = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+        val mimeIndex = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+        val sizeIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
+        buildList {
+            while (cursor.moveToNext()) {
+                val name = cursor.getString(nameIndex).orEmpty()
+                val mime = cursor.getString(mimeIndex).orEmpty()
+                if (mime == DocumentsContract.Document.MIME_TYPE_DIR || !name.endsWith(".mtz", ignoreCase = true)) continue
+                val documentId = cursor.getString(idIndex)
+                add(
+                    MtzFolderDocument(
+                        uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId),
+                        displayName = name,
+                        sizeBytes = if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else null,
+                    ),
+                )
+            }
+        }.sortedBy { it.displayName.lowercase() }
+    }.orEmpty()
 }
