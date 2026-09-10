@@ -1,141 +1,98 @@
 # HyperOS MTZ Studio
 
 <p align="center">
-  <img src="app/src/main/res/drawable-nodpi/logo_banner.png" alt="HyperOS MTZ Studio" width="760">
+  <img src="app/src/main/res/drawable-nodpi/logo_banner.png" alt="HyperOS MTZ Studio" width="640">
 </p>
 
 <p align="center">
-  <strong>A modern MTZ workspace for Xiaomi HyperOS and MIUI.</strong><br>
-  Import, convert, translate, preview, compose and apply themes from one app.
+  Xiaomi HyperOS ve MIUI için açık kaynaklı MTZ çalışma alanı.<br>
+  Temaları içe aktarın, düzenleyin, çevirin, dönüştürün, birleştirin ve uyumlu cihazlarda uygulayın.
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GloriousTR/HyperOS-MTZ-Studio?display_name=tag&style=for-the-badge&color=7357e6"></a>
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/actions/workflows/release.yml"><img alt="Release build" src="https://img.shields.io/github/actions/workflow/status/GloriousTR/HyperOS-MTZ-Studio/release.yml?style=for-the-badge&label=Release"></a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/latest"><img alt="Son sürüm" src="https://img.shields.io/github/v/release/GloriousTR/HyperOS-MTZ-Studio?display_name=tag&style=for-the-badge&color=7357e6"></a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/actions/workflows/release.yml"><img alt="Release derlemesi" src="https://img.shields.io/github/actions/workflow/status/GloriousTR/HyperOS-MTZ-Studio/release.yml?style=for-the-badge&label=Release"></a>
   <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white">
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.6.0"><strong>Download v3.6.0</strong></a>
-  · <a href="docs/release-notes-v3.6.0.md">Release notes</a>
-  · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
-  · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0"><strong>v4.0.0 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.0.0.md">Sürüm notları</a>
+  · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
+  · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
 
-## What it does
-
-- **MTZ library:** safely imports, validates, previews and organizes complete themes, icons and fonts.
-- **BAK Converter:** converts supported Xiaomi Themes `.bak` archives directly into portable MTZ packages without replacing Xiaomi Themes data. Results appear immediately in the Studio library.
-- **Theme Language Tool:** detects visible theme text and translates it into the app language. Reviewed Chinese terminology, safe MAML handling, translation memory and optional user-configured API providers improve natural results.
-- **Background operations:** translation and cloud transfers continue while Studio is minimized, with live card and notification progress.
-- **Portable cloud backup:** stores the Studio library in its private Google Drive app-data space, independent of Android's file picker and available after reinstalling or changing devices. HTTPS WebDAV/Nextcloud remains available as an alternative.
-- **Secure updates:** checks GitHub releases in the background, downloads newer APKs and verifies their checksum, package identity, version and signing certificate before opening Android's installer.
-- **Theme Composer:** combines a base theme with selected icons, lock screen, status bar, dialer, messages, launcher, AOD, font and wallpapers while preserving untouched components.
-- **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
-- **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
-
-## v3.6.0 highlights
-
-- A Theme Manager compatibility card is now visible before import in Root and Shizuku/Shevery modes.
-- It probes the installed Xiaomi Themes package for a real local-MTZ import surface instead of assuming removed Xiaomi internal activities still exist.
-- Unsupported or unverified builds clearly explain that local importing/applying may not work and offer a one-tap direct download for the verified `3.0.5.6-global` APK from APKMirror.
-- Root users can select that downloaded APK in Studio; package, version and Xiaomi signing-certificate checks run before the optional in-app downgrade. Shizuku/Shevery ADB mode never attempts a system-package downgrade.
-
-## v3.5.0 highlights
-
-- Translation progress is shown as a taller live percentage bar inside the Translate button.
-- Translation continues in a foreground background task and reports progress in Android notifications.
-- Google Drive backup now uses private account-backed app-data storage for reliable restore after reinstalling or changing devices.
-- Added real HTTPS WebDAV/Nextcloud upload and restore; credentials are protected by Android Keystore.
-- Cloud backup and restore now continue when the app is minimized and report completion through notifications.
-- Added foreground GitHub update checks and secure APK downloading. Android still asks for final installation confirmation.
-- The AI provider list now opens downward from its selector and remains scrollable on smaller screens.
-- Reordered the app menu so update checking sits directly above About, with About at the bottom.
-
-## Existing capabilities
-
-- Shizuku/Shevery is now required for applying themes without root; unreliable standard-rootless Xiaomi hand-offs are no longer attempted.
-- Detects an installed Shizuku or Shevery manager and opens it directly when authorization is not ready.
-- When neither manager is installed, Studio recommends Shevery and links to its official GitHub releases page.
-- Includes a numbered Wireless debugging pairing guide with permanently visible setup actions and a direct link to Shizuku's official illustrated instructions.
-- Adds an in-app video tutorial button that opens the shared Shizuku/Shevery setup video directly.
-- Lets users export diagnostics and contact [@Glorioustr](https://t.me/Glorioustr) from the same screen.
-- Shizuku theme persistence monitoring can automatically restore the last protected theme after Xiaomi replaces its active components.
-- Direct **BAK → MTZ** reconstruction in Shizuku/Shevery mode; no root request and no destructive Theme Manager restore.
-- Optional translation during conversion, or preservation of the original theme language.
-- Converted themes are added straight to **Themes**; font-only packages remain under **Fonts**.
-- Expanded multilingual XML, JSON and safe MAML translation with optional BYOK API settings and offline fallback.
-- Editable Vector/LSPosed recommendations: **Android System**, **System Framework** and **Themes**.
-- 20 interface languages, RTL support, Material You/Liquid Glass styles and System/Light/Dark/AMOLED modes.
-
-## Interface
+## v4.0.0 arayüzü
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="HyperOS MTZ Studio home" width="30%">
-  &nbsp;
-  <img src="docs/screenshots/themes.png" alt="Visual theme library" width="30%">
-  &nbsp;
-  <img src="docs/screenshots/composer.png" alt="Theme composer" width="30%">
+  <img src="docs/screenshots/v4/shizuku-panel.png" alt="Shizuku ve Tema Yöneticisi uyumluluk paneli" width="24%">
+  <img src="docs/screenshots/v4/root-panel.png" alt="Root ve FolkPatch yetkilendirme paneli" width="24%">
+  <img src="docs/screenshots/v4/shizuku-library.png" alt="Aktif tema ve kayıtlı temalar kitaplığı" width="24%">
+  <img src="docs/screenshots/v4/shizuku-tools.png" alt="MTZ Studio araçları" width="24%">
 </p>
 
-## Access modes
+## Neler yapar?
 
-| Mode | Available workflow |
+- **MTZ Import:** MTZ paketlerini doğrular, özel kitaplığa ekler, önizleme verilerini üretir. Tek dosya veya en fazla beş dosyalı toplu içe aktarma kullanılabilir.
+- **BAK Converter:** Desteklenen Xiaomi Temalar `.bak` yedeklerini güvenli biçimde MTZ’ye dönüştürür; sonuç doğrudan kitaplığa gelir.
+- **Tema Dil Aracı:** Görünür tema metinlerini uygulama diline göre çevirir. XML, JSON ve güvenli MAML içerikleri için çeviri belleği ve isteğe bağlı API sağlayıcıları kullanır.
+- **Temanı Oluştur:** Bir temel temaya başka paketlerden kilit ekranı, simgeler, yazı tipi, duvar kâğıdı ve diğer seçili bileşenleri ekleyerek yeni MTZ oluşturur.
+- **Kitaplık:** Uygulanan temayı, içe aktarılan ve oluşturulan temaları; font paketlerinden ayrı olarak gösterir.
+- **Yedekleme ve güncelleme:** Studio kitaplığı için bulut/WebDAV yedekleme, geri yükleme ve imza/özet kontrolü yapan GitHub güncelleme akışı sunar.
+- **Live Diagnostics:** İçe aktarma, dönüştürme, çeviri ve uygulama adımlarını kaydeder; Temalar paketiyle ilgili sorunların incelenmesini kolaylaştırır.
+
+## Erişim modları
+
+| Mod | Kullanım |
 | --- | --- |
-| **Root** | Private Xiaomi Themes catalog access, supported native import/apply/delete, advanced diagnostics and compatible Xposed integration. |
-| **Shizuku / Shevery** | BAK Converter, authorized local import/apply, persistence monitoring and Studio tools without root. |
-| **No authorization service** | Local MTZ import, preview, translation, composition and export remain available; theme applying waits for Shizuku/Shevery. |
+| **Root** | Algılanan root yöneticisi üzerinden gelişmiş Tema Yöneticisi işlemleri, uyumlu uygulama akışı ve tanılama. |
+| **Shizuku / Shevery** | Root olmadan BAK Converter, yerel MTZ işlemleri, tema koruması ve desteklenen uygulama akışı. |
+| **Yetkilendirme yok** | MTZ kitaplığı, önizleme, çeviri, besteci, dışa aktarma ve yedekleme kullanılabilir. Tema uygulama için Shizuku veya Shevery gerekir. |
 
-On non-rooted devices, install and start Shizuku or [Shevery](https://github.com/HmnDev-Tech/shevery/releases) with Wireless debugging, then grant MTZ Studio permission. If either compatible manager is already installed, Studio opens that app instead of recommending another one. The in-app setup card follows the [official illustrated Shizuku guide](https://shizuku.rikka.app/guide/setup/).
+Rootsuz cihazlarda Shizuku ya da [Shevery](https://github.com/HmnDev-Tech/shevery/releases) kurup Kablosuz hata ayıklama ile başlatın ve MTZ Studio iznini verin. Uygulama, kurulu yöneticiyi otomatik algılar ve gereken hizmeti açar.
 
-## Compatibility
+## Tema Yöneticisi uyumluluğu
 
-| Xiaomi Themes family | Status |
-| --- | --- |
-| `2.15.5.46`, `3.0.4.32`, `3.0.5.6` | Verified Global contract |
-| `3.0.5.14` | Shizuku BAK + local apply verified; legacy direct call remains temporary/composite |
-| `3.0.6.8` | Legacy tester activity removed |
-| `10.8.7.6+` | Native bridge when required runtime surfaces and privileges are present |
-| Other builds | A visible compatibility warning explains when no declared local-MTZ path exists and offers the verified `3.0.5.6-global` download route |
+Studio sabit bir Temalar sürüm listesine göre karar vermez. Kurulu `com.android.thememanager` paketinde `ApplyThemeForScreenshot` etkinliği çözülebiliyorsa profil **Uyumlu** olarak gösterilir. Etkinlik yoksa uygulama açık bir uyumsuzluk notu ve kurtarma seçeneği sunar.
 
-Modern root integration requires an active Vector/LSPosed-compatible environment and appropriate scopes. MTZ Studio recommends Android System (`android`), System Framework (`system`) and Themes (`com.android.thememanager`) while keeping the list editable.
+Bu seçenek, doğrulanmış Xiaomi Themes `3.0.5.6-global` paketini uygulama içinden Android İndirme Yöneticisiyle doğrudan indirir:
 
-> [!NOTE]
-> Xiaomi controls the final system apply surface. Depending on the ROM and Xiaomi Themes version, a short Xiaomi activity or manual confirmation can still appear.
+- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk)
+- [SHA-256 doğrulama dosyası](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
 
-## Install
+Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre değiştirebilir. Studio, uygulama sonuçlarını ve uyumluluğu mümkün olduğunda çalışma anında doğrular; manuel Xiaomi onayı yine görünebilir.
 
-1. Download `MTZ_Studio_v3.6.0.apk` and its checksum from the [v3.6.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.6.0).
-2. Back up the Studio library before replacing an older major build.
-3. Install the APK and let the app detect the available access mode.
+## Kurulum
 
-v2.1.0 and later releases use the same stable signing key and normally support in-place upgrades. Older CI builds may require backup, uninstall and reinstall because they used a different certificate.
+1. [v4.0.0 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0) sayfasından `MTZ_Studio_v4.0.0.apk` dosyasını indirin.
+2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
+3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
+4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.
 
-From v3.4.0 onward, Studio checks the official GitHub release channel automatically. A downloaded update is installed only after checksum and signing-certificate verification and Android's system confirmation.
+v2.1.0 ve sonrasındaki resmi sürümler aynı imza anahtarını kullanır; normalde mevcut kurulumun üzerine güncellenir. Android, APK kurulumunun son onayını her zaman kullanıcıdan ister.
 
-## Build
+## Geliştirme
 
-Requirements: JDK 17, Android SDK API 36 and Android 8.0/API 26 or newer.
+Gereksinimler: JDK 17, Android SDK API 36 ve Android 8.0 / API 26 veya üzeri.
 
 ```powershell
 .\gradlew.bat test assembleDebug
 ```
 
-Release signing uses `MTZ_RELEASE_STORE_FILE`, `MTZ_RELEASE_STORE_PASSWORD`, `MTZ_RELEASE_KEY_ALIAS` and `MTZ_RELEASE_KEY_PASSWORD`.
+Release imzalama için `MTZ_RELEASE_STORE_FILE`, `MTZ_RELEASE_STORE_PASSWORD`, `MTZ_RELEASE_KEY_ALIAS` ve `MTZ_RELEASE_KEY_PASSWORD` değişkenleri kullanılır.
 
-## Documentation
+## Belgeler
 
-- [Architecture](docs/architecture.md)
-- [Theme Manager compatibility](docs/theme-manager-compatibility.md)
-- [Localization](docs/localization.md)
-- [Theme Language Tool](docs/theme-language-translation.md)
-- [Threat model](docs/threat-model.md)
-- [Privacy policy](docs/privacy-policy.md)
+- [Mimari](docs/architecture.md)
+- [Tema Yöneticisi uyumluluğu](docs/theme-manager-compatibility.md)
+- [Yerelleştirme](docs/localization.md)
+- [Tema Dil Aracı](docs/theme-language-translation.md)
+- [Gizlilik ve güvenlik modeli](docs/threat-model.md)
 
-## Responsible use
+## Sorumlu kullanım
 
-Use themes, fonts, icons and artwork only when you own them or have permission from their creators. Xiaomi, HyperOS and MIUI are trademarks of their respective owners. This independent project is not affiliated with or endorsed by Xiaomi.
+Tema, font, simge ve görselleri yalnızca sahibi olduğunuz veya kullanım izniniz bulunan paketlerde kullanın. Xiaomi, HyperOS ve MIUI ilgili sahiplerinin ticari markalarıdır. Bu bağımsız proje Xiaomi ile bağlantılı değildir ve Xiaomi tarafından desteklenmez.
 
 <p align="center">
-  Built for theme makers and HyperOS enthusiasts by <a href="https://github.com/GloriousTR">GloriousTR</a>.
+  HyperOS kullanıcıları ve tema üreticileri için <a href="https://github.com/GloriousTR">GloriousTR</a> tarafından geliştirildi.
 </p>
