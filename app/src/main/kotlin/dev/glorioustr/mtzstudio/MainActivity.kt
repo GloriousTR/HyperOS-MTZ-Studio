@@ -22,13 +22,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -52,6 +59,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.identity.AuthorizationResult
@@ -272,8 +280,6 @@ private fun StudioScreen(
     val themeProtectionState by ThemeProtectionServiceClient.state.collectAsState()
     var destination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
     var returnDestination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
-    var appMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    var importExpanded by rememberSaveable { mutableStateOf(false) }
     var bakImporting by remember { mutableStateOf(false) }
     var pendingBakArchive by remember { mutableStateOf<ThemeManagerBakArchive?>(null) }
     var translateBakToAppLanguage by remember { mutableStateOf(false) }
@@ -1351,6 +1357,13 @@ private fun StudioScreen(
     // Keep private drafts visible even while native synchronization is incomplete or unavailable.
     val workspaceThemes = themes
 
+    val primaryDestinations = setOf(
+        StudioDestination.HOME,
+        StudioDestination.THEMES,
+        StudioDestination.PERSONALIZE,
+        StudioDestination.TOOLS,
+    )
+
     Scaffold(
         containerColor = if (contentStyle == AppContentStyle.LIQUID_GLASS) {
             Color.Transparent
@@ -1361,7 +1374,7 @@ private fun StudioScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    if (destination == StudioDestination.HOME) {
+                    if (destination in primaryDestinations) {
                         Image(
                             painter = painterResource(R.drawable.logo_banner),
                             contentDescription = stringResource(R.string.app_name),
@@ -1373,16 +1386,30 @@ private fun StudioScreen(
                     }
                 },
                 navigationIcon = {
-                    if (destination == StudioDestination.HOME) {
-                        IconButton(
-                            onClick = { appMenuExpanded = true },
-                            modifier = Modifier.semantics { contentDescription = resources.getString(R.string.menu_title) },
-                        ) {
-                            Icon(Icons.Filled.Menu, contentDescription = null)
-                        }
-                    } else {
+                    if (destination !in primaryDestinations) {
                         IconButton(onClick = ::navigateBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back))
+                        }
+                    }
+                },
+                actions = {
+                    if (destination in primaryDestinations) {
+                        Surface(
+                            modifier = Modifier.padding(end = 12.dp),
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ) {
+                            Text(
+                                text = when (accessMode) {
+                                    StudioAccessMode.ROOT -> "ROOT"
+                                    StudioAccessMode.SHIZUKU -> "SHIZUKU"
+                                    StudioAccessMode.STANDARD -> stringResource(R.string.panel_required)
+                                    null -> "…"
+                                },
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                     }
                 },
@@ -1398,17 +1425,37 @@ private fun StudioScreen(
                 ),
             )
         },
+        bottomBar = {
+            if (destination in primaryDestinations) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                    listOf(
+                        Triple(StudioDestination.HOME, Icons.Filled.Dashboard, R.string.nav_panel),
+                        Triple(StudioDestination.THEMES, Icons.Filled.ColorLens, R.string.nav_library),
+                        Triple(StudioDestination.PERSONALIZE, Icons.Filled.Tune, R.string.dest_personalize),
+                        Triple(StudioDestination.TOOLS, Icons.Filled.Build, R.string.dest_tools),
+                    ).forEach { (target, icon, label) ->
+                        NavigationBarItem(
+                            selected = destination == target,
+                            onClick = {
+                                destination = target
+                                returnDestination = StudioDestination.HOME
+                            },
+                            icon = { Icon(icon, contentDescription = null) },
+                            label = { Text(stringResource(label), maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+            }
+        },
     ) { padding ->
         val contentModifier = Modifier.padding(padding)
         when {
-            destination == StudioDestination.HOME -> HomeMenuScreen(
-                importExpanded = importExpanded,
+            destination == StudioDestination.HOME -> StudioPanelScreen(
                 importing = diagnosticState.activeSessionId != null || checkingImportAccess || themeOperationRunning,
                 accessMode = accessMode,
                 themeManagerInspector = themeManagerInspector,
                 themeManagerUpdater = themeManagerUpdater,
                 openInput = openInput,
-                onToggleImport = { importExpanded = !importExpanded },
                 onAddMtz = {
                     if (!checkingImportAccess && !themeOperationRunning) {
                         pauseCatalog.set(true)
@@ -1428,7 +1475,8 @@ private fun StudioScreen(
                     runCatching { bakPicker.launch(arrayOf("application/octet-stream", "application/x-tar", "*/*")) }
                         .onFailure { error -> status = resources.getString(R.string.bak_import_failed, error.message ?: "") }
                 },
-                onNavigate = { navigateTo(it) },
+                onOpenLibrary = { destination = StudioDestination.THEMES },
+                onOpenBackup = { navigateTo(StudioDestination.BACKUP) },
                 authorizationManagerName = authorizationManager?.displayName,
                 onOpenAuthorizationManager = {
                     authorizationManager?.let { manager ->
@@ -1441,9 +1489,6 @@ private fun StudioScreen(
                         }
                     }
                 },
-                // Compatibility is relevant before import in every mode.  Only the optional
-                // in-app downgrade controls remain limited to an actual root-capable session.
-                showThemeManagerVersionTool = true,
                 allowRootDowngrade = rootAccessAvailable == true,
                 modifier = contentModifier,
             )
@@ -1474,6 +1519,25 @@ private fun StudioScreen(
                 },
                 onTranslateTheme = ::localizeTheme,
                 onDeleteTheme = ::deleteTheme,
+                onCustomizeTheme = { theme ->
+                    baseThemeId = theme.id.value
+                    selections.clear()
+                    destination = StudioDestination.PERSONALIZE
+                },
+                modifier = contentModifier,
+            )
+            destination == StudioDestination.TOOLS -> StudioToolsScreen(
+                showThemeProtection = globalThemeProtectionRequired && rootAccessAvailable == true,
+                onNavigate = { target -> navigateTo(target, StudioDestination.TOOLS) },
+                onCheckForUpdates = {
+                    showUpdateCheckResult = true
+                    scope.launch(Dispatchers.IO) {
+                        runCatching { appUpdateManager.checkAndDownload(force = true) }
+                            .onFailure {
+                                AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
+                            }
+                    }
+                },
                 modifier = contentModifier,
             )
             destination == StudioDestination.PERSONALIZE -> PersonalizeScreen(
@@ -1620,27 +1684,6 @@ private fun StudioScreen(
                 modifier = contentModifier,
             )
         }
-    }
-
-    if (appMenuExpanded) {
-        StudioOverlayMenu(
-            showThemeProtection = globalThemeProtectionRequired && rootAccessAvailable == true,
-            onDismiss = { appMenuExpanded = false },
-            onNavigate = { target ->
-                appMenuExpanded = false
-                navigateTo(target)
-            },
-            onCheckForUpdates = {
-                appMenuExpanded = false
-                showUpdateCheckResult = true
-                scope.launch(Dispatchers.IO) {
-                    runCatching { appUpdateManager.checkAndDownload(force = true) }
-                        .onFailure {
-                            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
-                        }
-                }
-            },
-        )
     }
 
     if (appUpdateState.phase == AppUpdatePhase.READY && appUpdateState.eventId != dismissedUpdateEventId) {

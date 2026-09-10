@@ -23,7 +23,30 @@
     <string name="dest_backup">Yedekleme</string>
     <string name="dest_diagnostics">Live Diagnostics</string>
     <string name="dest_theme_protection">Global tema koruması</string>
+    <string name="dest_tools">Araçlar</string>
     <string name="dest_about">Hakkında</string>
+    <string name="nav_panel">Panel</string>
+    <string name="nav_library">Kitaplık</string>
+    <string name="panel_authorization_title">Yetkilendirme Durumu</string>
+    <string name="panel_theme_manager_title">Tema Yöneticisi Uyumluluğu</string>
+    <string name="panel_quick_actions">Hızlı İşlemler</string>
+    <string name="panel_modules_available">4 modül kullanılabilir</string>
+    <string name="panel_root_active">Root aktif</string>
+    <string name="panel_root_desc">Yetkili tema kurulumu ve sistem bütünleştirmeleri hazır.</string>
+    <string name="panel_access_checking">Yetkilendirme denetleniyor</string>
+    <string name="panel_access_checking_desc">Root, Shizuku veya Shevery hizmeti algılanıyor.</string>
+    <string name="panel_required">GEREKLİ</string>
+    <string name="panel_mtz_short">Doğrulama ve içe aktarma</string>
+    <string name="panel_bak_short">Yedekleri MTZ’ye dönüştür</string>
+    <string name="panel_quick_apply">Hızlı Uygula</string>
+    <string name="panel_quick_apply_short">Tema kitaplığını aç</string>
+    <string name="panel_cloud_sync">Bulut Eşitleme</string>
+    <string name="panel_cloud_sync_short">Yedekle ve geri yükle</string>
+    <string name="tools_title">Araçlar</string>
+    <string name="library_current_theme">ŞU AN UYGULANAN TEMA</string>
+    <string name="library_no_current_theme">Burada görmek için kitaplıktan bir tema uygulayın.</string>
+    <string name="library_reapply">Yeniden Uygula</string>
+    <string name="library_customize">Özelleştir</string>
  
     <!-- Categories -->
     <string name="category_icons">Simgeler</string>

@@ -388,4 +388,27 @@
     <string name="app_update_checking">GitHub சரிபார்க்கப்பட்டு புதுப்பிப்பு பாதுகாப்பாக உறுதிப்படுத்தப்படுகிறது…</string>
     <string name="app_update_up_to_date">நீங்கள் ஏற்கனவே சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள்.</string>
     <string name="app_update_check_failed">புதுப்பிப்பு சரிபார்ப்பை முடிக்க முடியவில்லை.</string>
+    <string name="dest_tools">Tools</string>
+    <string name="nav_panel">Panel</string>
+    <string name="nav_library">Library</string>
+    <string name="panel_authorization_title">Authorization status</string>
+    <string name="panel_theme_manager_title">Theme Manager compatibility</string>
+    <string name="panel_quick_actions">Quick actions</string>
+    <string name="panel_modules_available">4 modules available</string>
+    <string name="panel_root_active">Root active</string>
+    <string name="panel_root_desc">Privileged theme installation and system integrations are ready.</string>
+    <string name="panel_access_checking">Checking authorization</string>
+    <string name="panel_access_checking_desc">Detecting Root, Shizuku or Shevery service.</string>
+    <string name="panel_required">REQUIRED</string>
+    <string name="panel_mtz_short">Validate and import</string>
+    <string name="panel_bak_short">Convert backups</string>
+    <string name="panel_quick_apply">Quick Apply</string>
+    <string name="panel_quick_apply_short">Open theme library</string>
+    <string name="panel_cloud_sync">Cloud Sync</string>
+    <string name="panel_cloud_sync_short">Backup and restore</string>
+    <string name="tools_title">Tools</string>
+    <string name="library_current_theme">CURRENTLY APPLIED THEME</string>
+    <string name="library_no_current_theme">Apply a theme from the library to see it here.</string>
+    <string name="library_reapply">Reapply</string>
+    <string name="library_customize">Customize</string>
 </resources>

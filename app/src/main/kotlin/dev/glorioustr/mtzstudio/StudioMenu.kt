@@ -154,7 +154,145 @@ internal enum class StudioDestination(
     BACKUP(R.string.dest_backup),
     DIAGNOSTICS(R.string.dest_diagnostics),
     THEME_PROTECTION(R.string.dest_theme_protection),
+    TOOLS(R.string.dest_tools),
     ABOUT(R.string.dest_about),
+}
+
+@Composable
+internal fun StudioPanelScreen(
+    importing: Boolean,
+    accessMode: StudioAccessMode?,
+    themeManagerInspector: ThemeManagerInspector,
+    themeManagerUpdater: RootThemeManagerUpdater,
+    openInput: (Uri) -> InputStream?,
+    onAddMtz: () -> Unit,
+    showBakImport: Boolean,
+    bakImporting: Boolean,
+    onAddBak: () -> Unit,
+    onOpenLibrary: () -> Unit,
+    onOpenBackup: () -> Unit,
+    authorizationManagerName: String?,
+    onOpenAuthorizationManager: () -> Unit,
+    allowRootDowngrade: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var showShizukuTutorial by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item { Text(stringResource(R.string.panel_authorization_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MenuIconBox(
+                            if (accessMode == StudioAccessMode.ROOT) Icons.Filled.Security else Icons.Filled.VerifiedUser,
+                            if (accessMode == StudioAccessMode.STANDARD) Color(0xFFFF8A3D) else Color(0xFF00BFA5),
+                        )
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                when (accessMode) {
+                                    StudioAccessMode.ROOT -> stringResource(R.string.panel_root_active)
+                                    StudioAccessMode.SHIZUKU -> stringResource(R.string.shizuku_mode_title)
+                                    StudioAccessMode.STANDARD -> authorizationManagerName ?: "Shevery"
+                                    null -> stringResource(R.string.panel_access_checking)
+                                },
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                when (accessMode) {
+                                    StudioAccessMode.ROOT -> stringResource(R.string.panel_root_desc)
+                                    StudioAccessMode.SHIZUKU -> stringResource(R.string.shizuku_mode_desc)
+                                    StudioAccessMode.STANDARD -> stringResource(R.string.shizuku_recommended_desc)
+                                    null -> stringResource(R.string.panel_access_checking_desc)
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        StatusBadge(
+                            text = when (accessMode) {
+                                StudioAccessMode.ROOT -> "ROOT"
+                                StudioAccessMode.SHIZUKU -> "SHIZUKU"
+                                StudioAccessMode.STANDARD -> stringResource(R.string.panel_required)
+                                null -> "…"
+                            },
+                            color = if (accessMode == StudioAccessMode.STANDARD) Color(0xFFE65100) else Color(0xFF00897B),
+                        )
+                    }
+                    if (accessMode == StudioAccessMode.STANDARD) {
+                        Button(
+                            onClick = {
+                                if (authorizationManagerName != null) onOpenAuthorizationManager()
+                                else uriHandler.openUri(SHEVERY_RELEASES_URL)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(authorizationManagerName ?: "Shevery · GitHub")
+                        }
+                        OutlinedButton(onClick = { showShizukuTutorial = true }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Filled.Info, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.shizuku_tutorial_open))
+                        }
+                    }
+                }
+            }
+        }
+        item { Text(stringResource(R.string.panel_theme_manager_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
+        item {
+            ThemeManagerCompatibilityCard(
+                inspector = themeManagerInspector,
+                updater = themeManagerUpdater,
+                openInput = openInput,
+                allowRootDowngrade = allowRootDowngrade,
+            )
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.panel_quick_actions), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.panel_modules_available), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(stringResource(R.string.mtz_import_title), if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.panel_mtz_short), Icons.Filled.Download, Color(0xFF0066FF), onAddMtz, Modifier.weight(1f), !importing)
+                    QuickActionCard(stringResource(R.string.bak_import_title), if (bakImporting) stringResource(R.string.bak_import_inspecting) else stringResource(R.string.panel_bak_short), Icons.Filled.Restore, Color(0xFF7000FF), onAddBak, Modifier.weight(1f), showBakImport && !bakImporting)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(stringResource(R.string.panel_quick_apply), stringResource(R.string.panel_quick_apply_short), Icons.Filled.PlayArrow, Color(0xFF00BCD4), onOpenLibrary, Modifier.weight(1f))
+                    QuickActionCard(stringResource(R.string.panel_cloud_sync), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.weight(1f))
+                }
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+    if (showShizukuTutorial) ShizukuPairingTutorialDialog { showShizukuTutorial = false }
+}
+
+@Composable
+private fun QuickActionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    StudioCard(modifier.heightIn(min = 118.dp).clickable(enabled = enabled, onClick = onClick)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            MenuIconBox(icon, color)
+            Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }
 
 @Composable
@@ -552,6 +690,44 @@ internal fun StudioOverlayMenu(
 }
 
 @Composable
+internal fun StudioToolsScreen(
+    showThemeProtection: Boolean,
+    onNavigate: (StudioDestination) -> Unit,
+    onCheckForUpdates: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val items = listOf(
+        OverlayMenuItem(StudioDestination.APPEARANCE, Icons.Filled.Palette, Color(0xFF5C6BC0), R.string.overlay_appearance_desc),
+        OverlayMenuItem(StudioDestination.AI_TRANSLATION, Icons.Filled.AutoFixHigh, Color(0xFFFF8A3D), R.string.theme_language_tool_desc),
+        OverlayMenuItem(StudioDestination.BACKUP, Icons.Filled.CloudUpload, Color(0xFF3F7FD9), R.string.overlay_backup_desc),
+        OverlayMenuItem(StudioDestination.DIAGNOSTICS, Icons.Filled.MonitorHeart, Color(0xFF607D8B), R.string.overlay_diagnostics_desc),
+        OverlayMenuItem(StudioDestination.THEME_PROTECTION, Icons.Filled.Security, Color(0xFF2E7D32), R.string.overlay_theme_protection_desc),
+    ).filter { showThemeProtection || it.destination != StudioDestination.THEME_PROTECTION }
+    val about = OverlayMenuItem(StudioDestination.ABOUT, Icons.Filled.Info, Color(0xFF7E57C2), R.string.overlay_about_desc)
+    LazyColumn(modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item {
+            Text(stringResource(R.string.tools_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.menu_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        items(items) { item -> OverlayMenuCard(item) { onNavigate(item.destination) } }
+        item {
+            StudioCard(Modifier.fillMaxWidth().heightIn(min = 80.dp).clickable(onClick = onCheckForUpdates)) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 80.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    MenuIconBox(Icons.Filled.SystemUpdateAlt, Color(0xFF00897B))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.app_update_check), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.app_update_check_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                }
+            }
+        }
+        item { OverlayMenuCard(about) { onNavigate(about.destination) } }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
 private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
     StudioCard(
         modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clickable(onClick = onClick),
@@ -600,11 +776,13 @@ internal fun ThemesScreen(
     onApplyTheme: (LibraryTheme) -> Unit,
     onTranslateTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
+    onCustomizeTheme: (LibraryTheme) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var pendingDeleteTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var detailsTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     val galleryThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
+    val activeTheme = galleryThemes.firstOrNull { it.id.value == activeThemeId }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -612,6 +790,13 @@ internal fun ThemesScreen(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            CurrentAppliedThemeCard(
+                theme = activeTheme,
+                onApply = { activeTheme?.let(onApplyTheme) },
+                onCustomize = { activeTheme?.let(onCustomizeTheme) },
+            )
+        }
         if (rootlessMode) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 StudioCard(Modifier.fillMaxWidth()) {
@@ -2293,6 +2478,56 @@ private fun ThemeGalleryCard(
             onTranslate = { onTranslateTheme(theme) },
             onDelete = { onDeleteTheme(theme) },
         )
+    }
+}
+
+@Composable
+private fun CurrentAppliedThemeCard(
+    theme: LibraryTheme?,
+    onApply: () -> Unit,
+    onCustomize: () -> Unit,
+) {
+    StudioCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(Color(0xFF00DAF3)))
+                Text(
+                    stringResource(R.string.library_current_theme),
+                    color = Color(0xFF00BCD4),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            if (theme == null) {
+                Text(stringResource(R.string.library_no_current_theme), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(82.dp, 112.dp).clip(RoundedCornerShape(14.dp))) {
+                        ThemePreview(theme = theme, purpose = ThemePreviewPurpose.GALLERY, modifier = Modifier.fillMaxSize())
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            theme.archive.metadata?.name ?: theme.displayName,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            theme.archive.metadata?.designer ?: theme.archive.metadata?.author ?: stringResource(R.string.app_name),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(onClick = onApply, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.library_reapply)) }
+                    Button(onClick = onCustomize, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.library_customize)) }
+                }
+            }
+        }
     }
 }
 
