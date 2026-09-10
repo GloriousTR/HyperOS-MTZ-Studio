@@ -5,15 +5,24 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,6 +35,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -121,32 +132,68 @@ internal fun ThemeManagerCompatibilityCard(
 
     StudioCard(Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.tm_card_title), fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier.size(42.dp).clip(RoundedCornerShape(50)).background(Color(0xFF00BCD4).copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF00DAF3), modifier = Modifier.size(24.dp))
+                }
+                Text(stringResource(R.string.tm_card_title), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ) {
+                    Text(
+                        stringResource(if (installed?.isRecommended == true) R.string.tm_profile_active else R.string.tm_profile_checking),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
             installed?.let { current ->
                 val rootlessImportUnavailable = runtimeProfile?.let {
                     current.installed && !it.legacyTesterResolvable && !it.publicMtzImportResolvable
                 } == true
                 val needsRecommendedVersion = current.installed && !current.isRecommended
                 Text(
-                    if (current.installed) {
-                        if (current.isRecommended) {
-                            stringResource(
-                                R.string.tm_device_installed_compatible,
-                                current.versionName ?: ThemeManagerContract.RECOMMENDED_VERSION,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.tm_device_installed_incompatible,
-                                current.versionName ?: stringResource(R.string.tm_version_unknown),
-                            )
-                        }
-                    } else {
-                        stringResource(R.string.tm_device_not_found)
-                    },
+                    if (current.installed && current.isRecommended) {
+                        stringResource(R.string.tm_panel_version_approved, current.versionName ?: ThemeManagerContract.RECOMMENDED_VERSION)
+                    } else if (current.installed) {
+                        stringResource(R.string.tm_device_installed_incompatible, current.versionName ?: stringResource(R.string.tm_version_unknown))
+                    } else stringResource(R.string.tm_device_not_found),
+                    color = if (current.isRecommended) Color(0xFF00DAF3) else MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
+                if (current.isRecommended) {
+                    Text(
+                        stringResource(R.string.tm_panel_compatible_desc),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.PhoneAndroid, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        Text(
+                            stringResource(
+                                if (runtimeProfile?.legacyTesterResolvable == true || runtimeProfile?.publicMtzImportResolvable == true) {
+                                    R.string.tm_panel_native_ready
+                                } else {
+                                    R.string.tm_panel_bridge_ready
+                                },
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                        )
+                    }
+                }
                 if (needsRecommendedVersion) {
                     Text(current.behavior.explanation, style = MaterialTheme.typography.bodySmall)
                 }

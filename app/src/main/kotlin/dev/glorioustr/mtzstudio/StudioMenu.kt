@@ -2,6 +2,7 @@ package dev.glorioustr.mtzstudio
 
 import android.net.Uri
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -112,6 +113,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -169,7 +171,6 @@ internal fun StudioPanelScreen(
     showBakImport: Boolean,
     bakImporting: Boolean,
     onAddBak: () -> Unit,
-    onOpenLibrary: () -> Unit,
     onOpenBackup: () -> Unit,
     authorizationManagerName: String?,
     onOpenAuthorizationManager: () -> Unit,
@@ -178,50 +179,73 @@ internal fun StudioPanelScreen(
 ) {
     var showShizukuTutorial by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val wirelessDebuggingEnabled = remember(accessMode) {
+        runCatching { Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1 }.getOrDefault(false)
+    }
+    val deviceName = remember { listOf(Build.MANUFACTURER, Build.MODEL).filter(String::isNotBlank).joinToString(" ").trim() }
+    val platformName = remember { hyperOsVersionLabel() }
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { Text(stringResource(R.string.panel_authorization_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
         item {
             StudioCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         MenuIconBox(
                             if (accessMode == StudioAccessMode.ROOT) Icons.Filled.Security else Icons.Filled.VerifiedUser,
                             if (accessMode == StudioAccessMode.STANDARD) Color(0xFFFF8A3D) else Color(0xFF00BFA5),
                         )
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                when (accessMode) {
-                                    StudioAccessMode.ROOT -> stringResource(R.string.panel_root_active)
-                                    StudioAccessMode.SHIZUKU -> stringResource(R.string.shizuku_mode_title)
-                                    StudioAccessMode.STANDARD -> authorizationManagerName ?: "Shevery"
-                                    null -> stringResource(R.string.panel_access_checking)
-                                },
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                when (accessMode) {
-                                    StudioAccessMode.ROOT -> stringResource(R.string.panel_root_desc)
-                                    StudioAccessMode.SHIZUKU -> stringResource(R.string.shizuku_mode_desc)
-                                    StudioAccessMode.STANDARD -> stringResource(R.string.shizuku_recommended_desc)
-                                    null -> stringResource(R.string.panel_access_checking_desc)
-                                },
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
+                        Text(stringResource(R.string.panel_authorization_title), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                         StatusBadge(
                             text = when (accessMode) {
-                                StudioAccessMode.ROOT -> "ROOT"
-                                StudioAccessMode.SHIZUKU -> "SHIZUKU"
+                                StudioAccessMode.ROOT -> stringResource(R.string.panel_root_active)
+                                StudioAccessMode.SHIZUKU -> stringResource(R.string.panel_shizuku_active)
                                 StudioAccessMode.STANDARD -> stringResource(R.string.panel_required)
                                 null -> "…"
                             },
                             color = if (accessMode == StudioAccessMode.STANDARD) Color(0xFFE65100) else Color(0xFF00897B),
                         )
+                    }
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+                    ) {
+                        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(stringResource(R.string.panel_device_version), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text(deviceName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(platformName, color = Color(0xFF7C8DFF), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                            }
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(stringResource(R.string.panel_wireless_debugging), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    stringResource(if (wirelessDebuggingEnabled) R.string.panel_wireless_on else R.string.panel_wireless_off),
+                                    color = if (wirelessDebuggingEnabled) Color(0xFF00DAF3) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(authorizationManagerName ?: stringResource(if (accessMode == StudioAccessMode.ROOT) R.string.panel_root_service else R.string.panel_service_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Filled.Security, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        Text(
+                            stringResource(if (accessMode == StudioAccessMode.STANDARD || accessMode == null) R.string.panel_system_rights_missing else R.string.panel_system_rights_ready),
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        if (authorizationManagerName != null) {
+                            Button(onClick = onOpenAuthorizationManager) {
+                                Icon(Icons.Filled.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.panel_manage_service))
+                            }
+                        }
                     }
                     if (accessMode == StudioAccessMode.STANDARD) {
                         Button(
@@ -244,7 +268,6 @@ internal fun StudioPanelScreen(
                 }
             }
         }
-        item { Text(stringResource(R.string.panel_theme_manager_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
         item {
             ThemeManagerCompatibilityCard(
                 inspector = themeManagerInspector,
@@ -265,15 +288,18 @@ internal fun StudioPanelScreen(
                     QuickActionCard(stringResource(R.string.mtz_import_title), if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.panel_mtz_short), Icons.Filled.Download, Color(0xFF0066FF), onAddMtz, Modifier.weight(1f), !importing)
                     QuickActionCard(stringResource(R.string.bak_import_title), if (bakImporting) stringResource(R.string.bak_import_inspecting) else stringResource(R.string.panel_bak_short), Icons.Filled.Restore, Color(0xFF7000FF), onAddBak, Modifier.weight(1f), showBakImport && !bakImporting)
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QuickActionCard(stringResource(R.string.panel_quick_apply), stringResource(R.string.panel_quick_apply_short), Icons.Filled.PlayArrow, Color(0xFF00BCD4), onOpenLibrary, Modifier.weight(1f))
-                    QuickActionCard(stringResource(R.string.panel_cloud_sync), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.weight(1f))
-                }
+                QuickActionCard(stringResource(R.string.panel_cloud_sync), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.fillMaxWidth())
             }
         }
         item { Spacer(Modifier.height(20.dp)) }
     }
     if (showShizukuTutorial) ShizukuPairingTutorialDialog { showShizukuTutorial = false }
+}
+
+private fun hyperOsVersionLabel(): String {
+    val incremental = Build.VERSION.INCREMENTAL.orEmpty()
+    val version = Regex("OS([0-9.]+)", RegexOption.IGNORE_CASE).find(incremental)?.groupValues?.getOrNull(1)
+    return if (!version.isNullOrBlank()) "HyperOS $version" else "Android ${Build.VERSION.RELEASE}"
 }
 
 @Composable
@@ -763,6 +789,9 @@ private fun OverlayMenuCard(item: OverlayMenuItem, onClick: () -> Unit) {
 internal fun ThemesScreen(
     themes: List<LibraryTheme>,
     activeThemeId: String?,
+    previousThemeId: String? = null,
+    accessMode: StudioAccessMode? = null,
+    appliedProtocol: String? = null,
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
@@ -777,12 +806,14 @@ internal fun ThemesScreen(
     onTranslateTheme: (LibraryTheme) -> Unit,
     onDeleteTheme: (LibraryTheme) -> Unit,
     onCustomizeTheme: (LibraryTheme) -> Unit = {},
+    onRollbackTheme: (LibraryTheme) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var pendingDeleteTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var detailsTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     val galleryThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
     val activeTheme = galleryThemes.firstOrNull { it.id.value == activeThemeId }
+    val previousTheme = galleryThemes.firstOrNull { it.id.value == previousThemeId }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -793,7 +824,11 @@ internal fun ThemesScreen(
         item(span = { GridItemSpan(maxLineSpan) }) {
             CurrentAppliedThemeCard(
                 theme = activeTheme,
+                previousTheme = previousTheme,
+                accessMode = accessMode,
+                appliedProtocol = appliedProtocol,
                 onApply = { activeTheme?.let(onApplyTheme) },
+                onRollback = { previousTheme?.let(onRollbackTheme) },
                 onCustomize = { activeTheme?.let(onCustomizeTheme) },
             )
         }
@@ -821,23 +856,25 @@ internal fun ThemesScreen(
                 )
             }
         }
-        if (nativeCatalogMode) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                DeviceImportCard(
-                    title = stringResource(R.string.catalog_full_library_title),
-                    description = stringResource(R.string.catalog_full_library_desc),
-                    status = deviceImportStatus,
-                    buttonText = stringResource(R.string.catalog_full_library_button),
-                    running = deviceImportRunning,
-                    onImport = onShowAllDeviceThemes,
-                )
-            }
-        }
         if (nativeCatalogMode && catalogError != null && !deviceImportRunning) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     EmptyState(stringResource(R.string.catalog_error_title), catalogError)
                     TextButton(onClick = onRetryCatalog) { Text(stringResource(R.string.catalog_retry)) }
+                }
+            }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(stringResource(R.string.library_saved_themes), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                StatusBadge(text = galleryThemes.size.toString(), color = MaterialTheme.colorScheme.surfaceVariant)
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onShowAllDeviceThemes, enabled = nativeCatalogMode) {
+                    Text(stringResource(R.string.library_all_visible), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -2356,7 +2393,7 @@ internal fun AppearanceScreen(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Text(
@@ -2366,28 +2403,14 @@ internal fun AppearanceScreen(
             )
         }
         item {
-            StudioCard(Modifier.fillMaxWidth()) {
-                Column {
-                    AppAppearance.entries.forEachIndexed { index, appearance ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onSelect(appearance) }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            RadioButton(
-                                selected = selected == appearance,
-                                onClick = { onSelect(appearance) },
-                            )
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(stringResource(appearance.titleRes), fontWeight = FontWeight.SemiBold)
-                                Text(stringResource(appearance.descriptionRes), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        if (index != AppAppearance.entries.lastIndex) {
-                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                        }
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AppearanceModeCard(AppAppearance.SYSTEM, selected == AppAppearance.SYSTEM, onSelect, Modifier.weight(1f))
+                    AppearanceModeCard(AppAppearance.AMOLED, selected == AppAppearance.AMOLED, onSelect, Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AppearanceModeCard(AppAppearance.LIGHT, selected == AppAppearance.LIGHT, onSelect, Modifier.weight(1f))
+                    AppearanceModeCard(AppAppearance.DARK, selected == AppAppearance.DARK, onSelect, Modifier.weight(1f))
                 }
             }
         }
@@ -2400,32 +2423,114 @@ internal fun AppearanceScreen(
             )
         }
         item {
-            StudioCard(Modifier.fillMaxWidth()) {
-                Column {
-                    AppContentStyle.entries.forEachIndexed { index, style ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onContentStyleSelect(style) }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            RadioButton(
-                                selected = contentStyle == style,
-                                onClick = { onContentStyleSelect(style) },
-                            )
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(stringResource(style.titleRes), fontWeight = FontWeight.SemiBold)
-                                Text(stringResource(style.descriptionRes), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        if (index != AppContentStyle.entries.lastIndex) {
-                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                        }
-                    }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(AppContentStyle.DEFAULT, AppContentStyle.LIQUID_GLASS).forEach { style ->
+                    ContentStyleCard(
+                        style = style,
+                        selected = contentStyle == style,
+                        onSelect = onContentStyleSelect,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
         item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+private fun AppearanceModeCard(
+    appearance: AppAppearance,
+    selected: Boolean,
+    onSelect: (AppAppearance) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val previewBrush = when (appearance) {
+        AppAppearance.SYSTEM -> Brush.linearGradient(
+            0f to Color(0xFFF7F4FA),
+            0.49f to Color(0xFFF7F4FA),
+            0.51f to Color(0xFF171820),
+            1f to Color(0xFF171820),
+        )
+        AppAppearance.AMOLED -> Brush.linearGradient(listOf(Color.Black, Color(0xFF050509)))
+        AppAppearance.LIGHT -> Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFEDE7F6)))
+        AppAppearance.DARK -> Brush.linearGradient(listOf(Color(0xFF26242D), Color(0xFF111116)))
+    }
+    Surface(
+        modifier = modifier.clickable { onSelect(appearance) },
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column {
+            Box(Modifier.fillMaxWidth().height(82.dp).background(previewBrush)) {
+                Surface(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    shape = RoundedCornerShape(50),
+                    color = if (selected) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.28f),
+                ) {
+                    RadioButton(selected = selected, onClick = { onSelect(appearance) }, modifier = Modifier.size(32.dp))
+                }
+                Column(Modifier.align(Alignment.CenterStart).padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(Modifier.fillMaxWidth(0.55f).height(8.dp).background(if (appearance == AppAppearance.LIGHT || appearance == AppAppearance.SYSTEM) Color(0xFF7756D8) else Color(0xFF8BA7FF), RoundedCornerShape(50)))
+                    Box(Modifier.fillMaxWidth(0.38f).height(6.dp).background(Color(0xFF00BCD4), RoundedCornerShape(50)))
+                }
+            }
+            Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(appearance.titleRes), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(appearance.descriptionRes), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContentStyleCard(
+    style: AppContentStyle,
+    selected: Boolean,
+    onSelect: (AppContentStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val aero = style == AppContentStyle.LIQUID_GLASS
+    val previewBrush = if (aero) {
+        Brush.linearGradient(listOf(Color(0xFF081A2B), Color(0xFF163B55), Color(0xFF4D275E)))
+    } else {
+        Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+    }
+    Surface(
+        modifier = modifier.clickable { onSelect(style) },
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column {
+            Box(Modifier.fillMaxWidth().height(112.dp).background(previewBrush).padding(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(22.dp).background(if (aero) Color(0x6600DAF3) else MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(7.dp)))
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(Modifier.fillMaxWidth(0.68f).height(7.dp).background(if (aero) Color.White.copy(alpha = 0.82f) else MaterialTheme.colorScheme.onSurface, RoundedCornerShape(50)))
+                            Box(Modifier.fillMaxWidth(0.45f).height(5.dp).background(if (aero) Color(0xFF00DAF3) else MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        repeat(2) {
+                            Box(
+                                Modifier.weight(1f).height(48.dp).background(
+                                    if (aero) Color.White.copy(alpha = 0.13f) else MaterialTheme.colorScheme.surface,
+                                    RoundedCornerShape(12.dp),
+                                ),
+                            )
+                        }
+                    }
+                }
+                RadioButton(selected = selected, onClick = { onSelect(style) }, modifier = Modifier.align(Alignment.TopEnd).size(32.dp))
+            }
+            Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(style.titleRes), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(style.descriptionRes), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
     }
 }
 
@@ -2484,7 +2589,11 @@ private fun ThemeGalleryCard(
 @Composable
 private fun CurrentAppliedThemeCard(
     theme: LibraryTheme?,
+    previousTheme: LibraryTheme?,
+    accessMode: StudioAccessMode?,
+    appliedProtocol: String?,
     onApply: () -> Unit,
+    onRollback: () -> Unit,
     onCustomize: () -> Unit,
 ) {
     StudioCard(Modifier.fillMaxWidth()) {
@@ -2501,9 +2610,17 @@ private fun CurrentAppliedThemeCard(
             if (theme == null) {
                 Text(stringResource(R.string.library_no_current_theme), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
+                val metadata = theme.archive.metadata
+                val maker = metadata?.designer?.takeIf(String::isNotBlank)
+                    ?: metadata?.author?.takeIf(String::isNotBlank)
+                    ?: stringResource(R.string.app_name)
+                val versionAndMaker = metadata?.version?.takeIf(String::isNotBlank)
+                    ?.let { "v${it.removePrefix("v")}  •  $maker" }
+                    ?: maker
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(82.dp, 112.dp).clip(RoundedCornerShape(14.dp))) {
+                    Box(Modifier.size(96.dp, 124.dp).clip(RoundedCornerShape(14.dp))) {
                         ThemePreview(theme = theme, purpose = ThemePreviewPurpose.GALLERY, modifier = Modifier.fillMaxSize())
+                        ThemeSourceBadge(theme, Modifier.align(Alignment.TopStart).padding(6.dp))
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(
@@ -2514,21 +2631,57 @@ private fun CurrentAppliedThemeCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            theme.archive.metadata?.designer ?: theme.archive.metadata?.author ?: stringResource(R.string.app_name),
+                            versionAndMaker,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF00BCD4).copy(alpha = 0.14f),
+                            contentColor = Color(0xFF00BCD4),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Icon(Icons.Filled.Build, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Text(
+                                    appliedMethodLabel(accessMode, appliedProtocol),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(onClick = onApply, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.library_reapply)) }
+                    OutlinedButton(
+                        onClick = if (previousTheme != null) onRollback else onApply,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Filled.RestartAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(if (previousTheme != null) R.string.library_rollback else R.string.library_reapply))
+                    }
                     Button(onClick = onCustomize, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.library_customize)) }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun appliedMethodLabel(accessMode: StudioAccessMode?, appliedProtocol: String?): String = when {
+    appliedProtocol?.contains("BACKUP", ignoreCase = true) == true -> stringResource(R.string.library_method_backup)
+    appliedProtocol?.contains("MODERN", ignoreCase = true) == true -> stringResource(R.string.library_method_bridge)
+    accessMode == StudioAccessMode.SHIZUKU -> stringResource(R.string.library_method_shizuku)
+    accessMode == StudioAccessMode.ROOT -> stringResource(R.string.library_method_root)
+    else -> stringResource(R.string.library_method_local)
 }
 
 private const val SHEVERY_RELEASES_URL = "https://github.com/HmnDev-Tech/shevery/releases"

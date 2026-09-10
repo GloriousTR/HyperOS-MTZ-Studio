@@ -67,8 +67,8 @@ internal class AiTranslationSettingsStore(context: Context) {
             customEndpoint = preferences.getString(KEY_CUSTOM_ENDPOINT, "").orEmpty(),
             model = loadModel(provider),
             apiKey = loadApiKey(provider),
-            systemPrompt = preferences.getString(KEY_SYSTEM_PROMPT, "").orEmpty(),
-            userPrompt = preferences.getString(KEY_USER_PROMPT, "").orEmpty(),
+            systemPrompt = "",
+            userPrompt = "",
             useContext = preferences.getBoolean(KEY_USE_CONTEXT, true),
         )
     }
@@ -83,8 +83,8 @@ internal class AiTranslationSettingsStore(context: Context) {
             .putString(KEY_PROVIDER, settings.provider.name)
             .putString(KEY_CUSTOM_ENDPOINT, settings.customEndpoint.trim())
             .putString(modelName(settings.provider), settings.model.trim())
-            .putString(KEY_SYSTEM_PROMPT, settings.systemPrompt.trim())
-            .putString(KEY_USER_PROMPT, settings.userPrompt.trim())
+            .remove(KEY_SYSTEM_PROMPT)
+            .remove(KEY_USER_PROMPT)
             .putBoolean(KEY_USE_CONTEXT, settings.useContext)
         newApiKey?.trim()?.takeIf(String::isNotBlank)?.let { key ->
             val encrypted = encrypt(key)

@@ -30,7 +30,7 @@
     <string name="panel_authorization_title">Yetkilendirme Durumu</string>
     <string name="panel_theme_manager_title">Tema Yöneticisi Uyumluluğu</string>
     <string name="panel_quick_actions">Hızlı İşlemler</string>
-    <string name="panel_modules_available">4 modül kullanılabilir</string>
+    <string name="panel_modules_available">3 modül kullanılabilir</string>
     <string name="panel_root_active">Root aktif</string>
     <string name="panel_root_desc">Yetkili tema kurulumu ve sistem bütünleştirmeleri hazır.</string>
     <string name="panel_access_checking">Yetkilendirme denetleniyor</string>
@@ -47,6 +47,30 @@
     <string name="library_no_current_theme">Burada görmek için kitaplıktan bir tema uygulayın.</string>
     <string name="library_reapply">Yeniden Uygula</string>
     <string name="library_customize">Özelleştir</string>
+    <string name="library_rollback">Geri Al</string>
+    <string name="library_saved_themes">KAYITLI TEMALAR</string>
+    <string name="library_all_visible">Tümünü Yönet</string>
+    <string name="library_method_backup">BAK Geri Yükleme Protokolü</string>
+    <string name="library_method_bridge">Tema Yöneticisi Köprüsü</string>
+    <string name="library_method_shizuku">Shizuku Bridge Protokolü</string>
+    <string name="library_method_root">Root Kurulum Protokolü</string>
+    <string name="library_method_local">Yerel MTZ Akışı</string>
+    <string name="panel_shizuku_active">Shizuku Aktif</string>
+    <string name="panel_device_version">CİHAZ &amp; SÜRÜM</string>
+    <string name="panel_wireless_debugging">KABLOSUZ HATA AYIKLAMA</string>
+    <string name="panel_wireless_on">Etkin</string>
+    <string name="panel_wireless_off">Kapalı</string>
+    <string name="panel_root_service">Root hizmeti</string>
+    <string name="panel_service_unavailable">Hizmet kullanılamıyor</string>
+    <string name="panel_system_rights_ready">Sistem hakları tanımlı</string>
+    <string name="panel_system_rights_missing">Yetkilendirme gerekiyor</string>
+    <string name="panel_manage_service">Hizmeti Yönet</string>
+    <string name="tm_profile_active">Profil Aktif</string>
+    <string name="tm_profile_checking">Denetleniyor</string>
+    <string name="tm_panel_version_approved">v%1$s Global Onaylandı</string>
+    <string name="tm_panel_compatible_desc">Bu Tema Yöneticisi profili için doğrudan yerel MTZ işlemi ve kalıcı tema koruması hazır.</string>
+    <string name="tm_panel_native_ready">Yerel tema uygulama yolu hazır</string>
+    <string name="tm_panel_bridge_ready">Korumalı MTZ köprüsü hazır</string>
  
     <!-- Categories -->
     <string name="category_icons">Simgeler</string>
@@ -212,10 +236,10 @@
     <string name="appearance_amoled_title">AMOLED</string>
     <string name="appearance_amoled_desc">Gerçek siyah arka planlı koyu görünüm</string>
     <string name="style_default_title">Varsayılan</string>
-    <string name="style_default_desc">Sabit renkli, daha köşeli klasik kart ve menü düzeni</string>
+    <string name="style_default_desc">Temiz, düz ve dengeli renkli yüzeyler</string>
     <string name="style_material_you_title">Material You</string>
     <string name="style_material_you_desc">Duvar kâğıdından dinamik renk alan, daha yuvarlak Material 3 düzeni</string>
-    <string name="style_liquid_glass_title">Liquid Glass</string>
+    <string name="style_liquid_glass_title">Aero Glass</string>
     <string name="style_liquid_glass_desc">Yarı saydam, parlak ve akışkan cam yüzeyler</string>
 
     <!-- Backup & Restore Screen -->
@@ -311,6 +335,14 @@
     <string name="diag_telegram_support_desc">Önce tanılama paketini dışa aktarın, ardından @Glorioustr’a gönderirken mesaja ekleyin.</string>
     <string name="diag_export_failed">Tanılama dışa aktarılamadı: %1$s</string>
     <string name="diag_recent_events">Son olaylar</string>
+    <string name="diag_live_title">Canlı Sistem Tanılama</string>
+    <string name="diag_local_only">Cihazda tutulan özel olay akışı</string>
+    <string name="diag_live_active">Canlı Akış</string>
+    <string name="diag_live_ready">Hazır</string>
+    <string name="diag_no_events">Henüz bir tanılama olayı kaydedilmedi.</string>
+    <string name="diag_tools_title">Tanılama Araçları</string>
+    <string name="diag_export_action_desc">Son işlemleri ve teknik sonuçları içeren ayrıntılı bir rapor oluşturur.</string>
+    <string name="diag_action_open">Aç</string>
     <string name="diag_phase_staging_created">Geçici alan hazır</string>
     <string name="diag_phase_copying">MTZ kopyalanıyor</string>
     <string name="diag_phase_copy_completed">Kopyalama tamamlandı</string>

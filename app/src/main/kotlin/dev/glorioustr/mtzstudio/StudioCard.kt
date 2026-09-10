@@ -22,13 +22,13 @@ internal fun StudioCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val shape = MaterialTheme.shapes.large
     if (LocalAppContentStyle.current != AppContentStyle.LIQUID_GLASS) {
-        Card(modifier = modifier, content = content)
+        Card(modifier = modifier, shape = shape, content = content)
         return
     }
 
     val colors = MaterialTheme.colorScheme
-    val shape = MaterialTheme.shapes.large
     val glassBase = Brush.linearGradient(
         colors = listOf(
             colors.surfaceContainerHigh.copy(alpha = 0.88f),

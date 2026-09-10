@@ -2,7 +2,6 @@ package dev.glorioustr.mtzstudio
 
 import android.app.Activity
 import android.content.Context
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -10,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,10 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import java.nio.file.Files
 import androidx.annotation.StringRes
@@ -39,7 +33,6 @@ internal enum class AppAppearance(@StringRes val titleRes: Int, @StringRes val d
 
 internal enum class AppContentStyle(@StringRes val titleRes: Int, @StringRes val descriptionRes: Int) {
     DEFAULT(R.string.style_default_title, R.string.style_default_desc),
-    MATERIAL_YOU(R.string.style_material_you_title, R.string.style_material_you_desc),
     LIQUID_GLASS(R.string.style_liquid_glass_title, R.string.style_liquid_glass_desc),
 }
 
@@ -61,7 +54,7 @@ internal class AppearanceStore(context: Context) {
 
     fun loadContentStyle(): AppContentStyle = runCatching {
         val stored = Files.newBufferedReader(contentStyleFile).use { reader -> reader.readLine() }
-        AppContentStyle.valueOf(stored.trim())
+        if (stored.trim() == "MATERIAL_YOU") AppContentStyle.DEFAULT else AppContentStyle.valueOf(stored.trim())
     }.getOrDefault(AppContentStyle.DEFAULT)
 
     fun saveContentStyle(style: AppContentStyle) {
@@ -88,51 +81,16 @@ internal fun StudioAppTheme(
         AppAppearance.LIGHT -> false
         AppAppearance.DARK, AppAppearance.AMOLED -> true
     }
-    val context = LocalContext.current
     val colors = when (contentStyle) {
         AppContentStyle.DEFAULT -> when {
             appearance == AppAppearance.AMOLED -> AmoledColors
             useDark -> DarkColors
             else -> LightColors
         }
-        AppContentStyle.MATERIAL_YOU -> {
-            val dynamic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (useDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            } else if (useDark) {
-                DarkColors
-            } else {
-                LightColors
-            }
-            if (appearance == AppAppearance.AMOLED) {
-                dynamic.copy(
-                    background = Color.Black,
-                    surface = Color.Black,
-                    surfaceDim = Color.Black,
-                    surfaceContainerLowest = Color.Black,
-                )
-            } else {
-                dynamic
-            }
-        }
         AppContentStyle.LIQUID_GLASS -> liquidGlassColors(useDark, appearance == AppAppearance.AMOLED)
     }
-    val shapes = when (contentStyle) {
-        AppContentStyle.DEFAULT -> Shapes()
-        AppContentStyle.MATERIAL_YOU -> Shapes(
-            extraSmall = RoundedCornerShape(12.dp),
-            small = RoundedCornerShape(16.dp),
-            medium = RoundedCornerShape(24.dp),
-            large = RoundedCornerShape(32.dp),
-            extraLarge = RoundedCornerShape(40.dp),
-        )
-        AppContentStyle.LIQUID_GLASS -> Shapes(
-            extraSmall = RoundedCornerShape(18.dp),
-            small = RoundedCornerShape(24.dp),
-            medium = RoundedCornerShape(30.dp),
-            large = RoundedCornerShape(40.dp),
-            extraLarge = RoundedCornerShape(48.dp),
-        )
-    }
+    // Content themes change color and material treatment only; geometry stays identical.
+    val shapes = Shapes()
     val view = LocalView.current
     SideEffect {
         val window = (view.context as? Activity)?.window ?: return@SideEffect

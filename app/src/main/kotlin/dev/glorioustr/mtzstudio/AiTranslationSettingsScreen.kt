@@ -1,8 +1,9 @@
 package dev.glorioustr.mtzstudio
 
 import android.widget.Toast
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,8 +72,6 @@ internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
     var modelMenu by remember { mutableStateOf(false) }
     var apiKey by remember { mutableStateOf("") }
     var storedKey by remember { mutableStateOf(initial.apiKey.isNotBlank()) }
-    var systemPrompt by remember { mutableStateOf(initial.systemPrompt) }
-    var userPrompt by remember { mutableStateOf(initial.userPrompt) }
     var useContext by remember { mutableStateOf(initial.useContext) }
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -80,25 +82,47 @@ internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
         customEndpoint = endpoint,
         model = model,
         apiKey = apiKey.trim().ifBlank { store.loadApiKey(provider) },
-        systemPrompt = systemPrompt,
-        userPrompt = userPrompt,
+        systemPrompt = "",
+        userPrompt = "",
         useContext = useContext,
     )
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         StudioCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.AutoFixHigh, null, tint = Color(0xFFFF8A3D))
-                    Text(label("Gelişmiş API çevirisi", "Advanced API translation"), Modifier.padding(start = 10.dp).weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        modifier = Modifier.size(44.dp).background(Color(0xFF7C4DFF).copy(alpha = 0.16f), RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.AutoFixHigh, null, tint = Color(0xFF9C75FF), modifier = Modifier.size(24.dp))
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(label("Tema Dil Aracı", "Theme Language Tool"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        Text(label("Bağlamsal yapay zekâ çevirisi", "Context-aware AI translation"), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
                     Switch(enabled, { enabled = it })
                 }
-                Text(label("BAK Importer’daki bağlamsal çeviri, toplu istek, tekrar deneme ve çeviri belleğini kullanır. API isteğe bağlıdır; kapalıyken cihaz içi çeviri çalışır.", "Uses BAK Importer's contextual batching, retries and translation memory. The API is optional; on-device translation remains available."), style = MaterialTheme.typography.bodySmall)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+                ) {
+                    Text(
+                        label("Bağlamsal toplu çeviri, tekrar deneme ve çeviri belleği birlikte çalışır. API kapalıyken cihaz içi çeviri kullanılabilir.", "Contextual batching, retries and translation memory work together. On-device translation remains available when the API is disabled."),
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         }
         StudioCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(label("Sağlayıcı ve model", "Provider and model"), fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Filled.AutoFixHigh, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+                    Text(label("Sağlayıcı ve model", "Provider and model"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
                 Column {
                     OutlinedButton(onClick = { providerMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(provider.title) }
                     DropdownMenu(
@@ -129,11 +153,15 @@ internal fun AiTranslationSettingsScreen(modifier: Modifier = Modifier) {
                     }
                 }
                 OutlinedTextField(apiKey, { apiKey = it }, label = { Text(label("API anahtarı", "API key")) }, placeholder = { Text(if (storedKey) label("Şifrelenmiş anahtar kayıtlı", "Encrypted key saved") else label("Birden fazla anahtar virgülle ayrılabilir", "Separate multiple keys with commas")) }, leadingIcon = { Icon(Icons.Filled.Lock, null) }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(systemPrompt, { systemPrompt = it }, label = { Text(label("Ek sistem talimatı", "Additional system instructions")) }, minLines = 2, maxLines = 4, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(userPrompt, { userPrompt = it }, label = { Text(label("Ek kullanıcı talimatı", "Additional user instructions")) }, minLines = 2, maxLines = 4, modifier = Modifier.fillMaxWidth())
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { Text(label("Tema bağlamını kullan", "Use theme context"), fontWeight = FontWeight.Medium); Text(label("Aynı gruptaki metinlerde tutarlı ve doğal terimler üretir.", "Produces natural, consistent terms across sibling strings."), style = MaterialTheme.typography.bodySmall) }
-                    Switch(useContext, { useContext = it })
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+                ) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) { Text(label("Tema bağlamını kullan", "Use theme context"), fontWeight = FontWeight.Medium); Text(label("Aynı gruptaki metinlerde tutarlı ve doğal terimler üretir.", "Produces natural, consistent terms across sibling strings."), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
+                        Switch(useContext, { useContext = it })
+                    }
                 }
             }
         }

@@ -18,7 +18,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -321,6 +324,23 @@ private fun StudioScreen(
     var activeThemeId by rememberSaveable {
         mutableStateOf(studioState.getString("last-applied-theme-id", null))
     }
+    var previousThemeId by rememberSaveable {
+        mutableStateOf(studioState.getString("previous-applied-theme-id", null))
+    }
+    var lastAppliedProtocol by rememberSaveable {
+        mutableStateOf(studioState.getString("last-applied-protocol", null))
+    }
+
+    fun rememberAppliedTheme(themeId: String, protocol: ThemeApplyProtocol) {
+        if (activeThemeId != null && activeThemeId != themeId) previousThemeId = activeThemeId
+        activeThemeId = themeId
+        lastAppliedProtocol = protocol.name
+        studioState.edit()
+            .putString("last-applied-theme-id", themeId)
+            .putString("previous-applied-theme-id", previousThemeId)
+            .putString("last-applied-protocol", protocol.name)
+            .apply()
+    }
 
     fun persistPreparedApply(prepared: PreparedThemeApply) {
         if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE) {
@@ -561,8 +581,7 @@ private fun StudioScreen(
                 ThemeApplyProtocol.LEGACY_TESTER -> {
                     diagnostics.record("legacy_apply_unverified", "Global tester çağrısı döndü; bu protokol kesin uygulama sonucu bildirmiyor", mapOf("theme" to prepared.themeName))
                     status = resources.getString(R.string.status_legacy_apply_unverified, prepared.themeName)
-                    activeThemeId = prepared.themeId
-                    studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                    rememberAppliedTheme(prepared.themeId, prepared.protocol)
                 }
 
                 ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE -> {
@@ -574,8 +593,7 @@ private fun StudioScreen(
                         when (prepared.operation) {
                             ThemeManagerOperation.APPLY -> {
                                 status = resources.getString(R.string.status_apply_success, prepared.themeName)
-                                activeThemeId = prepared.themeId
-                                studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                                rememberAppliedTheme(prepared.themeId, prepared.protocol)
                             }
                             ThemeManagerOperation.IMPORT_ONLY -> {
                                 scope.launch {
@@ -663,15 +681,13 @@ private fun StudioScreen(
                         mapOf("theme" to prepared.themeName),
                     )
                     status = resources.getString(R.string.status_legacy_apply_unverified, prepared.themeName)
-                    activeThemeId = prepared.themeId
-                    studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                    rememberAppliedTheme(prepared.themeId, prepared.protocol)
                 }
 
                 ThemeApplyProtocol.ROOTLESS_BACKUP_RESTORE -> {
                     diagnostics.record("rootless_backup_returned", "Doğrudan aktarılan tema için Xiaomi Temalar ekranından dönüldü", mapOf("theme" to prepared.themeName))
                     status = resources.getString(R.string.status_legacy_apply_unverified, prepared.themeName)
-                    activeThemeId = prepared.themeId
-                    studioState.edit().putString("last-applied-theme-id", prepared.themeId).apply()
+                    rememberAppliedTheme(prepared.themeId, prepared.protocol)
                 }
             }
             if (prepared.operation == ThemeManagerOperation.APPLY) {
@@ -1427,22 +1443,32 @@ private fun StudioScreen(
         },
         bottomBar = {
             if (destination in primaryDestinations) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-                    listOf(
-                        Triple(StudioDestination.HOME, Icons.Filled.Dashboard, R.string.nav_panel),
-                        Triple(StudioDestination.THEMES, Icons.Filled.ColorLens, R.string.nav_library),
-                        Triple(StudioDestination.PERSONALIZE, Icons.Filled.Tune, R.string.dest_personalize),
-                        Triple(StudioDestination.TOOLS, Icons.Filled.Build, R.string.dest_tools),
-                    ).forEach { (target, icon, label) ->
-                        NavigationBarItem(
-                            selected = destination == target,
-                            onClick = {
-                                destination = target
-                                returnDestination = StudioDestination.HOME
-                            },
-                            icon = { Icon(icon, contentDescription = null) },
-                            label = { Text(stringResource(label), maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                        )
+                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shadowElevation = 10.dp,
+                    ) {
+                        NavigationBar(containerColor = Color.Transparent) {
+                            listOf(
+                                Triple(StudioDestination.HOME, Icons.Filled.Dashboard, R.string.nav_panel),
+                                Triple(StudioDestination.THEMES, Icons.Filled.ColorLens, R.string.nav_library),
+                                Triple(StudioDestination.PERSONALIZE, Icons.Filled.Tune, R.string.dest_personalize),
+                                Triple(StudioDestination.TOOLS, Icons.Filled.Build, R.string.dest_tools),
+                            ).forEach { (target, icon, label) ->
+                                NavigationBarItem(
+                                    selected = destination == target,
+                                    onClick = {
+                                        destination = target
+                                        returnDestination = StudioDestination.HOME
+                                    },
+                                    icon = { Icon(icon, contentDescription = null) },
+                                    label = { Text(stringResource(label), maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1475,7 +1501,6 @@ private fun StudioScreen(
                     runCatching { bakPicker.launch(arrayOf("application/octet-stream", "application/x-tar", "*/*")) }
                         .onFailure { error -> status = resources.getString(R.string.bak_import_failed, error.message ?: "") }
                 },
-                onOpenLibrary = { destination = StudioDestination.THEMES },
                 onOpenBackup = { navigateTo(StudioDestination.BACKUP) },
                 authorizationManagerName = authorizationManager?.displayName,
                 onOpenAuthorizationManager = {
@@ -1495,13 +1520,16 @@ private fun StudioScreen(
             destination == StudioDestination.THEMES -> ThemesScreen(
                 themes = workspaceThemes,
                 activeThemeId = activeThemeId,
+                previousThemeId = previousThemeId,
+                accessMode = accessMode,
+                appliedProtocol = lastAppliedProtocol,
                 deviceImportStatus = themeDeviceImportStatus,
                 deviceImportRunning = deviceImportRunning || (capabilities.usesNativeCatalog && !catalogLoadFinished),
                 catalogError = catalogError,
                 onRetryCatalog = ::refreshModernThemeManagerCatalog,
                 onOpenDeviceThemePicker = ::openDeviceThemePicker,
                 onShowAllDeviceThemes = ::requestFullThemeManagerCatalog,
-                showDeviceImport = rootAccessAvailable == true,
+                showDeviceImport = capabilities.usesNativeCatalog,
                 nativeCatalogMode = capabilities.usesNativeCatalog,
                 rootlessMode = accessMode == StudioAccessMode.STANDARD,
                 translationProgress = translationProgress,
@@ -1523,6 +1551,15 @@ private fun StudioScreen(
                     baseThemeId = theme.id.value
                     selections.clear()
                     destination = StudioDestination.PERSONALIZE
+                },
+                onRollbackTheme = { theme ->
+                    if (!themeOperationRunning) {
+                        when (accessMode) {
+                            StudioAccessMode.ROOT -> pendingApplyTheme = theme
+                            StudioAccessMode.SHIZUKU -> beginThemeApply(theme)
+                            StudioAccessMode.STANDARD, null -> operationError = resources.getString(R.string.shizuku_recommended_desc)
+                        }
+                    }
                 },
                 modifier = contentModifier,
             )
