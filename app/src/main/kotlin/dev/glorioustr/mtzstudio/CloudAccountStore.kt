@@ -1,8 +1,6 @@
 package dev.glorioustr.mtzstudio
 
 import android.content.Context
-import android.net.Uri
-import android.provider.DocumentsContract
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -22,7 +20,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 enum class CloudProvider(val displayName: String) {
-    GOOGLE_DRIVE("Cloud folder"),
+    GOOGLE_DRIVE("Google Drive"),
     WEBDAV("WebDAV / Nextcloud"),
 }
 
@@ -32,14 +30,14 @@ data class CloudAccount(
     val serverUrl: String = "",
     val password: String = "",
     val treeUri: String = "",
+    val oauthBacked: Boolean = false,
     val isConnected: Boolean = false,
     val lastBackupTime: String? = null,
 )
 
-/** Real remote storage backed by a persisted cloud-folder URI or a WebDAV endpoint. */
+/** Real remote storage backed by Google Drive app data or a WebDAV endpoint. */
 class CloudAccountStore(private val context: Context) {
     private val prefs = context.getSharedPreferences("cloud_account_prefs", Context.MODE_PRIVATE)
-    private val resolver = context.contentResolver
 
     fun load(): CloudAccount {
         val provider = runCatching {
@@ -48,7 +46,7 @@ class CloudAccountStore(private val context: Context) {
         val treeUri = prefs.getString("tree_uri", "").orEmpty()
         val serverUrl = prefs.getString("server_url", "").orEmpty()
         val connected = prefs.getBoolean("is_connected", false) && when (provider) {
-            CloudProvider.GOOGLE_DRIVE -> treeUri.isNotBlank() && hasPersistedPermission(Uri.parse(treeUri))
+            CloudProvider.GOOGLE_DRIVE -> prefs.getBoolean("drive_oauth", false)
             CloudProvider.WEBDAV -> serverUrl.startsWith("https://", ignoreCase = true)
         }
         return CloudAccount(
@@ -57,6 +55,7 @@ class CloudAccountStore(private val context: Context) {
             serverUrl = serverUrl,
             password = decryptSecret(prefs.getString("password_encrypted", "").orEmpty()),
             treeUri = treeUri,
+            oauthBacked = prefs.getBoolean("drive_oauth", false),
             isConnected = connected,
             lastBackupTime = prefs.getString("last_backup_time", null),
         )
@@ -70,6 +69,7 @@ class CloudAccountStore(private val context: Context) {
             .putString("server_url", account.serverUrl)
             .putString("password_encrypted", encryptSecret(account.password))
             .putString("tree_uri", account.treeUri)
+            .putBoolean("drive_oauth", account.oauthBacked)
             .putString("last_backup_time", account.lastBackupTime)
             .apply()
     }
@@ -86,12 +86,7 @@ class CloudAccountStore(private val context: Context) {
     fun uploadBackup(source: Path) {
         val account = requireConnected()
         when (account.provider) {
-            CloudProvider.GOOGLE_DRIVE -> {
-                val target = findOrCreateCloudFile(Uri.parse(account.treeUri))
-                resolver.openOutputStream(target, "wt")?.use { output ->
-                    Files.newInputStream(source).use { input -> input.copyTo(output) }
-                } ?: error("Cloud backup file could not be opened for writing")
-            }
+            CloudProvider.GOOGLE_DRIVE -> GoogleDriveAppDataStore(context).upload(source)
             CloudProvider.WEBDAV -> uploadWebDav(account, source)
         }
     }
@@ -100,51 +95,13 @@ class CloudAccountStore(private val context: Context) {
         val account = requireConnected()
         Files.createDirectories(target.parent)
         return when (account.provider) {
-            CloudProvider.GOOGLE_DRIVE -> {
-                val source = findCloudFile(Uri.parse(account.treeUri)) ?: return false
-                resolver.openInputStream(source)?.use { input ->
-                    Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING)
-                } ?: return false
-                Files.size(target) > 0
-            }
+            CloudProvider.GOOGLE_DRIVE -> GoogleDriveAppDataStore(context).download(target)
             CloudProvider.WEBDAV -> downloadWebDav(account, target)
         }
     }
 
     private fun requireConnected(): CloudAccount = load().also {
-        check(it.isConnected) { "Cloud storage permission is missing; reconnect the cloud folder" }
-    }
-
-    private fun hasPersistedPermission(uri: Uri): Boolean = resolver.persistedUriPermissions.any {
-        it.uri == uri && it.isReadPermission && it.isWritePermission
-    }
-
-    private fun findOrCreateCloudFile(treeUri: Uri): Uri = findCloudFile(treeUri)
-        ?: DocumentsContract.createDocument(
-            resolver,
-            DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri)),
-            "application/zip",
-            BACKUP_FILE_NAME,
-        )
-        ?: error("Cloud backup file could not be created")
-
-    private fun findCloudFile(treeUri: Uri): Uri? {
-        val parentId = DocumentsContract.getTreeDocumentId(treeUri)
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
-        val projection = arrayOf(
-            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-        )
-        resolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-            val nameColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-            while (cursor.moveToNext()) {
-                if (cursor.getString(nameColumn) == BACKUP_FILE_NAME) {
-                    return DocumentsContract.buildDocumentUriUsingTree(treeUri, cursor.getString(idColumn))
-                }
-            }
-        }
-        return null
+        check(it.isConnected) { "Cloud account permission is missing; reconnect cloud storage" }
     }
 
     private fun uploadWebDav(account: CloudAccount, source: Path) {

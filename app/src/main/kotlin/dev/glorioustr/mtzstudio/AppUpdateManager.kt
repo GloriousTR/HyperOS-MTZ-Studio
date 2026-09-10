@@ -23,6 +23,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -57,6 +60,21 @@ internal object AppUpdateScheduler {
     }
 }
 
+internal enum class AppUpdatePhase { IDLE, CHECKING, UP_TO_DATE, READY, ERROR }
+
+internal data class AppUpdateState(
+    val phase: AppUpdatePhase = AppUpdatePhase.IDLE,
+    val version: String? = null,
+    val error: String? = null,
+    val eventId: Long = 0L,
+)
+
+internal object AppUpdateStore {
+    private val mutableState = MutableStateFlow(AppUpdateState())
+    val state: StateFlow<AppUpdateState> = mutableState.asStateFlow()
+    fun update(state: AppUpdateState) { mutableState.value = state }
+}
+
 class AppUpdateJobService : JobService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var runningJob: kotlinx.coroutines.Job? = null
@@ -64,7 +82,10 @@ class AppUpdateJobService : JobService() {
     override fun onStartJob(params: JobParameters): Boolean {
         runningJob = scope.launch {
             runCatching { AppUpdateManager(applicationContext).checkAndDownload() }
-                .onFailure { LiveDiagnosticsRecorder.get(applicationContext).record("app_update_failed", "Güncelleme kontrolü tamamlanamadı", error = it) }
+                .onFailure {
+                    AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
+                    LiveDiagnosticsRecorder.get(applicationContext).record("app_update_failed", "Güncelleme kontrolü tamamlanamadı", error = it)
+                }
             jobFinished(params, false)
         }
         return true
@@ -82,14 +103,24 @@ internal class AppUpdateManager(private val context: Context) {
     private val updateDirectory = context.filesDir.toPath().resolve("updates")
     private val apkPath = updateDirectory.resolve("MTZ_Studio_update.apk")
 
-    fun checkAndDownload() {
+    fun checkAndDownload(force: Boolean = false) {
+        AppUpdateStore.update(AppUpdateState(AppUpdatePhase.CHECKING, eventId = System.currentTimeMillis()))
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong("last_check", 0L) < CHECK_INTERVAL_MS) return
+        if (!force && now - prefs.getLong("last_check", 0L) < CHECK_INTERVAL_MS) {
+            if (!restoreReadyState()) AppUpdateStore.update(AppUpdateState())
+            return
+        }
         prefs.edit().putLong("last_check", now).apply()
         val release = JSONObject(readUrl(RELEASE_API))
-        if (release.optBoolean("draft") || release.optBoolean("prerelease")) return
+        if (release.optBoolean("draft") || release.optBoolean("prerelease")) {
+            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.UP_TO_DATE, eventId = now))
+            return
+        }
         val tag = release.getString("tag_name").removePrefix("v")
-        if (!isNewer(tag, BuildConfig.VERSION_NAME)) return
+        if (!isNewer(tag, BuildConfig.VERSION_NAME)) {
+            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.UP_TO_DATE, eventId = now))
+            return
+        }
         val assets = release.getJSONArray("assets")
         var apkUrl: String? = null
         var checksumUrl: String? = null
@@ -113,11 +144,21 @@ internal class AppUpdateManager(private val context: Context) {
             Files.move(staging, apkPath, StandardCopyOption.REPLACE_EXISTING)
             verifyDownloadedApk()
             prefs.edit().putString("ready_version", tag).apply()
+            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = tag, eventId = System.currentTimeMillis()))
             showReadyNotification(tag)
             LiveDiagnosticsRecorder.get(context).record("app_update_ready", "İmzalı uygulama güncellemesi indirildi", mapOf("version" to tag, "sha256" to actualHash))
         } finally {
             Files.deleteIfExists(staging)
         }
+    }
+
+    fun restoreReadyState(): Boolean {
+        val version = prefs.getString("ready_version", null)?.takeIf { isNewer(it, BuildConfig.VERSION_NAME) }
+            ?: return false
+        val valid = runCatching { verifyDownloadedApk() }.getOrDefault(false)
+        if (!valid) return false
+        AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = version, eventId = System.currentTimeMillis()))
+        return true
     }
 
     fun verifyDownloadedApk(): Boolean {

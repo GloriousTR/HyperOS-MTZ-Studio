@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Tài nhập một tệp sao lưu .zip đã được xuất khẩu trước đó từ bộ nhớ thiết bị của bạn vào thư viện ứng dụng.</string>
     <string name="cloud_dialog_title">Kết nối tài khoản đám mây</string>
     <string name="cloud_dialog_subtitle">Chọn một nhà cung cấp dịch vụ đám mây để đồng bộ hóa các bản sao lưu chủ đề của bạn</string>
-    <string name="cloud_provider_google">Thư mục đám mây (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Chọn thư mục cố định từ Google Drive, OneDrive hoặc nhà cung cấp tệp khác</string>
+    <string name="cloud_google_desc">Đăng nhập bằng Google; bản sao lưu được giữ trong vùng Drive riêng tư và ẩn của MTZ Studio</string>
     <string name="cloud_webdav_desc">Kết nối với một máy chủ đám mây riêng với URL và mật khẩu</string>
     <string name="cloud_account_email_label">Email tài khoản Google</string>
     <string name="cloud_server_url_label">WebDAV URL máy chủ</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">Cập nhật ứng dụng</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Bản cập nhật đã được tải xuống và xác minh. Nhấn để cài đặt.</string>
+    <string name="app_update_check">Kiểm tra cập nhật</string>
+    <string name="app_update_check_desc">Kiểm tra bản MTZ Studio mới hơn đã ký trên GitHub</string>
+    <string name="app_update_install">Cài đặt cập nhật</string>
+    <string name="app_update_later">Để sau</string>
+    <string name="app_update_checking">Đang kiểm tra GitHub và xác minh cập nhật an toàn…</string>
+    <string name="app_update_up_to_date">Bạn đã dùng phiên bản mới nhất.</string>
+    <string name="app_update_check_failed">Không thể hoàn tất kiểm tra cập nhật.</string>
 </resources>

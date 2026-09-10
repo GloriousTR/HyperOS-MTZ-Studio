@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Mengimpor file cadangan .zip yang sebelumnya diekspor dari penyimpanan perangkat Anda ke perpustakaan aplikasi.</string>
     <string name="cloud_dialog_title">Sambungkan Akun Cloud</string>
     <string name="cloud_dialog_subtitle">Pilih penyedia layanan cloud untuk menyinkronkan cadangan tema Anda</string>
-    <string name="cloud_provider_google">Folder cloud (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Pilih folder permanen dari Google Drive, OneDrive, atau penyedia file lainnya</string>
+    <string name="cloud_google_desc">Masuk dengan Google; cadangan disimpan di ruang Drive pribadi dan tersembunyi milik MTZ Studio</string>
     <string name="cloud_webdav_desc">Sambung ke server cloud pribadi dengan URL dan kata sandi</string>
     <string name="cloud_account_email_label">Email Akun Google</string>
     <string name="cloud_server_url_label">WebDAV URL Server</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">Pembaruan aplikasi</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Pembaruan telah diunduh dan diverifikasi. Ketuk untuk menginstal.</string>
+    <string name="app_update_check">Periksa pembaruan</string>
+    <string name="app_update_check_desc">Periksa versi MTZ Studio bertanda tangan yang lebih baru di GitHub</string>
+    <string name="app_update_install">Pasang pembaruan</string>
+    <string name="app_update_later">Nanti</string>
+    <string name="app_update_checking">Memeriksa GitHub dan memverifikasi pembaruan dengan aman…</string>
+    <string name="app_update_up_to_date">Anda sudah menggunakan versi terbaru.</string>
+    <string name="app_update_check_failed">Pemeriksaan pembaruan tidak dapat diselesaikan.</string>
 </resources>

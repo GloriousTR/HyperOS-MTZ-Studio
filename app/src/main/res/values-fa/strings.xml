@@ -199,9 +199,9 @@
     <string name="local_restore_desc">یک فایل پشتیبان .zip قبلا صادر شده را از ذخیره سازی دستگاه شما به کتابخانه برنامه ها وارد می کند.</string>
     <string name="cloud_dialog_title">حساب Cloud را وصل کنید</string>
     <string name="cloud_dialog_subtitle">یک ارائه دهنده خدمات ابر را برای هماهنگ کردن نسخه پشتیبان موضوع انتخاب کنید</string>
-    <string name="cloud_provider_google">پوشه ابری (Google Drive، OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">یک پوشه دائمی از Google Drive، OneDrive یا ارائه‌دهنده فایل دیگری انتخاب کنید</string>
+    <string name="cloud_google_desc">با Google وارد شوید؛ پشتیبان در فضای خصوصی و مخفی Drive مخصوص MTZ Studio نگهداری می‌شود</string>
     <string name="cloud_webdav_desc">با URL و رمز عبور به یک سرور خصوصی ابر متصل شوید</string>
     <string name="cloud_account_email_label">ایمیل حساب گوگل</string>
     <string name="cloud_server_url_label">WebDAV URL سرور</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">به‌روزرسانی‌های برنامه</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">به‌روزرسانی دانلود و تأیید شد. برای نصب ضربه بزنید.</string>
+    <string name="app_update_check">بررسی به‌روزرسانی</string>
+    <string name="app_update_check_desc">نسخه امضاشده جدیدتر MTZ Studio را در GitHub بررسی کنید</string>
+    <string name="app_update_install">نصب به‌روزرسانی</string>
+    <string name="app_update_later">بعداً</string>
+    <string name="app_update_checking">در حال بررسی GitHub و تأیید امن به‌روزرسانی…</string>
+    <string name="app_update_up_to_date">در حال حاضر آخرین نسخه را دارید.</string>
+    <string name="app_update_check_failed">بررسی به‌روزرسانی کامل نشد.</string>
 </resources>

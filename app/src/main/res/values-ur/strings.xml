@@ -199,9 +199,9 @@
     <string name="local_restore_desc">آپ کے آلہ اسٹوریج سے پہلے برآمد شدہ .zip بیک اپ فائل کو ایپلی کیشن لائبریری میں درآمد کرتا ہے۔</string>
     <string name="cloud_dialog_title">کلاؤڈ اکاؤنٹ کو مربوط کریں</string>
     <string name="cloud_dialog_subtitle">اپنے تھیم بیک اپ کو مطابقت پذیر کرنے کے لئے کلاؤڈ سروس فراہم کنندہ کا انتخاب کریں</string>
-    <string name="cloud_provider_google">کلاؤڈ فولڈر (Google Drive، OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Google Drive، OneDrive یا کسی دوسرے فائل فراہم کنندہ سے مستقل فولڈر منتخب کریں</string>
+    <string name="cloud_google_desc">Google سے سائن ان کریں؛ بیک اپ MTZ Studio کی نجی اور مخفی Drive جگہ میں محفوظ ہوتا ہے</string>
     <string name="cloud_webdav_desc">یو آر ایل اور پاس ورڈ کے ساتھ نجی کلاؤڈ سرور سے رابطہ قائم کریں</string>
     <string name="cloud_account_email_label">گوگل اکاؤنٹ ای میل</string>
     <string name="cloud_server_url_label">WebDAV سرور یو آر ایل</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">ایپ اپ ڈیٹس</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">اپ ڈیٹ ڈاؤن لوڈ اور تصدیق ہو گئی ہے۔ انسٹال کرنے کے لیے ٹیپ کریں۔</string>
+    <string name="app_update_check">اپ ڈیٹس چیک کریں</string>
+    <string name="app_update_check_desc">GitHub پر نیا دستخط شدہ MTZ Studio ورژن چیک کریں</string>
+    <string name="app_update_install">اپ ڈیٹ انسٹال کریں</string>
+    <string name="app_update_later">بعد میں</string>
+    <string name="app_update_checking">GitHub چیک کیا جا رہا ہے اور اپ ڈیٹ محفوظ طور پر تصدیق ہو رہی ہے…</string>
+    <string name="app_update_up_to_date">آپ پہلے ہی تازہ ترین ورژن استعمال کر رہے ہیں۔</string>
+    <string name="app_update_check_failed">اپ ڈیٹ کی جانچ مکمل نہیں ہو سکی۔</string>
 </resources>

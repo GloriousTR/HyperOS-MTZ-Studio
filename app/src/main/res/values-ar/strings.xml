@@ -199,9 +199,9 @@
     <string name="local_restore_desc">يستورد ملف النسخ الاحتياطي .zip الذي تم تصديره من قبل من مخزن الجهاز الخاص بك إلى مكتبة التطبيقات.</string>
     <string name="cloud_dialog_title">إرباط حساب السحابة</string>
     <string name="cloud_dialog_subtitle">اختر مزود خدمة السحابة لمزامنة نسخ النسخ الاحتياطية الخاصة بك</string>
-    <string name="cloud_provider_google">مجلد سحابي (Google Drive، OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">اختر مجلدًا دائمًا من Google Drive أو OneDrive أو موفر ملفات آخر</string>
+    <string name="cloud_google_desc">سجّل الدخول باستخدام Google؛ تُحفظ النسخة في مساحة Drive الخاصة والمخفية لتطبيق MTZ Studio</string>
     <string name="cloud_webdav_desc">التواصل مع خادم سحابة خاصة باستخدام عنوان URL وكلمة المرور</string>
     <string name="cloud_account_email_label">رسالة بريد إلكتروني حساب جوجل</string>
     <string name="cloud_server_url_label">WebDAV عنوان عنوان الخادم</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">تحديثات التطبيق</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">تم تنزيل التحديث والتحقق منه. اضغط للتثبيت.</string>
+    <string name="app_update_check">التحقق من التحديثات</string>
+    <string name="app_update_check_desc">تحقق من GitHub بحثًا عن إصدار MTZ Studio أحدث وموقّع</string>
+    <string name="app_update_install">تثبيت التحديث</string>
+    <string name="app_update_later">لاحقًا</string>
+    <string name="app_update_checking">جارٍ التحقق من GitHub ومن سلامة التحديث…</string>
+    <string name="app_update_up_to_date">لديك أحدث إصدار بالفعل.</string>
+    <string name="app_update_check_failed">تعذر إكمال التحقق من التحديثات.</string>
 </resources>

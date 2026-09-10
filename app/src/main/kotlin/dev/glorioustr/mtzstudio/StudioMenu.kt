@@ -68,6 +68,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Notifications
@@ -84,6 +85,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -448,6 +450,7 @@ internal fun StudioOverlayMenu(
     showThemeProtection: Boolean,
     onDismiss: () -> Unit,
     onNavigate: (StudioDestination) -> Unit,
+    onCheckForUpdates: () -> Unit,
 ) {
     val items = listOf(
         OverlayMenuItem(
@@ -519,6 +522,22 @@ internal fun StudioOverlayMenu(
                     }
                     items.forEach { item ->
                         OverlayMenuCard(item = item, onClick = { onNavigate(item.destination) })
+                    }
+                    StudioCard(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clickable(onClick = onCheckForUpdates),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            MenuIconBox(Icons.Filled.SystemUpdateAlt, Color(0xFF00897B))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(R.string.app_update_check), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.app_update_check_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.menu_close))
@@ -2307,22 +2326,23 @@ private fun ThemeActionDock(
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
                     if (translationProgress?.running == true) {
-                        CircularProgressIndicator(
+                        LinearProgressIndicator(
                             progress = { translationProgress.fraction },
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(50)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         )
-                        Spacer(Modifier.width(5.dp))
+                    } else {
+                        Text(
+                            text = stringResource(R.string.action_translate),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
-                    Text(
-                        text = if (translationProgress?.running == true) {
-                            "${stringResource(R.string.action_translate)} ${(translationProgress.fraction * 100).toInt()}%"
-                        } else {
-                            stringResource(R.string.action_translate)
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
                 }
                 Spacer(Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 TextButton(

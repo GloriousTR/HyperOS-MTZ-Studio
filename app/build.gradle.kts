@@ -80,5 +80,8 @@ dependencies {
     // translation sends only candidate text when the user explicitly enables a provider.
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.6")
+    // Account-backed Google Drive app-data storage. Unlike the Storage Access
+    // Framework this follows the user's Google account to a new device.
+    implementation("com.google.android.gms:play-services-auth:22.0.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Importiert eine zuvor ausgeführte .zip-Backupdatei aus Ihrem Gerätsspeicher in die Anwendungsbibliothek.</string>
     <string name="cloud_dialog_title">Verbinden Sie Cloud-Account</string>
     <string name="cloud_dialog_subtitle">Wählen Sie einen Cloud-Dienstleister aus , um Ihre Themen-Backups zu synchronisieren</string>
-    <string name="cloud_provider_google">Cloud-Ordner (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Wählen Sie einen dauerhaften Ordner in Google Drive, OneDrive oder einem anderen Dateidienst</string>
+    <string name="cloud_google_desc">Mit Google anmelden; das Backup wird im privaten, verborgenen Drive-Speicher von MTZ Studio gespeichert</string>
     <string name="cloud_webdav_desc">Verbinden Sie sich mit einem privaten Cloud-Server mit URL und Passwort</string>
     <string name="cloud_account_email_label">E-Mail für das Google-Konto</string>
     <string name="cloud_server_url_label">WebDAV URL des Servers</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">App-Updates</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Das Update wurde heruntergeladen und geprüft. Zum Installieren tippen.</string>
+    <string name="app_update_check">Nach Updates suchen</string>
+    <string name="app_update_check_desc">GitHub auf eine neuere signierte MTZ-Studio-Version prüfen</string>
+    <string name="app_update_install">Update installieren</string>
+    <string name="app_update_later">Später</string>
+    <string name="app_update_checking">GitHub wird geprüft und das Update sicher verifiziert…</string>
+    <string name="app_update_up_to_date">Sie verwenden bereits die neueste Version.</string>
+    <string name="app_update_check_failed">Die Update-Prüfung konnte nicht abgeschlossen werden.</string>
 </resources>

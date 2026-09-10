@@ -28,7 +28,7 @@
 - **BAK Converter:** converts supported Xiaomi Themes `.bak` archives directly into portable MTZ packages without replacing Xiaomi Themes data. Results appear immediately in the Studio library.
 - **Theme Language Tool:** detects visible theme text and translates it into the app language. Reviewed Chinese terminology, safe MAML handling, translation memory and optional user-configured API providers improve natural results.
 - **Background operations:** translation and cloud transfers continue while Studio is minimized, with live card and notification progress.
-- **Portable cloud backup:** stores the Studio library in a user-selected Google Drive, OneDrive or document-provider folder, with optional HTTPS WebDAV/Nextcloud support.
+- **Portable cloud backup:** stores the Studio library in its private Google Drive app-data space, independent of Android's file picker and available after reinstalling or changing devices. HTTPS WebDAV/Nextcloud remains available as an alternative.
 - **Secure updates:** checks GitHub releases in the background, downloads newer APKs and verifies their checksum, package identity, version and signing certificate before opening Android's installer.
 - **Theme Composer:** combines a base theme with selected icons, lock screen, status bar, dialer, messages, launcher, AOD, font and wallpapers while preserving untouched components.
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
@@ -38,7 +38,7 @@
 
 - Translation progress is now shown compactly inside the Translate button; the separate bar between theme actions was removed.
 - Translation continues in a foreground background task and reports progress in Android notifications.
-- Replaced device-local “cloud” storage with a real persistent cloud-folder workflow for cross-device restore.
+- Replaced device-local “cloud” storage with account-backed Google Drive app-data storage for cross-device restore.
 - Added real HTTPS WebDAV/Nextcloud upload and restore; credentials are protected by Android Keystore.
 - Cloud backup and restore now continue when the app is minimized and report completion through notifications.
 - Added automatic GitHub update checks and secure APK downloading. Android still asks for final installation confirmation.
@@ -122,6 +122,7 @@ Release signing uses `MTZ_RELEASE_STORE_FILE`, `MTZ_RELEASE_STORE_PASSWORD`, `MT
 - [Localization](docs/localization.md)
 - [Theme Language Tool](docs/theme-language-translation.md)
 - [Threat model](docs/threat-model.md)
+- [Privacy policy](docs/privacy-policy.md)
 
 ## Responsible use
 

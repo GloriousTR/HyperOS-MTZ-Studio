@@ -199,9 +199,9 @@
     <string name="local_restore_desc">デバイスのストレージからアプリケーションライブラリに以前に輸出された .zip バックアップファイルをインポートします.</string>
     <string name="cloud_dialog_title">クラウドアカウントを接続する</string>
     <string name="cloud_dialog_subtitle">テーマバックアップを同期するクラウドサービスプロバイダーを選択</string>
-    <string name="cloud_provider_google">クラウドフォルダー（Google Drive、OneDrive…）</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Google Drive、OneDrive、または別のファイルプロバイダーから永続フォルダーを選択します</string>
+    <string name="cloud_google_desc">Google でログインします。バックアップは MTZ Studio 専用の非表示 Drive 領域に保存されます</string>
     <string name="cloud_webdav_desc">URLとパスワードでプライベートクラウドサーバーに接続する</string>
     <string name="cloud_account_email_label">Google アカウントのメール</string>
     <string name="cloud_server_url_label">WebDAV サーバのURL</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">アプリの更新</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">更新をダウンロードして検証しました。タップしてインストールします。</string>
+    <string name="app_update_check">アップデートを確認</string>
+    <string name="app_update_check_desc">GitHub で新しい署名済み MTZ Studio を確認します</string>
+    <string name="app_update_install">アップデートをインストール</string>
+    <string name="app_update_later">後で</string>
+    <string name="app_update_checking">GitHub を確認し、アップデートを安全に検証しています…</string>
+    <string name="app_update_up_to_date">すでに最新バージョンです。</string>
+    <string name="app_update_check_failed">アップデートの確認を完了できませんでした。</string>
 </resources>

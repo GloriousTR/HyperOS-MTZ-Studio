@@ -199,9 +199,9 @@
     <string name="local_restore_desc">從您的裝置存儲中進口以前出口的 .zip 備份檔案到應用圖書館.</string>
     <string name="cloud_dialog_title">聯繫雲端帳戶</string>
     <string name="cloud_dialog_subtitle">選擇雲端服務提供商同步主題備份</string>
-    <string name="cloud_provider_google">雲端資料夾（Google Drive、OneDrive…）</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">從 Google Drive、OneDrive 或其他檔案提供者選擇永久資料夾</string>
+    <string name="cloud_google_desc">使用 Google 登入；備份會儲存在 MTZ Studio 專用的隱藏 Drive 空間</string>
     <string name="cloud_webdav_desc">使用URL和密碼連接到私人雲端伺服器</string>
     <string name="cloud_account_email_label">谷歌帳戶電子郵件</string>
     <string name="cloud_server_url_label">WebDAV 伺服器的URL</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">應用程式更新</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">更新已下載並驗證。輕觸即可安裝。</string>
+    <string name="app_update_check">檢查更新</string>
+    <string name="app_update_check_desc">在 GitHub 檢查較新且已簽署的 MTZ Studio 版本</string>
+    <string name="app_update_install">安裝更新</string>
+    <string name="app_update_later">稍後</string>
+    <string name="app_update_checking">正在檢查 GitHub 並安全驗證更新…</string>
+    <string name="app_update_up_to_date">您已使用最新版本。</string>
+    <string name="app_update_check_failed">無法完成更新檢查。</string>
 </resources>

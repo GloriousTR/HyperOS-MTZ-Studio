@@ -218,9 +218,9 @@
     <!-- Cloud Account Dialog -->
     <string name="cloud_dialog_title">Bulut Hesabı Bağla</string>
     <string name="cloud_dialog_subtitle">Tema yedeklerinizi senkronize etmek için bir bulut sağlayıcısı seçin</string>
-    <string name="cloud_provider_google">Bulut klasörü (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Google Drive, OneDrive veya başka bir sağlayıcıdan kalıcı bir klasör seçin</string>
+    <string name="cloud_google_desc">Google hesabınızla oturum açın; yedek MTZ Studio\'ya özel gizli Drive alanında saklanır</string>
     <string name="cloud_webdav_desc">Özel bulut sunucusu adresi ve şifre ile bağlanın</string>
     <string name="cloud_account_email_label">Google Hesap E-postası</string>
     <string name="cloud_server_url_label">WebDAV Sunucu Adresi</string>
@@ -413,4 +413,11 @@
     <string name="app_update_channel">Uygulama güncellemeleri</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Güncelleme indirildi ve doğrulandı. Kurmak için dokunun.</string>
+    <string name="app_update_check">Güncellemeleri denetle</string>
+    <string name="app_update_check_desc">GitHub’da daha yeni, imzalı MTZ Studio sürümü olup olmadığını denetle</string>
+    <string name="app_update_install">Güncellemeyi kur</string>
+    <string name="app_update_later">Daha sonra</string>
+    <string name="app_update_checking">GitHub denetleniyor ve güncelleme güvenli biçimde doğrulanıyor…</string>
+    <string name="app_update_up_to_date">Zaten en güncel sürümü kullanıyorsunuz.</string>
+    <string name="app_update_check_failed">Güncelleme denetimi tamamlanamadı.</string>
 </resources>

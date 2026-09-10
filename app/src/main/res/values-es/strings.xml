@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Importa un archivo de copia de seguridad .zip anteriormente exportado desde el almacenamiento de su dispositivo a la biblioteca de aplicaciones.</string>
     <string name="cloud_dialog_title">Conectar la cuenta en la nube</string>
     <string name="cloud_dialog_subtitle">Seleccione un proveedor de servicios en la nube para sincronizar sus copias de seguridad del tema</string>
-    <string name="cloud_provider_google">Carpeta en la nube (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Elige una carpeta permanente de Google Drive, OneDrive u otro proveedor de archivos</string>
+    <string name="cloud_google_desc">Inicia sesión con Google; la copia se guarda en el espacio privado y oculto de MTZ Studio en Drive</string>
     <string name="cloud_webdav_desc">Conectar a un servidor en la nube privada con URL y contraseña</string>
     <string name="cloud_account_email_label">El correo electrónico de la cuenta de Google</string>
     <string name="cloud_server_url_label">WebDAV URL del servidor</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">Actualizaciones de la aplicación</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">La actualización se descargó y verificó. Toca para instalarla.</string>
+    <string name="app_update_check">Buscar actualizaciones</string>
+    <string name="app_update_check_desc">Buscar en GitHub una versión firmada más reciente de MTZ Studio</string>
+    <string name="app_update_install">Instalar actualización</string>
+    <string name="app_update_later">Más tarde</string>
+    <string name="app_update_checking">Comprobando GitHub y verificando la actualización de forma segura…</string>
+    <string name="app_update_up_to_date">Ya tienes la versión más reciente.</string>
+    <string name="app_update_check_failed">No se pudo completar la búsqueda de actualizaciones.</string>
 </resources>

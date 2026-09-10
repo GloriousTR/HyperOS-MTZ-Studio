@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Importe un fichier de sauvegarde .zip précédemment exporté depuis le stockage de votre appareil dans la bibliothèque des applications.</string>
     <string name="cloud_dialog_title">Connectez le compte Cloud</string>
     <string name="cloud_dialog_subtitle">Choisissez un fournisseur de services cloud pour synchroniser vos sauvegardes de thèmes</string>
-    <string name="cloud_provider_google">Dossier cloud (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Choisissez un dossier permanent dans Google Drive, OneDrive ou un autre fournisseur de fichiers</string>
+    <string name="cloud_google_desc">Connectez-vous avec Google ; la sauvegarde reste dans l’espace Drive privé et masqué de MTZ Studio</string>
     <string name="cloud_webdav_desc">Connectez-vous à un serveur cloud privé avec URL et mot de passe</string>
     <string name="cloud_account_email_label">E-mail du compte Google</string>
     <string name="cloud_server_url_label">WebDAV URL du serveur</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">Mises à jour de l’application</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">La mise à jour a été téléchargée et vérifiée. Touchez pour l’installer.</string>
+    <string name="app_update_check">Rechercher des mises à jour</string>
+    <string name="app_update_check_desc">Rechercher sur GitHub une version signée plus récente de MTZ Studio</string>
+    <string name="app_update_install">Installer la mise à jour</string>
+    <string name="app_update_later">Plus tard</string>
+    <string name="app_update_checking">Vérification de GitHub et validation sécurisée de la mise à jour…</string>
+    <string name="app_update_up_to_date">Vous utilisez déjà la dernière version.</string>
+    <string name="app_update_check_failed">La recherche de mise à jour n’a pas abouti.</string>
 </resources>

@@ -199,9 +199,9 @@
     <string name="local_restore_desc">आपके डिवाइस स्टोरेज से एप्लिकेशन लाइब्रेरी में पहले निर्यात की गई .zip बैकअप फ़ाइल आयात करता है।</string>
     <string name="cloud_dialog_title">क्लाउड खाता कनेक्ट करें</string>
     <string name="cloud_dialog_subtitle">अपने विषय बैकअप के लिए क्लाउड सेवा प्रदाता चुनें</string>
-    <string name="cloud_provider_google">क्लाउड फ़ोल्डर (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Google Drive, OneDrive या किसी अन्य फ़ाइल प्रदाता से स्थायी फ़ोल्डर चुनें</string>
+    <string name="cloud_google_desc">Google से साइन इन करें; बैकअप MTZ Studio के निजी और छिपे हुए Drive स्थान में रखा जाता है</string>
     <string name="cloud_webdav_desc">यूआरएल और पासवर्ड के साथ निजी क्लाउड सर्वर से कनेक्ट करें</string>
     <string name="cloud_account_email_label">Google खाता ईमेल</string>
     <string name="cloud_server_url_label">WebDAV सर्वर URL</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">ऐप अपडेट</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">अपडेट डाउनलोड और सत्यापित हो गया है। इंस्टॉल करने के लिए टैप करें।</string>
+    <string name="app_update_check">अपडेट जाँचें</string>
+    <string name="app_update_check_desc">GitHub पर नया हस्ताक्षरित MTZ Studio संस्करण जाँचें</string>
+    <string name="app_update_install">अपडेट इंस्टॉल करें</string>
+    <string name="app_update_later">बाद में</string>
+    <string name="app_update_checking">GitHub जाँचा जा रहा है और अपडेट सुरक्षित रूप से सत्यापित हो रहा है…</string>
+    <string name="app_update_up_to_date">आप पहले से नवीनतम संस्करण उपयोग कर रहे हैं।</string>
+    <string name="app_update_check_failed">अपडेट जाँच पूरी नहीं हो सकी।</string>
 </resources>

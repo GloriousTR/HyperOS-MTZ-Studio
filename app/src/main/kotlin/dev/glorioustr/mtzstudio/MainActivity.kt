@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -53,6 +54,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
+import com.google.android.gms.auth.api.identity.AuthorizationResult
+import com.google.android.gms.auth.api.identity.Identity
 import dev.glorioustr.mtzstudio.composer.ComponentSelection
 import dev.glorioustr.mtzstudio.composer.CompositionMetadata
 import dev.glorioustr.mtzstudio.composer.CompositionRequest
@@ -265,6 +268,7 @@ private fun StudioScreen(
     val diagnosticState by diagnostics.state.collectAsState()
     val translationProgress by ThemeTranslationProgressStore.state.collectAsState()
     val cloudTransferState by CloudTransferStore.state.collectAsState()
+    val appUpdateState by AppUpdateStore.state.collectAsState()
     val themeProtectionState by ThemeProtectionServiceClient.state.collectAsState()
     var destination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
     var returnDestination by rememberSaveable { mutableStateOf(StudioDestination.HOME) }
@@ -277,8 +281,11 @@ private fun StudioScreen(
     var preparedApply by remember { mutableStateOf<PreparedThemeApply?>(null) }
     var themeOperationRunning by remember { mutableStateOf(false) }
     var operationError by remember { mutableStateOf<String?>(null) }
+    var showUpdateCheckResult by remember { mutableStateOf(false) }
+    var dismissedUpdateEventId by rememberSaveable { mutableStateOf(0L) }
     var backupStatus by remember { mutableStateOf(resources.getString(R.string.status_no_backup_yet)) }
     val cloudAccountStore = remember { CloudAccountStore(context) }
+    val appUpdateManager = remember { AppUpdateManager(context.applicationContext) }
     var cloudAccount by remember { mutableStateOf(cloudAccountStore.load()) }
     var customHomeWallpaperUri by rememberSaveable { mutableStateOf<String?>(null) }
     var customLockWallpaperUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -385,32 +392,65 @@ private fun StudioScreen(
         }
     }
 
-    val cloudFolderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-    ) { uri ->
-        if (uri != null) {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                )
-                val account = CloudAccount(
+    fun saveGoogleDriveAuthorization(result: AuthorizationResult) {
+        runCatching {
+            check(!result.accessToken.isNullOrBlank()) { "Google Drive erişim anahtarı alınamadı" }
+            cloudAccountStore.save(
+                CloudAccount(
                     provider = CloudProvider.GOOGLE_DRIVE,
-                    accountName = resources.getString(R.string.cloud_provider_google),
-                    treeUri = uri.toString(),
+                    accountName = GoogleDriveAppDataStore.accountName(result),
+                    oauthBacked = true,
                     isConnected = true,
-                )
-                cloudAccountStore.save(account)
-                cloudAccount = cloudAccountStore.load()
-                backupStatus = resources.getString(R.string.status_cloud_connected, cloudAccount.accountName)
-            }.onFailure { error ->
-                backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
-            }
+                ),
+            )
+            cloudAccount = cloudAccountStore.load()
+            backupStatus = resources.getString(R.string.status_cloud_connected, cloudAccount.accountName)
+        }.onFailure { error ->
+            backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { appUpdateManager.restoreReadyState() }
+    }
+
+    val googleDriveAuthorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { activityResult ->
+        if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
+            runCatching {
+                Identity.getAuthorizationClient(context)
+                    .getAuthorizationResultFromIntent(activityResult.data!!)
+            }.onSuccess(::saveGoogleDriveAuthorization)
+                .onFailure { error ->
+                    backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
+                }
+        } else {
+            backupStatus = resources.getString(R.string.status_backup_failed, "Google Drive bağlantısı iptal edildi")
         }
     }
 
     val onChooseGoogleAccount: () -> Unit = {
-        cloudFolderPickerLauncher.launch(null)
+        backupStatus = resources.getString(R.string.status_backup_preparing)
+        Identity.getAuthorizationClient(context)
+            .authorize(GoogleDriveAppDataStore.authorizationRequest())
+            .addOnSuccessListener { result ->
+                if (result.hasResolution()) {
+                    val pendingIntent = result.pendingIntent
+                    if (pendingIntent != null) {
+                        googleDriveAuthorizationLauncher.launch(
+                            IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+                        )
+                    } else {
+                        backupStatus = resources.getString(R.string.status_backup_failed, "Google Drive izin ekranı açılamadı")
+                    }
+                } else {
+                    saveGoogleDriveAuthorization(result)
+                }
+            }
+            .addOnFailureListener { error ->
+                backupStatus = resources.getString(R.string.status_backup_failed, error.message ?: error::class.simpleName)
+            }
     }
 
     suspend fun loadLibrarySnapshot(): Boolean {
@@ -1586,6 +1626,58 @@ private fun StudioScreen(
             onNavigate = { target ->
                 appMenuExpanded = false
                 navigateTo(target)
+            },
+            onCheckForUpdates = {
+                appMenuExpanded = false
+                showUpdateCheckResult = true
+                scope.launch(Dispatchers.IO) {
+                    runCatching { appUpdateManager.checkAndDownload(force = true) }
+                        .onFailure {
+                            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
+                        }
+                }
+            },
+        )
+    }
+
+    if (appUpdateState.phase == AppUpdatePhase.READY && appUpdateState.eventId != dismissedUpdateEventId) {
+        AlertDialog(
+            onDismissRequest = {
+                dismissedUpdateEventId = appUpdateState.eventId
+                showUpdateCheckResult = false
+            },
+            title = { Text(resources.getString(R.string.app_update_ready_title, appUpdateState.version.orEmpty())) },
+            text = { Text(stringResource(R.string.app_update_ready_text)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.startActivity(Intent(context, UpdateInstallActivity::class.java))
+                }) { Text(stringResource(R.string.app_update_install)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    dismissedUpdateEventId = appUpdateState.eventId
+                    showUpdateCheckResult = false
+                }) { Text(stringResource(R.string.app_update_later)) }
+            },
+        )
+    } else if (showUpdateCheckResult && appUpdateState.phase != AppUpdatePhase.IDLE) {
+        AlertDialog(
+            onDismissRequest = { if (appUpdateState.phase != AppUpdatePhase.CHECKING) showUpdateCheckResult = false },
+            title = { Text(stringResource(R.string.app_update_check)) },
+            text = {
+                Text(
+                    when (appUpdateState.phase) {
+                        AppUpdatePhase.CHECKING -> stringResource(R.string.app_update_checking)
+                        AppUpdatePhase.UP_TO_DATE -> stringResource(R.string.app_update_up_to_date)
+                        AppUpdatePhase.ERROR -> appUpdateState.error ?: stringResource(R.string.app_update_check_failed)
+                        else -> ""
+                    },
+                )
+            },
+            confirmButton = {
+                if (appUpdateState.phase != AppUpdatePhase.CHECKING) {
+                    TextButton(onClick = { showUpdateCheckResult = false }) { Text(stringResource(R.string.action_close)) }
+                }
             },
         )
     }

@@ -199,9 +199,9 @@
     <string name="local_restore_desc">Импортирует ранее экспортированный файл резервного копирования .zip из хранилища устройства в библиотеку приложений.</string>
     <string name="cloud_dialog_title">Подключить учетную запись в облаке</string>
     <string name="cloud_dialog_subtitle">Выберите поставщика облачных услуг для синхронизации резервных копий темы</string>
-    <string name="cloud_provider_google">Облачная папка (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Выберите постоянную папку в Google Drive, OneDrive или другом файловом сервисе</string>
+    <string name="cloud_google_desc">Войдите через Google; резервная копия хранится в закрытой скрытой области MTZ Studio на Диске</string>
     <string name="cloud_webdav_desc">Подключение к частному облачному серверу с URL и паролем</string>
     <string name="cloud_account_email_label">Электронная почта учетной записи Google</string>
     <string name="cloud_server_url_label">WebDAV URL сервера</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">Обновления приложения</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Обновление загружено и проверено. Нажмите, чтобы установить.</string>
+    <string name="app_update_check">Проверить обновления</string>
+    <string name="app_update_check_desc">Проверить GitHub на наличие новой подписанной версии MTZ Studio</string>
+    <string name="app_update_install">Установить обновление</string>
+    <string name="app_update_later">Позже</string>
+    <string name="app_update_checking">Проверяем GitHub и безопасно подтверждаем обновление…</string>
+    <string name="app_update_up_to_date">У вас уже установлена последняя версия.</string>
+    <string name="app_update_check_failed">Не удалось завершить проверку обновлений.</string>
 </resources>

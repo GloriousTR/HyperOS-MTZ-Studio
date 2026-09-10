@@ -199,9 +199,9 @@
     <string name="local_restore_desc">আপনার ডিভাইস স্টোরেজ থেকে অ্যাপ্লিকেশন লাইব্রেরিতে পূর্বে এক্সপোর্ট করা .zip ব্যাকআপ ফাইলটি আমদানি করে।</string>
     <string name="cloud_dialog_title">ক্লাউড অ্যাকাউন্ট সংযুক্ত করুন</string>
     <string name="cloud_dialog_subtitle">আপনার থিম ব্যাকআপগুলি সিঙ্ক করার জন্য একটি ক্লাউড পরিষেবা প্রদানকারী নির্বাচন করুন</string>
-    <string name="cloud_provider_google">ক্লাউড ফোল্ডার (Google Drive, OneDrive…)</string>
+    <string name="cloud_provider_google">Google Drive</string>
     <string name="cloud_provider_webdav">WebDAV / Nextcloud</string>
-    <string name="cloud_google_desc">Google Drive, OneDrive বা অন্য ফাইল প্রদানকারী থেকে একটি স্থায়ী ফোল্ডার বেছে নিন</string>
+    <string name="cloud_google_desc">Google দিয়ে সাইন ইন করুন; ব্যাকআপ MTZ Studio-এর ব্যক্তিগত ও গোপন Drive স্থানে রাখা হয়</string>
     <string name="cloud_webdav_desc">ইউআরএল এবং পাসওয়ার্ড দিয়ে একটি ব্যক্তিগত ক্লাউড সার্ভারে সংযোগ করুন</string>
     <string name="cloud_account_email_label">গুগল অ্যাকাউন্ট ইমেইল</string>
     <string name="cloud_server_url_label">WebDAV সার্ভার URL</string>
@@ -381,4 +381,11 @@
     <string name="app_update_channel">অ্যাপ আপডেট</string>
     <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">আপডেট ডাউনলোড ও যাচাই করা হয়েছে। ইনস্টল করতে ট্যাপ করুন।</string>
+    <string name="app_update_check">আপডেট পরীক্ষা করুন</string>
+    <string name="app_update_check_desc">GitHub-এ নতুন স্বাক্ষরিত MTZ Studio সংস্করণ পরীক্ষা করুন</string>
+    <string name="app_update_install">আপডেট ইনস্টল করুন</string>
+    <string name="app_update_later">পরে</string>
+    <string name="app_update_checking">GitHub পরীক্ষা ও আপডেট নিরাপদভাবে যাচাই করা হচ্ছে…</string>
+    <string name="app_update_up_to_date">আপনি ইতিমধ্যে সর্বশেষ সংস্করণ ব্যবহার করছেন।</string>
+    <string name="app_update_check_failed">আপডেট পরীক্ষা সম্পন্ন করা যায়নি।</string>
 </resources>
