@@ -28,6 +28,13 @@
         <package android:name="com.software41.appshare" />
         <package android:name="moe.shizuku.privileged.api" />
         <package android:name="com.hamondev.shevery" />
+        <package android:name="me.yuki.folk" />
+        <package android:name="com.topjohnwu.magisk" />
+        <package android:name="me.weishu.kernelsu" />
+        <package android:name="me.bmax.apatch" />
+        <package android:name="com.rifsxd.ksunext" />
+        <package android:name="com.sukisu.ultra" />
+        <package android:name="io.github.vvb2060.magisk" />
     </queries>
 
     <application

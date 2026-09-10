@@ -425,6 +425,8 @@
     <string name="panel_wireless_on">Enabled</string>
     <string name="panel_wireless_off">Disabled</string>
     <string name="panel_root_service">Root service</string>
+    <string name="panel_root_manager">روٹ مینیجر</string>
+    <string name="panel_root_access_ready">سپر یوزر رسائی تیار ہے</string>
     <string name="panel_service_unavailable">Service unavailable</string>
     <string name="panel_system_rights_ready">System privileges defined</string>
     <string name="panel_system_rights_missing">Authorization is required</string>

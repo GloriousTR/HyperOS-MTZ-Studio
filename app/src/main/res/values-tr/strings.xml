@@ -61,6 +61,8 @@
     <string name="panel_wireless_on">Etkin</string>
     <string name="panel_wireless_off">Kapalı</string>
     <string name="panel_root_service">Root hizmeti</string>
+    <string name="panel_root_manager">ROOT YÖNETİCİSİ</string>
+    <string name="panel_root_access_ready">Süper kullanıcı erişimi hazır</string>
     <string name="panel_service_unavailable">Hizmet kullanılamıyor</string>
     <string name="panel_system_rights_ready">Sistem hakları tanımlı</string>
     <string name="panel_system_rights_missing">Yetkilendirme gerekiyor</string>

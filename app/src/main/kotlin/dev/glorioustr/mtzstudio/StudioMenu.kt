@@ -220,13 +220,25 @@ internal fun StudioPanelScreen(
                                 Text(platformName, color = Color(0xFF7C8DFF), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
                             }
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(stringResource(R.string.panel_wireless_debugging), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                                Text(
-                                    stringResource(if (wirelessDebuggingEnabled) R.string.panel_wireless_on else R.string.panel_wireless_off),
-                                    color = if (wirelessDebuggingEnabled) Color(0xFF00DAF3) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Text(authorizationManagerName ?: stringResource(if (accessMode == StudioAccessMode.ROOT) R.string.panel_root_service else R.string.panel_service_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                if (accessMode == StudioAccessMode.ROOT) {
+                                    Text(stringResource(R.string.panel_root_manager), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        authorizationManagerName ?: stringResource(R.string.panel_root_service),
+                                        color = Color(0xFF00BFA5),
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(stringResource(R.string.panel_root_access_ready), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                } else {
+                                    Text(stringResource(R.string.panel_wireless_debugging), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        stringResource(if (wirelessDebuggingEnabled) R.string.panel_wireless_on else R.string.panel_wireless_off),
+                                        color = if (wirelessDebuggingEnabled) Color(0xFF00DAF3) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(authorizationManagerName ?: stringResource(R.string.panel_service_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

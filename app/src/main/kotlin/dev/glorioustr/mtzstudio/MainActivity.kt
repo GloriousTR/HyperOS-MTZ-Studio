@@ -98,11 +98,28 @@ private val SHIZUKU_MANAGER_PACKAGES = listOf(
     "moe.shizuku.privileged.api",
     "com.hamondev.shevery",
 )
+private val ROOT_MANAGER_PACKAGES = listOf(
+    "me.yuki.folk",
+    "com.topjohnwu.magisk",
+    "me.weishu.kernelsu",
+    "me.bmax.apatch",
+    "com.rifsxd.ksunext",
+    "com.sukisu.ultra",
+    "io.github.vvb2060.magisk",
+)
 
 private data class AuthorizationManagerApp(val packageName: String, val displayName: String)
 
 private fun Context.installedAuthorizationManager(): AuthorizationManagerApp? =
     SHIZUKU_MANAGER_PACKAGES.firstNotNullOfOrNull { packageName ->
+        runCatching {
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            AuthorizationManagerApp(packageName, packageManager.getApplicationLabel(info).toString())
+        }.getOrNull()
+    }
+
+private fun Context.installedRootManager(): AuthorizationManagerApp? =
+    ROOT_MANAGER_PACKAGES.firstNotNullOfOrNull { packageName ->
         runCatching {
             val info = packageManager.getApplicationInfo(packageName, 0)
             AuthorizationManagerApp(packageName, packageManager.getApplicationLabel(info).toString())
@@ -316,6 +333,7 @@ private fun StudioScreen(
     // here caused a misleading rootless card to flash briefly on rooted devices.
     var accessMode by remember { mutableStateOf<StudioAccessMode?>(null) }
     var authorizationManager by remember { mutableStateOf(context.installedAuthorizationManager()) }
+    var rootManager by remember { mutableStateOf(context.installedRootManager()) }
     val capabilities = StudioCapabilityPolicy(
         rootAvailable = rootAccessAvailable == true,
         themeManagerBehavior = themeManagerBehavior,
@@ -1303,6 +1321,7 @@ private fun StudioScreen(
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 authorizationManager = context.installedAuthorizationManager()
+                rootManager = context.installedRootManager()
             }
         }
         lifecycle.addObserver(observer)
@@ -1518,9 +1537,9 @@ private fun StudioScreen(
                         .onFailure { error -> status = resources.getString(R.string.bak_import_failed, error.message ?: "") }
                 },
                 onOpenBackup = { navigateTo(StudioDestination.BACKUP) },
-                authorizationManagerName = authorizationManager?.displayName,
+                authorizationManagerName = (if (accessMode == StudioAccessMode.ROOT) rootManager else authorizationManager)?.displayName,
                 onOpenAuthorizationManager = {
-                    authorizationManager?.let { manager ->
+                    (if (accessMode == StudioAccessMode.ROOT) rootManager else authorizationManager)?.let { manager ->
                         runCatching {
                             val launchIntent = checkNotNull(context.packageManager.getLaunchIntentForPackage(manager.packageName))
                             context.startActivity(launchIntent)
