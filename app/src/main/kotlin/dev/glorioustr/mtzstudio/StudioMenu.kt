@@ -483,13 +483,13 @@ internal fun StudioOverlayMenu(
             color = Color(0xFF2E7D32),
             descriptionRes = R.string.overlay_theme_protection_desc,
         ),
-        OverlayMenuItem(
-            destination = StudioDestination.ABOUT,
-            icon = Icons.Filled.Info,
-            color = Color(0xFF7E57C2),
-            descriptionRes = R.string.overlay_about_desc,
-        ),
     ).filter { showThemeProtection || it.destination != StudioDestination.THEME_PROTECTION }
+    val aboutItem = OverlayMenuItem(
+        destination = StudioDestination.ABOUT,
+        icon = Icons.Filled.Info,
+        color = Color(0xFF7E57C2),
+        descriptionRes = R.string.overlay_about_desc,
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -539,6 +539,7 @@ internal fun StudioOverlayMenu(
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+                    OverlayMenuCard(item = aboutItem, onClick = { onNavigate(aboutItem.destination) })
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.menu_close))
                     }

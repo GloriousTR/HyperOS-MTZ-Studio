@@ -61,8 +61,21 @@ internal class CloudTransferService : Service() {
         startForeground(NOTIFICATION_ID, progressNotification(operation))
         scope.launch {
             val result = runCatching { execute(operation) }.fold(
-                onSuccess = { it },
+                onSuccess = {
+                    LiveDiagnosticsRecorder.get(applicationContext).record(
+                        event = "cloud_transfer_completed",
+                        message = "Bulut aktarımı tamamlandı",
+                        details = mapOf("operation" to operation.name, "provider" to CloudAccountStore(applicationContext).load().provider.name),
+                    )
+                    it
+                },
                 onFailure = { error ->
+                    LiveDiagnosticsRecorder.get(applicationContext).record(
+                        event = "cloud_transfer_failed",
+                        message = "Bulut aktarımı tamamlanamadı",
+                        details = mapOf("operation" to operation.name, "provider" to CloudAccountStore(applicationContext).load().provider.name),
+                        error = error,
+                    )
                     CloudTransferState(
                         operation = operation,
                         completed = true,
