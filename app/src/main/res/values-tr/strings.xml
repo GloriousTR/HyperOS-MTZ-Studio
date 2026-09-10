@@ -369,6 +369,7 @@
     <string name="tm_checking_version">Tema Yöneticisi sürümü denetleniyor…</string>
     <string name="tm_recommended_active">Önerilen sürüm etkin. Bağımsız yerel MTZ import davranışı bekleniyor.</string>
     <string name="tm_recommendation_notice">Bağımsız yerel MTZ importu için %1$s önerilir.</string>
+    <string name="tm_btn_download_apk">%1$s APK indir</string>
     <string name="tm_verifying_apk">APK paket, sürüm, SHA-256 ve Xiaomi imzası doğrulanıyor…</string>
     <string name="tm_apk_verified">APK doğrulandı: %1$s · SHA-256 %2$s</string>
     <string name="tm_apk_rejected">APK reddedildi: %1$s</string>

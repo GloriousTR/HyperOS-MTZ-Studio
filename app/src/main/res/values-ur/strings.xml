@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">This Xiaomi Themes version does not expose a public MTZ import route. Automatic rootless applying is unavailable; use Shizuku + BAK Converter, the built-in Xiaomi import flow, or share the Themes APK from Live Diagnostics for analysis.</string>
+    <string name="tm_rootless_import_unavailable">Xiaomi Themes کا یہ ورژن بیرونی ایپس کے لیے عوامی MTZ درآمد راستہ فراہم نہیں کرتا۔ Root کے بغیر خودکار اطلاق دستیاب نہیں؛ Shizuku + BAK Converter، Xiaomi کی اندرونی درآمد یا Live Diagnostics سے Themes APK شیئر کریں۔</string>
+    <string name="tm_btn_download_apk">%1$s APK ڈاؤن لوڈ کریں</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">تھیمز</string>

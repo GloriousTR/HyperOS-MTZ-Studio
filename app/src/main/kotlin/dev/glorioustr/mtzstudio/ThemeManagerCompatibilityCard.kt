@@ -225,7 +225,7 @@ internal fun ThemeManagerCompatibilityCard(
                 // The modern version family alone is not enough if its component is missing.
                 if (applyActivityUnavailable) {
                     OutlinedButton(onClick = ::openRecommendedDownload) {
-                        Text("Themes ${ThemeManagerContract.RECOMMENDED_VERSION} APK indir")
+                        Text(stringResource(R.string.tm_btn_download_apk, "Themes ${ThemeManagerContract.RECOMMENDED_VERSION}"))
                     }
                 }
             }
