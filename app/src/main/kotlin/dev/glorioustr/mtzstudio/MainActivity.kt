@@ -20,7 +20,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -1478,15 +1480,24 @@ private fun StudioScreen(
         },
         bottomBar = {
             if (destination in primaryDestinations) {
-                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 1f),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         shadowElevation = 10.dp,
                     ) {
-                        NavigationBar(containerColor = Color.Transparent) {
+                        NavigationBar(
+                            modifier = Modifier.height(80.dp),
+                            containerColor = Color.Transparent,
+                            windowInsets = WindowInsets(0, 0, 0, 0),
+                        ) {
                             listOf(
                                 Triple(StudioDestination.HOME, Icons.Filled.Dashboard, R.string.nav_panel),
                                 Triple(StudioDestination.THEMES, Icons.Filled.ColorLens, R.string.nav_library),

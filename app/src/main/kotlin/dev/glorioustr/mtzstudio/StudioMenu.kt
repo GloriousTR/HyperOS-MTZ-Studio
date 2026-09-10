@@ -211,7 +211,11 @@ internal fun StudioPanelScreen(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+                        color = if (LocalAppContentStyle.current == AppContentStyle.LIQUID_GLASS) {
+                            Color.Transparent
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
+                        },
                     ) {
                         Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -894,7 +898,6 @@ internal fun ThemesScreen(
         gridItems(galleryThemes, key = { it.id.value }) { theme ->
             ThemeGalleryCard(
                 theme = theme,
-                isActive = theme.id.value == activeThemeId,
                 translationProgress = translationProgress.takeIf { it.themeId == theme.id.value },
                 onOpenDetails = { detailsTheme = theme },
                 onApplyTheme = onApplyTheme,
@@ -2542,7 +2545,6 @@ private fun ContentStyleCard(
 @Composable
 private fun ThemeGalleryCard(
     theme: LibraryTheme,
-    isActive: Boolean,
     translationProgress: ThemeTranslationProgress?,
     onOpenDetails: () -> Unit,
     onApplyTheme: (LibraryTheme) -> Unit,
@@ -2566,13 +2568,6 @@ private fun ThemeGalleryCard(
                 theme = theme,
                 modifier = Modifier.align(Alignment.TopStart).padding(7.dp),
             )
-            if (isActive) {
-                StatusBadge(
-                    text = stringResource(R.string.theme_active_badge),
-                    color = Color(0xFF2E7D32),
-                    modifier = Modifier.align(Alignment.TopEnd).padding(7.dp),
-                )
-            }
         }
         Text(
             theme.archive.metadata?.name ?: theme.displayName,
@@ -2914,10 +2909,12 @@ private fun ThemeSourceBadge(theme: LibraryTheme, modifier: Modifier = Modifier)
 
 @Composable
 private fun StatusBadge(text: String, color: Color, modifier: Modifier = Modifier) {
+    val badgeColor = color.copy(alpha = 0.94f)
+    val badgeContentColor = if (color.luminance() > 0.5f) Color(0xFF172034) else Color.White
     Surface(
         modifier = modifier,
-        color = color.copy(alpha = 0.94f),
-        contentColor = Color.White,
+        color = badgeColor,
+        contentColor = badgeContentColor,
         shape = RoundedCornerShape(50),
         shadowElevation = 3.dp,
     ) {

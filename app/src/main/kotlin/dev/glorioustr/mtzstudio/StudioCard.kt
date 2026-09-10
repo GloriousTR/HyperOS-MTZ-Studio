@@ -11,6 +11,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -43,17 +45,16 @@ internal fun StudioCard(
         ),
     )
 
-    Card(
-        modifier = modifier.border(1.dp, glassEdge, shape),
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent,
-            contentColor = colors.onSurface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    // A Material Card with a transparent container still creates its own tonal surface layer.
+    // On light Aero Glass this appeared as a white rectangle inset inside the glass edge.
+    // Draw the glass as one clipped layer so the whole card has a continuous surface.
+    Box(
+        modifier = modifier
+            .shadow(2.dp, shape)
+            .clip(shape)
+            .background(glassBase)
+            .border(1.dp, glassEdge, shape),
     ) {
-        Box(Modifier.fillMaxWidth().background(glassBase)) {
-            Column(Modifier.fillMaxWidth(), content = content)
-        }
+        Column(Modifier.fillMaxWidth(), content = content)
     }
 }
