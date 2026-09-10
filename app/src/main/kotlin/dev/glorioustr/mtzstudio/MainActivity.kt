@@ -48,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -309,6 +310,11 @@ private fun StudioScreen(
     var pendingApplyTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var preparedApply by remember { mutableStateOf<PreparedThemeApply?>(null) }
     var themeOperationRunning by remember { mutableStateOf(false) }
+    var mtzImportTotal by remember { mutableIntStateOf(0) }
+    var mtzImportCompleted by remember { mutableIntStateOf(0) }
+    var mtzImportSucceeded by remember { mutableIntStateOf(0) }
+    var mtzImportFailed by remember { mutableIntStateOf(0) }
+    var mtzImportCurrentName by remember { mutableStateOf<String?>(null) }
     var operationError by remember { mutableStateOf<String?>(null) }
     var showUpdateCheckResult by remember { mutableStateOf(false) }
     var dismissedUpdateEventId by rememberSaveable { mutableStateOf(0L) }
@@ -1185,20 +1191,37 @@ private fun StudioScreen(
         }
     }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    fun importMtzDocuments(selectedUris: List<Uri>) {
         checkingImportAccess = false
-        if (uri != null && !themeOperationRunning) {
-            themeOperationRunning = true
-            diagnostics.recordPickerResultReceived()
-            launchThemeOperation {
+        if (selectedUris.isEmpty()) {
+            pauseCatalog.set(false)
+            return
+        }
+        if (selectedUris.size > 5) {
+            status = resources.getString(R.string.mtz_import_too_many)
+            operationError = status
+            pauseCatalog.set(false)
+            return
+        }
+        if (themeOperationRunning) return
+        themeOperationRunning = true
+        pauseCatalog.set(true)
+        mtzImportTotal = selectedUris.size
+        mtzImportCompleted = 0
+        mtzImportSucceeded = 0
+        mtzImportFailed = 0
+        mtzImportCurrentName = null
+        diagnostics.recordPickerResultReceived()
+        scope.launch {
+            selectedUris.forEach { uri ->
                 status = resources.getString(R.string.status_copying_verifying)
                 var diagnosticSession: ImportDiagnosticSession? = null
                 runCatching {
                     withContext(Dispatchers.IO) {
                         val document = documentDiagnostics(uri)
+                        withContext(Dispatchers.Main) { mtzImportCurrentName = document.displayName }
                         val session = diagnostics.beginImport(document)
                         diagnosticSession = session
-                        // Saving a private MTZ needs no root channel. Verify root only for host operations.
                         openInput(uri)?.use { input ->
                             library.importTheme(input, document.displayName, session.observer)
                         } ?: run {
@@ -1209,40 +1232,33 @@ private fun StudioScreen(
                     }
                 }.onSuccess { importedTheme ->
                     themes = (themes.filterNot { it.id == importedTheme.id } + importedTheme)
+                    mtzImportSucceeded += 1
                     diagnostics.record("import_components", "Tema bileşenleri ve genel önizleme incelendi", mapOf(
                         "themeId" to importedTheme.id.value,
                         "components" to importedTheme.archive.components.joinToString { it.category.name },
                         "defaultPreviews" to dev.glorioustr.mtzstudio.core.ThemeVisualPolicy
                             .defaultPreviewPaths(importedTheme.archive.entries).joinToString(),
                     ))
-                    if (capabilities.usesNativeCatalog) {
-                        runCatching {
-                            withContext(Dispatchers.IO) { themeApplyCoordinator.prepareModernImportOnly(importedTheme) }
-                        }.onSuccess { prepared ->
-                            launchPreparedTheme(prepared)
-                        }.onFailure { error ->
-                            themeOperationRunning = false
-                            diagnostics.record(
-                                "modern_import_source_retained",
-                                "Tema Yöneticisi hazırlanamadı; özel MTZ tekrar denemek için korundu",
-                                mapOf("themeId" to importedTheme.id.value),
-                            )
-                            status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
-                            operationError = status
-                        }
-                    } else {
-                        themeOperationRunning = false
-                        reload(openThemesAfter = true)
-                    }
                 }.onFailure { error ->
-                    themeOperationRunning = false
+                    mtzImportFailed += 1
                     diagnosticSession?.failBeforeImport(error.message ?: error::class.simpleName ?: "unknown error")
                     status = resources.getString(R.string.status_import_rejected, error.message ?: error::class.simpleName)
                 }
+                mtzImportCompleted += 1
             }
-        } else {
+            themeOperationRunning = false
             pauseCatalog.set(false)
+            loadLibrarySnapshot()
+            status = resources.getString(R.string.mtz_import_result, mtzImportSucceeded, mtzImportFailed)
         }
+    }
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        importMtzDocuments(listOfNotNull(uri))
+    }
+
+    val multipleMtzPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        importMtzDocuments(uris)
     }
 
     val bakPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -1529,17 +1545,7 @@ private fun StudioScreen(
                 themeManagerUpdater = themeManagerUpdater,
                 openInput = openInput,
                 onAddMtz = {
-                    if (!checkingImportAccess && !themeOperationRunning) {
-                        pauseCatalog.set(true)
-                        checkingImportAccess = true
-                        runCatching {
-                            diagnostics.recordPickerLaunched()
-                            picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                        }.onFailure { error ->
-                            checkingImportAccess = false
-                            status = resources.getString(R.string.status_import_rejected, error.message ?: "")
-                        }
-                    }
+                    navigateTo(StudioDestination.MTZ_IMPORT)
                 },
                 showBakImport = accessMode == StudioAccessMode.SHIZUKU || accessMode == StudioAccessMode.ROOT,
                 bakImporting = bakImporting,
@@ -1606,6 +1612,31 @@ private fun StudioScreen(
                             StudioAccessMode.STANDARD, null -> operationError = resources.getString(R.string.shizuku_recommended_desc)
                         }
                     }
+                },
+                modifier = contentModifier,
+            )
+            destination == StudioDestination.MTZ_IMPORT -> MtzImportScreen(
+                importing = themeOperationRunning || checkingImportAccess,
+                completed = mtzImportCompleted,
+                total = mtzImportTotal,
+                succeeded = mtzImportSucceeded,
+                failed = mtzImportFailed,
+                currentName = mtzImportCurrentName,
+                currentFileProgress = diagnosticState.sourceBytes?.takeIf { it > 0L }?.let {
+                    diagnosticState.bytesCopied.toFloat() / it.toFloat()
+                } ?: 0f,
+                phase = diagnosticState.phase,
+                onSelectSingle = {
+                    checkingImportAccess = true
+                    diagnostics.recordPickerLaunched()
+                    runCatching { picker.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) }
+                        .onFailure { checkingImportAccess = false }
+                },
+                onSelectMultiple = {
+                    checkingImportAccess = true
+                    diagnostics.recordPickerLaunched()
+                    runCatching { multipleMtzPicker.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) }
+                        .onFailure { checkingImportAccess = false }
                 },
                 modifier = contentModifier,
             )

@@ -179,6 +179,13 @@
     <string name="mtz_import_desc">Sahip olduğun MTZ dosyasını güvenli biçimde özel kitaplığa kopyala, doğrula ve bileşenlerini sınıflandır.</string>
     <string name="mtz_import_btn_select">MTZ dosyası seç</string>
     <string name="mtz_import_btn_importing">Import sürüyor…</string>
+    <string name="mtz_import_page_desc">Kitaplığınıza tek bir MTZ veya en fazla 5 MTZ dosyasını birlikte aktarın.</string>
+    <string name="mtz_import_single_button">1 MTZ seç</string>
+    <string name="mtz_import_multiple_button">Birden fazla MTZ seç (maks. 5)</string>
+    <string name="mtz_import_progress_title">İçe aktarma sürüyor</string>
+    <string name="mtz_import_complete_title">İçe aktarma tamamlandı</string>
+    <string name="mtz_import_result">Aktarılan: %1$d · Başarısız: %2$d</string>
+    <string name="mtz_import_too_many">Aynı anda en fazla 5 MTZ dosyası seçebilirsiniz.</string>
     <string name="status_loading_library">Özel kitaplık yükleniyor…</string>
     <string name="status_library_warnings">%1$d özel kitaplık uyarısıyla yüklendi</string>
     <string name="status_library_empty">İçe aktarmak için sahip olduğun bir MTZ seç</string>

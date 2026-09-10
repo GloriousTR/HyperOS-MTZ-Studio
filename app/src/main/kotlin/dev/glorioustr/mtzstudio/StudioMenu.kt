@@ -136,6 +136,7 @@ internal enum class StudioDestination(
     val category: ComponentCategory? = null,
 ) {
     HOME(R.string.dest_home),
+    MTZ_IMPORT(R.string.mtz_import_title),
     THEMES(R.string.dest_themes),
     WALLPAPERS(R.string.dest_wallpapers, ComponentCategory.WALLPAPER),
     RINGTONES(R.string.dest_ringtones, ComponentCategory.RINGTONE),
@@ -304,12 +305,90 @@ internal fun StudioPanelScreen(
                     QuickActionCard(stringResource(R.string.mtz_import_title), if (importing) stringResource(R.string.mtz_import_btn_importing) else stringResource(R.string.panel_mtz_short), Icons.Filled.Download, Color(0xFF0066FF), onAddMtz, Modifier.weight(1f), !importing)
                     QuickActionCard(stringResource(R.string.bak_import_title), if (bakImporting) stringResource(R.string.bak_import_inspecting) else stringResource(R.string.panel_bak_short), Icons.Filled.Restore, Color(0xFF7000FF), onAddBak, Modifier.weight(1f), showBakImport && !bakImporting)
                 }
-                QuickActionCard(stringResource(R.string.dest_backup), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.fillMaxWidth())
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(stringResource(R.string.dest_backup), stringResource(R.string.panel_cloud_sync_short), Icons.Filled.CloudDone, Color(0xFF607D8B), onOpenBackup, Modifier.weight(1f))
+                    Spacer(Modifier.weight(1f))
+                }
             }
         }
         item { Spacer(Modifier.height(20.dp)) }
     }
     if (showShizukuTutorial) ShizukuPairingTutorialDialog { showShizukuTutorial = false }
+}
+
+@Composable
+internal fun MtzImportScreen(
+    importing: Boolean,
+    completed: Int,
+    total: Int,
+    succeeded: Int,
+    failed: Int,
+    currentName: String?,
+    currentFileProgress: Float,
+    phase: String,
+    onSelectSingle: () -> Unit,
+    onSelectMultiple: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val overallProgress = when {
+        total <= 0 -> 0f
+        !importing && completed >= total -> 1f
+        else -> ((completed + currentFileProgress.coerceIn(0f, 1f)) / total.toFloat()).coerceIn(0f, 1f)
+    }
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item {
+            StudioCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MenuIconBox(Icons.Filled.Download, Color(0xFF0066FF))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.mtz_import_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                            Text(stringResource(R.string.mtz_import_page_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    Button(onClick = onSelectSingle, enabled = !importing, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                        Icon(Icons.Filled.Download, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.mtz_import_single_button))
+                    }
+                    OutlinedButton(onClick = onSelectMultiple, enabled = !importing, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.mtz_import_multiple_button))
+                    }
+                }
+            }
+        }
+        if (importing || total > 0) {
+            item {
+                StudioCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(
+                                if (importing) stringResource(R.string.mtz_import_progress_title) else stringResource(R.string.mtz_import_complete_title),
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text("${(overallProgress * 100).toInt()}%", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
+                        LinearProgressIndicator(progress = { overallProgress }, modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)))
+                        currentName?.let { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium) }
+                        Text(
+                            if (importing) phase else stringResource(R.string.mtz_import_result, succeeded, failed),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        if (total > 1) {
+                            Text("$completed / $total", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
 }
 
 private fun hyperOsVersionLabel(): String {
