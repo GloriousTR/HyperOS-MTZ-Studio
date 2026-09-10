@@ -5,6 +5,8 @@ object ThemeManagerContract {
     const val PACKAGE_NAME = "com.android.thememanager"
     const val LEGACY_TESTER_ACTION = "com.android.thememanager.support3.0"
     const val LEGACY_TESTER_COMPONENT = "com.android.thememanager.ApplyThemeForScreenshot"
+    const val MODERN_LOCAL_LIBRARY_COMPONENT =
+        "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity"
 
     // The exported legacy alias and support3.0 contract were inspected in the 3.0.2.34
     // Global branch and device-verified in 3.0.5.6. 3.0.4.32 stays on that same branch.

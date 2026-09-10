@@ -164,6 +164,8 @@ class MainActivity : ComponentActivity() {
             "restored" to (savedInstanceState != null),
             "knownBehavior" to capabilityProfile.knownBehavior,
             "legacyTesterResolvable" to capabilityProfile.legacyTesterResolvable,
+            "modernLocalLibraryResolvable" to capabilityProfile.modernLocalLibraryResolvable,
+            "compatibleLocalMtzPath" to capabilityProfile.compatibleLocalMtzPath,
             "splitApkCount" to capabilityProfile.splitApkCount,
             "exportedThemeActivityCandidates" to capabilityProfile.exportedThemeActivityCandidates.joinToString(),
         ))

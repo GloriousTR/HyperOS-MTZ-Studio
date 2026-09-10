@@ -17,22 +17,39 @@ data class ThemeManagerRuntimeProfile(
     val versionName: String?,
     val knownBehavior: ThemeManagerBehavior,
     val legacyTesterResolvable: Boolean,
+    /** True when the 10.8.7.6+ Theme Manager family exposes its native local-theme library. */
+    val modernLocalLibraryResolvable: Boolean,
     /** True only when Themes itself advertises a public content-URI MTZ entry point. */
     val publicMtzImportResolvable: Boolean,
     val splitApkCount: Int,
     val exportedThemeActivityCandidates: List<String>,
-)
+) {
+    /** A verified legacy apply activity or a verified modern native import library is sufficient. */
+    val compatibleLocalMtzPath: Boolean
+        get() = legacyTesterResolvable ||
+            (knownBehavior == ThemeManagerBehavior.MODERN_NATIVE_LIBRARY && modernLocalLibraryResolvable)
+}
 
 class ThemeManagerCapabilityProbe(private val context: Context) {
     fun probe(installed: InstalledThemeManager): ThemeManagerRuntimeProfile {
         if (!installed.installed) {
-            return ThemeManagerRuntimeProfile(false, null, ThemeManagerBehavior.UNKNOWN, false, false, 0, emptyList())
+            return ThemeManagerRuntimeProfile(false, null, ThemeManagerBehavior.UNKNOWN, false, false, false, 0, emptyList())
         }
         val legacyTester = Intent(ThemeManagerContract.LEGACY_TESTER_ACTION).apply {
             component = ComponentName(ThemeManagerContract.PACKAGE_NAME, ThemeManagerContract.LEGACY_TESTER_COMPONENT)
         }
         val resolvable = runCatching {
             context.packageManager.resolveActivity(legacyTester, PackageManager.MATCH_DEFAULT_ONLY) != null
+        }.getOrDefault(false)
+        val modernLocalLibrary = Intent().apply {
+            component = ComponentName(
+                ThemeManagerContract.PACKAGE_NAME,
+                ThemeManagerContract.MODERN_LOCAL_LIBRARY_COMPONENT,
+            )
+            putExtra("REQUEST_RESOURCE_CODE", "theme")
+        }
+        val modernLocalLibraryResolvable = runCatching {
+            context.packageManager.resolveActivity(modernLocalLibrary, PackageManager.MATCH_DEFAULT_ONLY) != null
         }.getOrDefault(false)
         val publicMtzImport = listOf(
             "application/vnd.miui.mtz",
@@ -74,6 +91,7 @@ class ThemeManagerCapabilityProbe(private val context: Context) {
             versionName = installed.versionName,
             knownBehavior = installed.behavior,
             legacyTesterResolvable = resolvable,
+            modernLocalLibraryResolvable = modernLocalLibraryResolvable,
             publicMtzImportResolvable = publicMtzImport,
             splitApkCount = splits,
             exportedThemeActivityCandidates = candidates,

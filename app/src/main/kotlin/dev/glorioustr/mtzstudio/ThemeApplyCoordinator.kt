@@ -474,7 +474,7 @@ class ThemeApplyCoordinator(
         const val THEME_MANAGER_MODERN_DOWNLOAD_ROOT =
             "/sdcard/Android/data/com.android.thememanager/files/MIUI/theme/.download"
         const val THEME_MANAGER_MODERN_LOCAL_ACTIVITY =
-            "com.android.thememanager.mine.remote.view.activity.MineResourceTabActivity"
+            ThemeManagerContract.MODERN_LOCAL_LIBRARY_COMPONENT
         val SAFE_LOCAL_ID = Regex("[A-Za-z0-9._-]{1,128}")
         val BRIDGE_MARKER_FILES = listOf(
             "/data/system/theme/${ThemeManagerBridgeContract.BRIDGE_MARKER}",

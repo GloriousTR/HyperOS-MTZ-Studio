@@ -66,7 +66,7 @@ internal fun ThemeManagerCompatibilityCard(
 ) {
     val recommendedApkName = "Xiaomi_Themes_3.0.5.6-global.apk"
     val recommendedDownloadUrl =
-        "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/$recommendedApkName"
+        "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/$recommendedApkName"
     val resources = LocalResources.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -101,7 +101,7 @@ internal fun ThemeManagerCompatibilityCard(
             installed = detected
             val profile = withContext(Dispatchers.IO) { ThemeManagerCapabilityProbe(context).probe(detected) }
             runtimeProfile = profile
-            status = if (profile.legacyTesterResolvable) {
+            status = if (profile.compatibleLocalMtzPath) {
                 resources.getString(R.string.tm_recommended_active)
             } else {
                 resources.getString(R.string.tm_recommendation_notice, ThemeManagerContract.RECOMMENDED_VERSION)
@@ -140,7 +140,7 @@ internal fun ThemeManagerCompatibilityCard(
     }
 
     StudioCard(Modifier.fillMaxWidth()) {
-        val applyActivityAvailable = runtimeProfile?.legacyTesterResolvable == true
+        val compatibleLocalMtzPath = runtimeProfile?.compatibleLocalMtzPath == true
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -161,7 +161,7 @@ internal fun ThemeManagerCompatibilityCard(
                     Text(
                         stringResource(
                             if (runtimeProfile == null) R.string.tm_profile_checking
-                            else if (applyActivityAvailable) R.string.tm_profile_active
+                            else if (compatibleLocalMtzPath) R.string.tm_profile_active
                             else R.string.tm_profile_checking,
                         ),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -171,21 +171,21 @@ internal fun ThemeManagerCompatibilityCard(
                 }
             }
             installed?.let { current ->
-                val applyActivityUnavailable = runtimeProfile != null && current.installed && !applyActivityAvailable
+                val applyActivityUnavailable = runtimeProfile != null && current.installed && !compatibleLocalMtzPath
                 Text(
                     if (!current.installed) stringResource(R.string.tm_device_not_found)
-                    else if (applyActivityAvailable) stringResource(
+                    else if (compatibleLocalMtzPath) stringResource(
                         R.string.tm_device_installed_compatible,
                         current.versionName ?: stringResource(R.string.tm_version_unknown),
                     ) else stringResource(
                         R.string.tm_device_installed_incompatible,
                         current.versionName ?: stringResource(R.string.tm_version_unknown),
                     ),
-                    color = if (applyActivityAvailable) cyanAccent else MaterialTheme.colorScheme.error,
+                    color = if (compatibleLocalMtzPath) cyanAccent else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                if (applyActivityAvailable) {
+                if (compatibleLocalMtzPath) {
                     Text(
                         stringResource(R.string.tm_panel_compatible_desc),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -195,7 +195,10 @@ internal fun ThemeManagerCompatibilityCard(
                         Icon(Icons.Filled.PhoneAndroid, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         Text(
                             stringResource(
-                                if (runtimeProfile?.legacyTesterResolvable == true || runtimeProfile?.publicMtzImportResolvable == true) {
+                                if (runtimeProfile?.legacyTesterResolvable == true ||
+                                    runtimeProfile?.modernLocalLibraryResolvable == true ||
+                                    runtimeProfile?.publicMtzImportResolvable == true
+                                ) {
                                     R.string.tm_panel_native_ready
                                 } else {
                                     R.string.tm_panel_bridge_ready
@@ -217,18 +220,19 @@ internal fun ThemeManagerCompatibilityCard(
                     )
                 }
 
-                // Compatibility is determined only from the runtime-resolvable Xiaomi apply
-                // activity. Version names remain diagnostic information, not an allowlist.
+                // Compatibility requires a runtime-resolvable Xiaomi route. Legacy Global builds
+                // use ApplyThemeForScreenshot; 10.8.7.6+ builds use the native local library.
+                // The modern version family alone is not enough if its component is missing.
                 if (applyActivityUnavailable) {
                     OutlinedButton(onClick = ::openRecommendedDownload) {
                         Text("Themes ${ThemeManagerContract.RECOMMENDED_VERSION} APK indir")
                     }
                 }
             }
-            if (runtimeProfile != null && !applyActivityAvailable) Text(status, style = MaterialTheme.typography.bodySmall)
+            if (runtimeProfile != null && !compatibleLocalMtzPath) Text(status, style = MaterialTheme.typography.bodySmall)
 
             val current = installed
-            if (allowRootDowngrade && current != null && current.installed && runtimeProfile != null && !applyActivityAvailable) {
+            if (allowRootDowngrade && current != null && current.installed && runtimeProfile != null && !compatibleLocalMtzPath) {
                 OutlinedButton(
                     onClick = {
                         apkPicker.launch(

@@ -49,6 +49,24 @@ class ThemeManagerCompatibilityTest {
     }
 
     @Test
+    fun `modern profile is compatible only when native local library resolves`() {
+        val available = ThemeManagerRuntimeProfile(
+            packageInstalled = true,
+            versionName = "11.1.5.0",
+            knownBehavior = ThemeManagerBehavior.MODERN_NATIVE_LIBRARY,
+            legacyTesterResolvable = false,
+            modernLocalLibraryResolvable = true,
+            publicMtzImportResolvable = false,
+            splitApkCount = 0,
+            exportedThemeActivityCandidates = emptyList(),
+        )
+        val missing = available.copy(modernLocalLibraryResolvable = false)
+
+        assertTrue(available.compatibleLocalMtzPath)
+        assertFalse(missing.compatibleLocalMtzPath)
+    }
+
+    @Test
     fun `modded persistent import disables redundant global protection`() {
         val installed = InstalledThemeManager(
             installed = true,

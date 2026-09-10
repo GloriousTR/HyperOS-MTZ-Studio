@@ -20,13 +20,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0"><strong>v4.0.0 APK indir</strong></a>
-  · <a href="docs/release-notes-v4.0.0.md">Sürüm notları</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.1"><strong>v4.0.1 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.0.1.md">Sürüm notları</a>
   · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
 
-## v4.0.0 arayüzü
+## v4 arayüzü
 
 <p align="center">
   <img src="docs/screenshots/v4/shizuku-panel.png" alt="Shizuku ve Tema Yöneticisi uyumluluk paneli" width="24%">
@@ -57,18 +57,18 @@ Rootsuz cihazlarda Shizuku ya da [Shevery](https://github.com/HmnDev-Tech/shever
 
 ## Tema Yöneticisi uyumluluğu
 
-Studio sabit bir Temalar sürüm listesine göre karar vermez. Kurulu `com.android.thememanager` paketinde `ApplyThemeForScreenshot` etkinliği çözülebiliyorsa profil **Uyumlu** olarak gösterilir. Etkinlik yoksa uygulama açık bir uyumsuzluk notu ve kurtarma seçeneği sunar.
+Studio yalnızca sabit bir Temalar sürüm listesine güvenmez. Eski Global sürümlerde `ApplyThemeForScreenshot` etkinliğini; 10.8.7.6 ve sonrası modern sürümlerde ise yerleşik yerel tema kitaplığı ekranını çalışma anında doğrular. Bu yollardan biri hazırsa profil **Uyumlu** gösterilir. Hiçbiri yoksa açık bir uyumsuzluk notu ve kurtarma seçeneği sunulur.
 
 Bu seçenek, doğrulanmış Xiaomi Themes `3.0.5.6-global` paketini uygulama içinden Android İndirme Yöneticisiyle doğrudan indirir:
 
-- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk)
-- [SHA-256 doğrulama dosyası](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
+- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/Xiaomi_Themes_3.0.5.6-global.apk)
+- [SHA-256 doğrulama dosyası](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
 
 Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre değiştirebilir. Studio, uygulama sonuçlarını ve uyumluluğu mümkün olduğunda çalışma anında doğrular; manuel Xiaomi onayı yine görünebilir.
 
 ## Kurulum
 
-1. [v4.0.0 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0) sayfasından `MTZ_Studio_v4.0.0.apk` dosyasını indirin.
+1. [v4.0.1 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.1) sayfasından `MTZ_Studio_v4.0.1.apk` dosyasını indirin.
 2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
 3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
 4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.

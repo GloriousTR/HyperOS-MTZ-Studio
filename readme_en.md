@@ -20,13 +20,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0"><strong>Download v4.0.0 APK</strong></a>
-  · <a href="docs/release-notes-v4.0.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.1"><strong>Download v4.0.1 APK</strong></a>
+  · <a href="docs/release-notes-v4.0.1.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
 
-## v4.0.0 interface
+## v4 interface
 
 <p align="center">
   <img src="docs/screenshots/v4/shizuku-panel.png" alt="Shizuku and Theme Manager compatibility panel" width="24%">
@@ -57,18 +57,18 @@ On non-rooted devices, install and start Shizuku or [Shevery](https://github.com
 
 ## Theme Manager compatibility
 
-Studio does not use a fixed Xiaomi Themes version allowlist. If `ApplyThemeForScreenshot` can be resolved in the installed `com.android.thememanager` package, the profile is shown as **Compatible**. If it is unavailable, Studio shows an explicit incompatibility notice and recovery option.
+Studio does not rely only on a fixed Xiaomi Themes version allowlist. At runtime it verifies `ApplyThemeForScreenshot` on legacy Global builds and the native local-theme library on modern 10.8.7.6+ builds. If either route is available, the profile is shown as **Compatible**. If neither is available, Studio shows an explicit incompatibility notice and recovery option.
 
 The recovery action downloads the verified Xiaomi Themes `3.0.5.6-global` package directly through Android Download Manager:
 
-- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk)
-- [SHA-256 checksum](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
+- [Xiaomi Themes 3.0.5.6-global APK](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/Xiaomi_Themes_3.0.5.6-global.apk)
+- [SHA-256 checksum](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/Xiaomi_Themes_3.0.5.6-global.apk.sha256)
 
 Xiaomi can change the final application screen and theme-acceptance behaviour depending on the ROM. Studio verifies capabilities and outcomes at runtime whenever possible, but a Xiaomi confirmation screen may still appear.
 
 ## Install
 
-1. Download `MTZ_Studio_v4.0.0.apk` from the [v4.0.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.0).
+1. Download `MTZ_Studio_v4.0.1.apk` from the [v4.0.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.0.1).
 2. Back up an important Studio library before upgrading from an older build.
 3. Install the APK, open Studio and let it detect the available access mode.
 4. On non-rooted devices, grant the requested Shizuku/Shevery authorization before applying themes.
