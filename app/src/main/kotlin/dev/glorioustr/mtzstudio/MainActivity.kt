@@ -1441,7 +1441,10 @@ private fun StudioScreen(
                         }
                     }
                 },
-                showThemeManagerVersionTool = rootAccessAvailable == true && !modernThemeManagerMode,
+                // Compatibility is relevant before import in every mode.  Only the optional
+                // in-app downgrade controls remain limited to an actual root-capable session.
+                showThemeManagerVersionTool = true,
+                allowRootDowngrade = rootAccessAvailable == true,
                 modifier = contentModifier,
             )
             destination == StudioDestination.THEMES -> ThemesScreen(

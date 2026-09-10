@@ -1,5 +1,6 @@
 package dev.glorioustr.mtzstudio
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,7 +47,14 @@ internal fun ThemeManagerCompatibilityCard(
     inspector: ThemeManagerInspector,
     updater: RootThemeManagerUpdater,
     openInput: (Uri) -> InputStream?,
+    allowRootDowngrade: Boolean,
 ) {
+    // APKMirror's version page requires an extra tap.  This is its stable download-start route
+    // for the verified universal 3.0.5.6-global package, so the browser immediately starts the
+    // download without MTZ Studio ever handling or installing a third-party system APK itself.
+    val recommendedDownloadUrl =
+        "https://www.apkmirror.com/apk/xiaomi-inc/miui-theme-app/xiaomi-themes-3-0-5-6-global-release/" +
+            "xiaomi-themes-3-0-5-6-global-android-apk-download/download/?key=e5010769a82e6509e696d27f7b61561b9b8db5fd"
     val resources = LocalResources.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -56,6 +64,17 @@ internal fun ThemeManagerCompatibilityCard(
     var status by remember { mutableStateOf(resources.getString(R.string.tm_checking_version)) }
     var riskAccepted by remember { mutableStateOf(false) }
     var showConfirmation by remember { mutableStateOf(false) }
+
+    fun openRecommendedDownload() {
+        runCatching {
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(recommendedDownloadUrl),
+                ),
+            )
+        }
+    }
 
     fun refresh() {
         scope.launch {
@@ -107,6 +126,10 @@ internal fun ThemeManagerCompatibilityCard(
         ) {
             Text(stringResource(R.string.tm_card_title), fontWeight = FontWeight.Bold)
             installed?.let { current ->
+                val rootlessImportUnavailable = runtimeProfile?.let {
+                    current.installed && !it.legacyTesterResolvable && !it.publicMtzImportResolvable
+                } == true
+                val needsRecommendedVersion = current.installed && !current.isRecommended
                 Text(
                     if (current.installed) {
                         if (current.isRecommended) {
@@ -124,23 +147,30 @@ internal fun ThemeManagerCompatibilityCard(
                         stringResource(R.string.tm_device_not_found)
                     },
                 )
-                if (!current.isRecommended) {
+                if (needsRecommendedVersion) {
                     Text(current.behavior.explanation, style = MaterialTheme.typography.bodySmall)
                 }
-                runtimeProfile?.takeIf {
-                    current.installed && !it.legacyTesterResolvable && !it.publicMtzImportResolvable
-                }?.let {
+                if (rootlessImportUnavailable) {
                     Text(
                         stringResource(R.string.tm_rootless_import_unavailable),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+
+                // All modes receive an explicit recovery route.  The version test tells users
+                // why a Xiaomi internal apply screen cannot be opened; the capability probe
+                // catches builds that advertise no usable external MTZ import surface at all.
+                if (needsRecommendedVersion || rootlessImportUnavailable) {
+                    OutlinedButton(onClick = ::openRecommendedDownload) {
+                        Text("Themes ${ThemeManagerContract.RECOMMENDED_VERSION} APK indir")
+                    }
+                }
             }
             if (installed?.isRecommended != true) Text(status, style = MaterialTheme.typography.bodySmall)
 
             val current = installed
-            if (current != null && current.installed && !current.isRecommended) {
+            if (allowRootDowngrade && current != null && current.installed && !current.isRecommended) {
                 OutlinedButton(
                     onClick = {
                         apkPicker.launch(

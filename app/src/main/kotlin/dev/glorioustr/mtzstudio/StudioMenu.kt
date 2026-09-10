@@ -174,6 +174,7 @@ internal fun HomeMenuScreen(
     authorizationManagerName: String? = null,
     onOpenAuthorizationManager: () -> Unit = {},
     showThemeManagerVersionTool: Boolean = true,
+    allowRootDowngrade: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var showShizukuTutorial by remember { mutableStateOf(false) }
@@ -294,6 +295,7 @@ internal fun HomeMenuScreen(
                                 inspector = themeManagerInspector,
                                 updater = themeManagerUpdater,
                                 openInput = openInput,
+                                allowRootDowngrade = allowRootDowngrade,
                             )
                         }
                     }

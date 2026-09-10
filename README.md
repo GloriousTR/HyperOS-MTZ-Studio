@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.5.0"><strong>Download v3.5.0</strong></a>
-  · <a href="docs/release-notes-v3.5.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.6.0"><strong>Download v3.6.0</strong></a>
+  · <a href="docs/release-notes-v3.6.0.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -33,6 +33,13 @@
 - **Theme Composer:** combines a base theme with selected icons, lock screen, status bar, dialer, messages, launcher, AOD, font and wallpapers while preserving untouched components.
 - **Adaptive application:** uses the proven Root path or a Shizuku/Shevery-authorized rootless path for the installed Xiaomi Themes family.
 - **Live Diagnostics:** records import, conversion, translation, composition and apply stages for compatibility analysis.
+
+## v3.6.0 highlights
+
+- A Theme Manager compatibility card is now visible before import in Root and Shizuku/Shevery modes.
+- It probes the installed Xiaomi Themes package for a real local-MTZ import surface instead of assuming removed Xiaomi internal activities still exist.
+- Unsupported or unverified builds clearly explain that local importing/applying may not work and offer a one-tap direct download for the verified `3.0.5.6-global` APK from APKMirror.
+- Root users can select that downloaded APK in Studio; package, version and Xiaomi signing-certificate checks run before the optional in-app downgrade. Shizuku/Shevery ADB mode never attempts a system-package downgrade.
 
 ## v3.5.0 highlights
 
@@ -89,7 +96,7 @@ On non-rooted devices, install and start Shizuku or [Shevery](https://github.com
 | `3.0.5.14` | Shizuku BAK + local apply verified; legacy direct call remains temporary/composite |
 | `3.0.6.8` | Legacy tester activity removed |
 | `10.8.7.6+` | Native bridge when required runtime surfaces and privileges are present |
-| Other builds | Runtime activity probing is used; Shizuku imports to the library and safely opens Xiaomi Themes when direct apply is unavailable |
+| Other builds | A visible compatibility warning explains when no declared local-MTZ path exists and offers the verified `3.0.5.6-global` download route |
 
 Modern root integration requires an active Vector/LSPosed-compatible environment and appropriate scopes. MTZ Studio recommends Android System (`android`), System Framework (`system`) and Themes (`com.android.thememanager`) while keeping the list editable.
 
@@ -98,7 +105,7 @@ Modern root integration requires an active Vector/LSPosed-compatible environment
 
 ## Install
 
-1. Download `MTZ_Studio_v3.5.0.apk` and its checksum from the [v3.5.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.5.0).
+1. Download `MTZ_Studio_v3.6.0.apk` and its checksum from the [v3.6.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v3.6.0).
 2. Back up the Studio library before replacing an older major build.
 3. Install the APK and let the app detect the available access mode.
 
