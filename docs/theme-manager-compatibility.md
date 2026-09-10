@@ -16,7 +16,7 @@ Suffixes such as `-global` are ignored only for matrix matching. Unknown version
 
 ## Modern Theme Manager matrix
 
-| Canonical version | v4.0.1 behavior |
+| Canonical version | v4.0.2 behavior |
 | --- | --- |
 | `10.8.7.6` and later | Uses Xiaomi Theme Manager's local catalog as the source of truth when the verified native import surface is available. Global Theme Protection and the manual Theme Manager import card are hidden. |
 
@@ -26,7 +26,7 @@ The native surface was inspected in `10.8.7.6`, `10.9.2.0`, `10.9.4.0`, `10.9.5.
 
 The app queries `com.android.thememanager` through Android `PackageManager`. Versions `2.15.5.46`, `3.0.4.32` and `3.0.5.6` use the exported legacy tester contract. The `3.0.2.34` Global APK was statically inspected and exposes the same `support3.0` action and exported `ApplyThemeForScreenshot` alias used by the `3.0.4.32` branch. The request is intentionally frozen to that action, alias, and the original four extras verified on a `3.0.5.6-global` device. Additional path keys, apply booleans, or activity flags can make that version return without applying the MTZ.
 
-When Theme Manager `10.8.7.6` or a later modern build is detected, v4.0.1 verifies the native local-library activity at runtime before marking the profile compatible and switching to the native-library provider. MTZ Studio mirrors verified resources into a private editor cache so personalization can read MTZ components, while Xiaomi Theme Manager remains the visible and authoritative catalog. The “import from Theme Manager” step is removed. A theme added or composed in MTZ Studio is retained in `Downloads/MTZ Studio`, imported through Theme Manager's native importer, associated with the returned local resource ID, and then shown in the shared catalog.
+When Theme Manager `10.8.7.6` or a later modern build is detected, v4.0.2 verifies the native local-library activity at runtime before marking the profile compatible and switching to the native-library provider. MTZ Studio mirrors verified resources into a private editor cache so personalization can read MTZ components, while Xiaomi Theme Manager remains the visible and authoritative catalog. The “import from Theme Manager” step is removed. A theme added or composed in MTZ Studio is retained in `Downloads/MTZ Studio`, imported through Theme Manager's native importer, associated with the returned local resource ID, and then shown in the shared catalog.
 
 Apply and remove actions use the corresponding native Theme Manager resource. Removing an item deletes the Theme Manager record and its private editor mirror; the public MTZ backup is deliberately retained. Requests are accepted only when the activity was started for result by the MTZ Studio package, and imported files are authenticated by canonical path and SHA-256.
 

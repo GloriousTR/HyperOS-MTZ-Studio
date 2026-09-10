@@ -66,7 +66,7 @@ internal fun ThemeManagerCompatibilityCard(
 ) {
     val recommendedApkName = "Xiaomi_Themes_3.0.5.6-global.apk"
     val recommendedDownloadUrl =
-        "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.1/$recommendedApkName"
+        "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.2/$recommendedApkName"
     val resources = LocalResources.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

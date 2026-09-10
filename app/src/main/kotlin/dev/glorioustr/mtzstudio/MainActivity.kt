@@ -1259,8 +1259,11 @@ private fun StudioScreen(
         importMtzDocuments(listOfNotNull(uri))
     }
 
-    val multipleMtzPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        importMtzDocuments(uris)
+    // Xiaomi's document provider handles ACTION_OPEN_DOCUMENT as a single-pick flow on some
+    // HyperOS builds even when EXTRA_ALLOW_MULTIPLE is present. ACTION_GET_CONTENT is routed
+    // through the system's multi-selection UI more reliably on those builds.
+    val multipleMtzPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        importMtzDocuments(uris.distinct())
     }
 
     val bakPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -1637,7 +1640,7 @@ private fun StudioScreen(
                 onSelectMultiple = {
                     checkingImportAccess = true
                     diagnostics.recordPickerLaunched()
-                    runCatching { multipleMtzPicker.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) }
+                    runCatching { multipleMtzPicker.launch("*/*") }
                         .onFailure { checkingImportAccess = false }
                 },
                 modifier = contentModifier,
