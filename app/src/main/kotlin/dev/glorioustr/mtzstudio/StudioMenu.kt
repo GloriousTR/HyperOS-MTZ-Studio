@@ -2327,16 +2327,29 @@ private fun ThemeActionDock(
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
                     if (translationProgress?.running == true) {
-                        LinearProgressIndicator(
-                            progress = { translationProgress.fraction },
+                        val progress = translationProgress.fraction.coerceIn(0f, 1f)
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(50)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        )
+                                .height(20.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(50)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            Text(
+                                text = "${(progress * 100).toInt()}%",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     } else {
                         Text(
                             text = stringResource(R.string.action_translate),
