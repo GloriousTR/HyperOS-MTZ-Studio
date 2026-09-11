@@ -92,11 +92,51 @@ internal class DeviceThemeImporter(
     @Synchronized
     fun availableThemeCount(): Int = readRecords().size
 
+    /** Captures Xiaomi Themes' current local IDs before its native importer is opened. */
+    @Synchronized
+    fun localThemeIds(): Set<String> = readRecords().mapTo(linkedSetOf(), ThemeManagerRecord::localId)
+
+    /** Resolves the record created by Xiaomi's own importer without touching its private database. */
+    @Synchronized
+    fun resolveImportedLocalId(theme: LibraryTheme, previousIds: Set<String>): String? {
+        val records = readRecords()
+        val newlyCreated = records.filter { it.localId !in previousIds }
+        val metadata = theme.archive.metadata
+        fun List<ThemeManagerRecord>.matchingRecord(): ThemeManagerRecord? {
+            val title = metadata?.name?.normalized().orEmpty()
+            val version = metadata?.version?.normalized().orEmpty()
+            val author = metadata?.author?.normalized().orEmpty()
+            return firstOrNull { record ->
+                (title.isBlank() || record.title.normalized() == title) &&
+                    (version.isBlank() || record.version.normalized() == version) &&
+                    (author.isBlank() || record.author.normalized() == author)
+            }
+        }
+        return newlyCreated.matchingRecord()?.localId
+            ?: newlyCreated.singleOrNull()?.localId
+    }
+
+    /** Finds an already imported Xiaomi theme when an older Studio build has no saved mapping. */
+    @Synchronized
+    fun resolveExistingLocalId(theme: LibraryTheme): String? {
+        val metadata = theme.archive.metadata ?: return null
+        val title = metadata.name.normalized()
+        if (title.isBlank()) return null
+        val version = metadata.version.normalized()
+        val author = metadata.author.normalized()
+        return readRecords().filter { record ->
+            record.title.normalized() == title &&
+                (version.isBlank() || record.version.normalized() == version) &&
+                (author.isBlank() || record.author.normalized() == author)
+        }.singleOrNull()?.localId
+    }
+
     /** Reconstructs selected Theme Manager items by localId. */
     @Synchronized
     fun importSelectedThemes(selectedLocalIds: Set<String>): DeviceThemeBulkImportResult {
         val records = readRecords().filter { selectedLocalIds.isEmpty() || it.localId in selectedLocalIds }
         if (records.isEmpty()) return DeviceThemeBulkImportResult(0, 0, 0, 0, emptyList())
+        records.forEach { importOrigins.edit().remove(hiddenKey(it.localId)).apply() }
         return importRecords(records)
     }
 
@@ -218,7 +258,7 @@ internal class DeviceThemeImporter(
     @Synchronized
     fun synchronizeModernLibrary(shouldPause: () -> Boolean = { false }): DeviceThemeBulkImportResult {
         // One metadata snapshot, not two scans that may disagree during a native operation.
-        val records = readRecords()
+        val records = readRecords().filterNot { importOrigins.getBoolean(hiddenKey(it.localId), false) }
         val availableIds = records.mapTo(mutableSetOf(), ThemeManagerRecord::localId)
         val result = importRecords(
             records,
@@ -247,6 +287,15 @@ internal class DeviceThemeImporter(
     fun rememberThemeManagerOrigin(localId: String, theme: LibraryTheme) {
         val safeLocalId = localId.requireSafeIdentifier("theme local ID")
         importOrigins.edit().putString(originKey(safeLocalId), "${theme.archive.sha256}|${theme.id.value}").apply()
+    }
+
+    /** Keeps a deliberately removed Studio mirror from being recreated by automatic catalog sync. */
+    fun hideThemeManagerOriginFor(theme: LibraryTheme) {
+        val localId = localIdFor(theme) ?: return
+        importOrigins.edit()
+            .remove(originKey(localId))
+            .putBoolean(hiddenKey(localId), true)
+            .apply()
     }
 
     fun forgetThemeManagerOrigin(localId: String) {
@@ -598,6 +647,7 @@ internal class DeviceThemeImporter(
 
     private fun deterministicEntry(path: String) = ZipEntry(path).apply { time = 0L }
     private fun originKey(localId: String) = "$ORIGIN_PREFIX$localId"
+    private fun hiddenKey(localId: String) = "$HIDDEN_PREFIX$localId"
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
     private data class ThemeManagerRecord(
@@ -624,6 +674,7 @@ internal class DeviceThemeImporter(
         const val AUTO_CATALOG_TIME_BUDGET_NANOS = 35_000_000_000L
         const val CATALOG_PROGRESS_LOG_INTERVAL = 5
         const val ORIGIN_PREFIX = "theme:"
+        const val HIDDEN_PREFIX = "hidden:"
         val SAFE_IDENTIFIER = Regex("[A-Za-z0-9._-]{1,128}")
         val SAFE_RESOURCE_CODE = Regex("[A-Za-z0-9._-]{1,160}")
         val SAFE_PREVIEW_NAME = Regex("[A-Za-z0-9._-]{1,180}")

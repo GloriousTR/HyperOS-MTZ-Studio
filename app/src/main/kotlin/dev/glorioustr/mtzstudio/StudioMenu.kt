@@ -372,10 +372,6 @@ internal fun MtzImportScreen(
                         onClick = onSelectMultiple,
                         enabled = !importing,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        ),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -1108,7 +1104,7 @@ internal fun ThemesScreen(
     deviceImportStatus: String,
     deviceImportRunning: Boolean,
     onOpenDeviceThemePicker: () -> Unit,
-    onShowAllDeviceThemes: () -> Unit,
+    onDeleteThemes: (List<LibraryTheme>) -> Unit,
     catalogError: String? = null,
     onRetryCatalog: () -> Unit = {},
     showDeviceImport: Boolean = true,
@@ -1124,6 +1120,7 @@ internal fun ThemesScreen(
 ) {
     var pendingDeleteTheme by remember { mutableStateOf<LibraryTheme?>(null) }
     var detailsTheme by remember { mutableStateOf<LibraryTheme?>(null) }
+    var showLibraryManager by remember { mutableStateOf(false) }
     val galleryThemes = themes.filter(LibraryTheme::isThemeGalleryItem)
     val activeTheme = galleryThemes.firstOrNull { it.id.value == activeThemeId }
     val previousTheme = galleryThemes.firstOrNull { it.id.value == previousThemeId }
@@ -1157,18 +1154,6 @@ internal fun ThemesScreen(
                 }
             }
         }
-        if (showDeviceImport) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                DeviceImportCard(
-                    title = stringResource(R.string.device_theme_import_title),
-                    description = stringResource(R.string.device_theme_import_desc),
-                    status = deviceImportStatus,
-                    buttonText = stringResource(R.string.device_theme_import_button),
-                    running = deviceImportRunning,
-                    onImport = onOpenDeviceThemePicker,
-                )
-            }
-        }
         if (nativeCatalogMode && catalogError != null && !deviceImportRunning) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
@@ -1186,7 +1171,7 @@ internal fun ThemesScreen(
                 Text(stringResource(R.string.library_saved_themes), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                 StatusBadge(text = galleryThemes.size.toString(), color = MaterialTheme.colorScheme.surfaceVariant)
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onShowAllDeviceThemes, enabled = nativeCatalogMode) {
+                TextButton(onClick = { showLibraryManager = true }) {
                     Text(stringResource(R.string.library_all_visible), style = MaterialTheme.typography.labelMedium)
                 }
             }
@@ -1264,6 +1249,23 @@ internal fun ThemesScreen(
                     Text(stringResource(R.string.action_cancel))
                 }
             },
+        )
+    }
+
+    if (showLibraryManager) {
+        LibraryManagerDialog(
+            themes = galleryThemes,
+            canImportDeviceThemes = showDeviceImport && nativeCatalogMode,
+            busy = deviceImportRunning,
+            onImportDeviceThemes = {
+                showLibraryManager = false
+                onOpenDeviceThemePicker()
+            },
+            onDeleteThemes = { selected ->
+                showLibraryManager = false
+                onDeleteThemes(selected)
+            },
+            onDismiss = { showLibraryManager = false },
         )
     }
 }
@@ -2887,6 +2889,86 @@ private fun ThemeGalleryCard(
             onTranslate = { onTranslateTheme(theme) },
             onDelete = { onDeleteTheme(theme) },
         )
+    }
+
+}
+
+@Composable
+private fun LibraryManagerDialog(
+    themes: List<LibraryTheme>,
+    canImportDeviceThemes: Boolean,
+    busy: Boolean,
+    onImportDeviceThemes: () -> Unit,
+    onDeleteThemes: (List<LibraryTheme>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.library_manage_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.library_manage_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+                }
+                if (canImportDeviceThemes) {
+                    Button(onClick = onImportDeviceThemes, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.Download, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.device_theme_import_title))
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.library_delete_selected), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    TextButton(onClick = {
+                        selectedIds = if (selectedIds.size == themes.size) emptySet() else themes.mapTo(linkedSetOf()) { it.id.value }
+                    }) {
+                        Text(stringResource(if (selectedIds.size == themes.size && themes.isNotEmpty()) R.string.device_theme_deselect_all else R.string.device_theme_select_all))
+                    }
+                }
+                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(themes, key = { it.id.value }) { theme ->
+                        val checked = theme.id.value in selectedIds
+                        StudioCard(
+                            Modifier.fillMaxWidth().clickable {
+                                selectedIds = if (checked) selectedIds - theme.id.value else selectedIds + theme.id.value
+                            },
+                        ) {
+                            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = checked,
+                                    onCheckedChange = { enabled ->
+                                        selectedIds = if (enabled) selectedIds + theme.id.value else selectedIds - theme.id.value
+                                    },
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(theme.archive.metadata?.name ?: theme.displayName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    theme.archive.metadata?.author?.takeIf(String::isNotBlank)?.let {
+                                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Button(
+                    onClick = { onDeleteThemes(themes.filter { it.id.value in selectedIds }) },
+                    enabled = selectedIds.isNotEmpty() && !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.library_delete_count, selectedIds.size))
+                }
+            }
+        }
     }
 }
 

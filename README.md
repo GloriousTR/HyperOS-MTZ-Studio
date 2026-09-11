@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.4"><strong>v4.2.4 APK indir</strong></a>
-  · <a href="docs/release-notes-v4.2.4.md">Sürüm notları</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.3.0"><strong>v4.3.0 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.3.0.md">Sürüm notları</a>
   · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
@@ -37,12 +37,12 @@
 
 ## Neler yapar?
 
-- **MTZ Import:** MTZ paketlerini doğrular, özel kitaplığa ekler, önizleme verilerini üretir. Tek dosya veya en fazla beş dosyalı toplu içe aktarma kullanılabilir.
+- **MTZ Import:** MTZ paketlerini doğrular, özel kitaplığa ekler ve önizleme verilerini üretir. Tek dosya veya en fazla beş dosyalı toplu içe aktarma kullanılabilir. Desteklenen modern Xiaomi Temalar sürümlerinde Shizuku/Shevery ile aynı tema Xiaomi kitaplığına da aktarılır.
 - **BAK Converter:** Desteklenen Xiaomi Temalar `.bak` yedeklerini güvenli biçimde MTZ’ye dönüştürür; sonuç doğrudan kitaplığa gelir.
 - **Tema Dil Aracı:** Görünür tema metinlerini uygulama diline göre çevirir. XML, JSON ve güvenli MAML içerikleri için çeviri belleği ve isteğe bağlı API sağlayıcıları kullanır.
 - **Temanı Oluştur:** Bir temel temaya başka paketlerden kilit ekranı, simgeler, yazı tipi, duvar kâğıdı ve diğer seçili bileşenleri ekleyerek yeni MTZ oluşturur.
-- **Kitaplık:** Uygulanan temayı, içe aktarılan ve oluşturulan temaları; font paketlerinden ayrı olarak gösterir.
-- **Yedekleme ve güncelleme:** Studio kitaplığı için bulut/WebDAV yedekleme ve geri yükleme sunar. Her açılışta GitHub güncellemesini arka planda denetler; yeni imzalı APK’yı doğrulayıp indirdikten sonra “Güncelleme bulundu” bildirimi gönderir.
+- **Kitaplık:** Uygulanan temayı, içe aktarılan ve oluşturulan temaları font paketlerinden ayrı gösterir. Kitaplığı Yönet ekranı çoklu seçimle silme ve desteklenen cihazlarda Xiaomi Temalar’dan yerel tema alma imkânı sunar.
+- **Yedekleme ve güncelleme:** Studio kitaplığı için bulut/WebDAV yedekleme ve geri yükleme sunar. Her ön plana gelişte GitHub güncellemesini arka planda denetler; yeni sürümü bildirir ve doğrulanmış APK indirmesini yüzde ilerlemesiyle gösterir.
 - **Live Diagnostics:** İçe aktarma, dönüştürme, çeviri ve uygulama adımlarını kaydeder; Temalar paketiyle ilgili sorunların incelenmesini kolaylaştırır.
 
 ## Erişim modları
@@ -68,7 +68,7 @@ Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre deği
 
 ## Kurulum
 
-1. [v4.2.4 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.4) sayfasından `MTZ_Studio_v4.2.4.apk` dosyasını indirin.
+1. [v4.3.0 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.3.0) sayfasından `MTZ_Studio_v4.3.0.apk` dosyasını indirin.
 2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
 3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
 4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.

@@ -464,4 +464,13 @@
     <string name="mtz_batch_picker_title">Select MTZ files</string>
     <string name="mtz_batch_picker_desc">Choose up to 5 files using the checkboxes. Selected: %1$d/5</string>
     <string name="mtz_batch_import_button">Import selected (%1$d)</string>
+    <string name="library_manage_title">Manage library</string>
+    <string name="library_manage_desc">Import local themes or select multiple saved themes to remove.</string>
+    <string name="library_delete_selected">Remove selected</string>
+    <string name="library_delete_count">Remove selected (%1$d)</string>
+    <string name="status_themes_removed">%1$d theme(s) removed.</string>
+    <string name="app_update_found_prompt">HyperOS MTZ Studio %1$s is available. Would you like to view the update?</string>
+    <string name="app_update_available_text">Version %1$s is ready to download.</string>
+    <string name="app_update_download_install">Download and install</string>
+    <string name="status_modern_theme_detail_opened">%1$s was imported. The Xiaomi Themes apply screen was opened.</string>
 </resources>

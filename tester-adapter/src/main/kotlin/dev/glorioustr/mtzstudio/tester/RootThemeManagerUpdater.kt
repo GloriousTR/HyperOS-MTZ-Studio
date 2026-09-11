@@ -239,7 +239,19 @@ internal object ShellInstallCommand {
             "Downloaded APK must stay inside the shared Download directory"
         }
         require('\n' !in downloadPath && '\r' !in downloadPath) { "Invalid downloaded APK path" }
-        return "/system/bin/pm install -r -d ${shellQuote(downloadPath)}"
+        val temporaryPath = "/data/local/tmp/mtzstudio-theme-manager-${UUID.randomUUID()}.apk"
+        val source = shellQuote(downloadPath)
+        val temporary = shellQuote(temporaryPath)
+        return buildString {
+            // On recent HyperOS releases system_server cannot read an APK from FUSE-backed
+            // shared storage even though the Shizuku shell process can. Stage it in the
+            // standard shell install directory before handing it to Package Manager.
+            append("/system/bin/cp ").append(source).append(' ').append(temporary)
+            append(" && /system/bin/chmod 0644 ").append(temporary)
+            append(" && /system/bin/pm install -r -d --user 0 ").append(temporary)
+            append("; result=${'$'}?; /system/bin/rm -f ").append(temporary)
+            append("; exit ${'$'}result")
+        }
     }
 
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"

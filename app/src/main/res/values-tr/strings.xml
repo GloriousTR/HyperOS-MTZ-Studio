@@ -52,7 +52,12 @@
     <string name="library_customize">Özelleştir</string>
     <string name="library_rollback">Geri Al</string>
     <string name="library_saved_themes">KAYITLI TEMALAR</string>
-    <string name="library_all_visible">Tümünü Yönet</string>
+    <string name="library_all_visible">Kitaplığı Yönet</string>
+    <string name="library_manage_title">Kitaplığı Yönet</string>
+    <string name="library_manage_desc">Yerel Xiaomi temalarını içe aktarın veya kaldırılacak MTZ Studio temalarını birlikte seçin.</string>
+    <string name="library_delete_selected">Temaları Sil</string>
+    <string name="library_delete_count">Seçilenleri Sil (%1$d)</string>
+    <string name="status_themes_removed">%1$d tema MTZ Studio kitaplığından kaldırıldı.</string>
     <string name="library_method_backup">BAK Geri Yükleme Protokolü</string>
     <string name="library_method_bridge">Tema Yöneticisi Köprüsü</string>
     <string name="library_method_shizuku">Shizuku Bridge Protokolü</string>
@@ -183,7 +188,7 @@
     <string name="mtz_import_btn_select">MTZ dosyası seç</string>
     <string name="mtz_import_btn_importing">Import sürüyor…</string>
     <string name="mtz_import_page_desc">Kitaplığınıza tek bir MTZ veya en fazla 5 MTZ dosyasını birlikte aktarın.</string>
-    <string name="mtz_import_single_button">1 MTZ seç</string>
+    <string name="mtz_import_single_button">Bir MTZ Seçin</string>
     <string name="mtz_import_multiple_button">Birden fazla MTZ seç (maks. 5)</string>
     <string name="mtz_import_progress_title">İçe aktarma sürüyor</string>
     <string name="mtz_import_complete_title">İçe aktarma tamamlandı</string>
@@ -494,6 +499,10 @@
     <string name="app_update_later">Daha sonra</string>
     <string name="app_update_checking">GitHub denetleniyor ve güncelleme güvenli biçimde doğrulanıyor…</string>
     <string name="app_update_downloading">Güncelleme indiriliyor…</string>
+    <string name="app_update_found_prompt">HyperOS MTZ Studio %1$s yayınlandı. Güncellemeyi görüntülemek ister misiniz?</string>
+    <string name="app_update_available_text">%1$s sürümü indirilmeye hazır. APK kurulmadan önce imzası ve SHA-256 değeri doğrulanacaktır.</string>
+    <string name="app_update_download_install">İndir ve Kur</string>
+    <string name="status_modern_theme_detail_opened">%1$s içe aktarıldı. Xiaomi Temalar uygulama ekranı açıldı.</string>
     <string name="app_update_up_to_date">Zaten en güncel sürümü kullanıyorsunuz.</string>
     <string name="app_update_check_failed">Güncelleme denetimi tamamlanamadı.</string>
 </resources>

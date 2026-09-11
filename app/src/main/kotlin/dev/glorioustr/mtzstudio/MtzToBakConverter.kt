@@ -102,6 +102,9 @@ object MtzToBakConverter {
         return "/storage/emulated/0/Android/data/$PACKAGE/files/MIUI/theme/${fileName(title)}"
     }
 
+    /** Stable localId written into the Xiaomi Themes metadata record by [convert]. */
+    fun restoredThemeLocalId(source: File): String = inspect(source).id
+
     private fun inspect(file: File): Metadata {
         var title = file.nameWithoutExtension; var author = "Unknown"; var version = "1.0"; var description = ""
         ZipFile(file).use { zip -> zip.getEntry("description.xml")?.let { entry ->

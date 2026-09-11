@@ -145,4 +145,17 @@ class ThemeManagerCompatibilityTest {
         assertFalse("skip-verification" in command)
         assertFalse("uninstall" in command)
     }
+
+    @Test
+    fun `shizuku command moves shared download to shell staging before install`() {
+        val command = ShellInstallCommand.forDownloadedApk(
+            "/sdcard/Download/Xiaomi_Themes_3.0.5.6-global.apk",
+        )
+
+        assertTrue(command.contains("/system/bin/cp '/sdcard/Download/Xiaomi_Themes_3.0.5.6-global.apk' '/data/local/tmp/mtzstudio-theme-manager-"))
+        assertTrue(command.contains("/system/bin/chmod 0644 '/data/local/tmp/mtzstudio-theme-manager-"))
+        assertTrue(command.contains("/system/bin/pm install -r -d --user 0 '/data/local/tmp/mtzstudio-theme-manager-"))
+        assertTrue(command.contains("/system/bin/rm -f '/data/local/tmp/mtzstudio-theme-manager-"))
+        assertFalse("pm install -r -d '/sdcard/Download/" in command)
+    }
 }

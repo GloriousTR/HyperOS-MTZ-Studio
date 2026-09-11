@@ -91,6 +91,7 @@ import dev.glorioustr.mtzstudio.tester.ThemeManagerCapabilityProbe
 import dev.glorioustr.mtzstudio.tester.StudioCapabilityPolicy
 import dev.glorioustr.mtzstudio.shevery.PreferredPrivilegedCommandRunner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -139,7 +140,7 @@ class MainActivity : ComponentActivity() {
         consumeShizukuSetupIntent(intent)
         // Run the launch check through JobScheduler so network waiting and downloading can
         // continue even when Studio leaves the foreground.
-        AppUpdateScheduler.schedule(applicationContext, checkNow = true)
+        AppUpdateScheduler.schedule(applicationContext, checkNow = false)
         val library = ThemeLibrary(applicationContext)
         val backupManager = StudioBackupManager(applicationContext)
         val composer = MtzComposer()
@@ -216,6 +217,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A unique short-lived job performs a quiet check whenever Studio returns to foreground.
+        AppUpdateScheduler.schedule(applicationContext, checkNow = true)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -344,6 +351,8 @@ private fun StudioScreen(
     var operationError by remember { mutableStateOf<String?>(null) }
     var showUpdateCheckResult by remember { mutableStateOf(false) }
     var dismissedUpdateEventId by rememberSaveable { mutableStateOf(0L) }
+    var installUpdateWhenReady by rememberSaveable { mutableStateOf(false) }
+    var modernImportObserverJob by remember { mutableStateOf<Job?>(null) }
     var backupStatus by remember { mutableStateOf(resources.getString(R.string.status_no_backup_yet)) }
     val cloudAccountStore = remember { CloudAccountStore(context) }
     val appUpdateManager = remember { AppUpdateManager(context.applicationContext) }
@@ -417,6 +426,10 @@ private fun StudioScreen(
             .putString("pending-manual-path", prepared.manualImportPath)
             .putString("pending-operation", prepared.operation.name)
             .putString("pending-local-id", prepared.themeManagerLocalId)
+            .putString(
+                "pending-local-ids-before",
+                prepared.themeManagerLocalIdsBefore?.joinToString("|") ?: "__not_captured__",
+            )
             .putString("pending-intent-uri", prepared.intent.toUri(Intent.URI_INTENT_SCHEME))
             .apply()
     }
@@ -440,6 +453,11 @@ private fun StudioScreen(
                 studioState.getString("pending-operation", ThemeManagerOperation.APPLY.name).orEmpty(),
             ),
             themeManagerLocalId = studioState.getString("pending-local-id", null),
+            themeManagerLocalIdsBefore = studioState.getString("pending-local-ids-before", "__not_captured__")
+                ?.takeUnless { it == "__not_captured__" }
+                ?.split('|')
+                ?.filter(String::isNotBlank)
+                ?.toSet(),
         )
     }.getOrNull()
 
@@ -452,6 +470,7 @@ private fun StudioScreen(
             .remove("pending-manual-path")
             .remove("pending-operation")
             .remove("pending-local-id")
+            .remove("pending-local-ids-before")
             .remove("pending-intent-uri")
             .remove("pending-started-at")
             .apply()
@@ -494,7 +513,7 @@ private fun StudioScreen(
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { appUpdateManager.restoreReadyState() }
+        withContext(Dispatchers.IO) { appUpdateManager.restoreState() }
     }
 
     val googleDriveAuthorizationLauncher = rememberLauncherForActivityResult(
@@ -700,6 +719,19 @@ private fun StudioScreen(
                     }
                 }
 
+                ThemeApplyProtocol.MODERN_THEME_MANAGER_DIRECT_APPLY -> {
+                    // Xiaomi's exported 10.8/11 detail activity consumes REQUEST_APPLY_EVENT
+                    // internally. Those builds do not return a structured result to the caller,
+                    // so retain the selected theme and let the persistence monitor verify it.
+                    diagnostics.record(
+                        "modern_direct_apply_dispatched",
+                        "Xiaomi Temalar yerel kaydı doğrudan uygulama isteğini aldı",
+                        mapOf("theme" to prepared.themeName, "localId" to prepared.themeManagerLocalId),
+                    )
+                    status = resources.getString(R.string.status_apply_success, prepared.themeName)
+                    rememberAppliedTheme(prepared.themeId, prepared.protocol)
+                }
+
                 ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT -> {
                     status = resources.getString(
                         R.string.status_manual_import_ready,
@@ -797,7 +829,63 @@ private fun StudioScreen(
         }
     }
 
+    fun observeModernNativeImport(prepared: PreparedThemeApply) {
+        val previousIds = prepared.themeManagerLocalIdsBefore ?: return
+        val importedTheme = themes.firstOrNull { it.id.value == prepared.themeId } ?: return
+        modernImportObserverJob?.cancel()
+        modernImportObserverJob = scope.launch {
+            repeat(60) {
+                delay(1_500)
+                val localId = withContext(Dispatchers.IO) {
+                    runCatching { deviceThemeImporter.resolveImportedLocalId(importedTheme, previousIds) }.getOrNull()
+                }
+                if (localId != null) {
+                    val opened = withContext(Dispatchers.IO) {
+                        runCatching {
+                            deviceThemeImporter.rememberThemeManagerOrigin(localId, importedTheme)
+                            themeApplyCoordinator.openModernLocalThemeDetail(localId)
+                        }
+                    }
+                    opened.onSuccess {
+                        diagnostics.record(
+                            "modern_import_detail_opened",
+                            "Yeni Xiaomi Temalar kaydı algılandı; tema ayrıntısı açıldı",
+                            mapOf("theme" to prepared.themeName, "localId" to localId),
+                        )
+                        status = resources.getString(R.string.status_modern_theme_detail_opened, prepared.themeName)
+                    }.onFailure { error ->
+                        diagnostics.record("modern_import_detail_failed", "Yeni tema bulundu ancak ayrıntı ekranı açılamadı", error = error)
+                    }
+                    return@launch
+                }
+            }
+            diagnostics.record(
+                "modern_import_observer_timeout",
+                "Xiaomi Temalar içe aktarımı için yeni kayıt zaman aşımı içinde görülmedi",
+                mapOf("theme" to prepared.themeName),
+            )
+        }
+    }
+
     fun launchPreparedTheme(prepared: PreparedThemeApply) {
+        if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT &&
+            prepared.themeManagerLocalIdsBefore == null
+        ) {
+            scope.launch {
+                runCatching {
+                    withContext(Dispatchers.IO) { deviceThemeImporter.localThemeIds() }
+                }.onSuccess { ids ->
+                    launchPreparedTheme(prepared.copy(themeManagerLocalIdsBefore = ids))
+                }.onFailure { error ->
+                    themeOperationRunning = false
+                    pauseCatalog.set(false)
+                    diagnostics.record("modern_import_snapshot_failed", "İçe aktarma öncesi yerel tema listesi okunamadı", error = error)
+                    status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+                    operationError = status
+                }
+            }
+            return
+        }
         try {
             preparedApply = prepared
             persistPreparedApply(prepared)
@@ -819,6 +907,9 @@ private fun StudioScreen(
                 ),
             )
             applyLauncher.launch(prepared.intent)
+            if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT) {
+                observeModernNativeImport(prepared)
+            }
             diagnostics.record(
                 "theme_activity_launched",
                 "Temalar etkinliği başlatıldı; dönüş bekleniyor",
@@ -862,7 +953,13 @@ private fun StudioScreen(
                         // catalog. Never send this branch to the removed legacy tester activity.
                         themeApplyCoordinator.prepare(
                             theme,
-                            deviceThemeImporter.localIdFor(theme).takeIf { rootAccessAvailable == true },
+                            // A known Xiaomi localId can be applied through the exported 10.8/11
+                            // detail route in both root and Shizuku modes. It does not require the
+                            // injected root bridge merely to identify an already imported theme.
+                            deviceThemeImporter.localIdFor(theme)
+                                ?: deviceThemeImporter.resolveExistingLocalId(theme)?.also { localId ->
+                                    deviceThemeImporter.rememberThemeManagerOrigin(localId, theme)
+                                },
                         )
                     } else {
                         themeApplyCoordinator.prepareRootlessManualImport(theme)
@@ -1230,6 +1327,46 @@ private fun StudioScreen(
         }
     }
 
+    suspend fun mirrorImportedThemeToXiaomi(theme: LibraryTheme): Boolean {
+        if (themeManagerBehavior != ThemeManagerBehavior.MODERN_NATIVE_LIBRARY) return false
+
+        val savedLocalId = withContext(Dispatchers.IO) { deviceThemeImporter.localIdFor(theme) }
+        val alreadyImported = savedLocalId ?: if (accessMode == StudioAccessMode.ROOT) {
+            withContext(Dispatchers.IO) {
+                deviceThemeImporter.resolveExistingLocalId(theme)?.also { localId ->
+                    deviceThemeImporter.rememberThemeManagerOrigin(localId, theme)
+                }
+            }
+        } else null
+        if (alreadyImported != null) {
+            diagnostics.record(
+                "dual_import_already_present",
+                "MTZ Xiaomi Temalar kitaplığında zaten bulundu",
+                mapOf("theme" to theme.displayName, "localId" to alreadyImported),
+            )
+            return true
+        }
+
+        // Root builds keep using the injected native bridge. Stock Xiaomi Themes exposes no
+        // public Java import API; Shizuku uses HyperOS' own backup service to create the native
+        // library record without coordinate automation or a second picker.
+        if (accessMode != StudioAccessMode.SHIZUKU ||
+            SheveryBackupRestorer.state() != SheveryBackupRestorer.State.READY
+        ) return false
+
+        val localId = withContext(Dispatchers.IO) {
+            themeApplyCoordinator.importModernThroughShizukuBackup(theme).also { restoredLocalId ->
+                deviceThemeImporter.rememberThemeManagerOrigin(restoredLocalId, theme)
+            }
+        }
+        diagnostics.record(
+            "dual_import_linked",
+            "Studio ve Xiaomi Temalar kayıtları eşleştirildi",
+            mapOf("theme" to theme.displayName, "localId" to localId),
+        )
+        return true
+    }
+
     fun importMtzDocuments(selectedUris: List<Uri>) {
         checkingImportAccess = false
         if (selectedUris.isEmpty()) {
@@ -1271,6 +1408,18 @@ private fun StudioScreen(
                     }
                 }.onSuccess { importedTheme ->
                     themes = (themes.filterNot { it.id == importedTheme.id } + importedTheme)
+                    runCatching { mirrorImportedThemeToXiaomi(importedTheme) }
+                        .onFailure { error ->
+                            // The Studio import remains valid when Xiaomi rejects its own native
+                            // catalog copy. Applying later can retry the existing manual/native
+                            // paths instead of discarding the user's successfully imported MTZ.
+                            diagnostics.record(
+                                "dual_import_failed",
+                                "MTZ Studio'ya eklendi ancak Xiaomi Temalar kopyası oluşturulamadı",
+                                mapOf("theme" to importedTheme.displayName),
+                                error,
+                            )
+                        }
                     mtzImportSucceeded += 1
                     diagnostics.record("import_components", "Tema bileşenleri ve genel önizleme incelendi", mapOf(
                         "themeId" to importedTheme.id.value,
@@ -1289,6 +1438,27 @@ private fun StudioScreen(
             pauseCatalog.set(false)
             loadLibrarySnapshot()
             status = resources.getString(R.string.mtz_import_result, mtzImportSucceeded, mtzImportFailed)
+        }
+    }
+
+    fun deleteThemesFromLibrary(selected: List<LibraryTheme>) {
+        if (themeOperationRunning || selected.isEmpty()) return
+        themeOperationRunning = true
+        launchThemeOperation {
+            val removedIds = withContext(Dispatchers.IO) {
+                selected.mapNotNull { theme ->
+                    deviceThemeImporter.hideThemeManagerOriginFor(theme)
+                    theme.id.value.takeIf { library.deleteTheme(theme.id) }
+                }.toSet()
+            }
+            if (baseThemeId in removedIds) baseThemeId = null
+            if (activeThemeId in removedIds) {
+                activeThemeId = null
+                studioState.edit().remove("last-applied-theme-id").apply()
+            }
+            themes = withContext(Dispatchers.IO) { library.load().themes }
+            status = resources.getString(R.string.status_themes_removed, removedIds.size)
+            diagnostics.record("library_bulk_delete", "Seçilen MTZ Studio temaları kaldırıldı", mapOf("count" to removedIds.size))
         }
     }
 
@@ -1644,7 +1814,7 @@ private fun StudioScreen(
                 catalogError = catalogError,
                 onRetryCatalog = ::refreshModernThemeManagerCatalog,
                 onOpenDeviceThemePicker = ::openDeviceThemePicker,
-                onShowAllDeviceThemes = ::requestFullThemeManagerCatalog,
+                onDeleteThemes = ::deleteThemesFromLibrary,
                 showDeviceImport = capabilities.usesNativeCatalog,
                 nativeCatalogMode = capabilities.usesNativeCatalog,
                 rootlessMode = accessMode == StudioAccessMode.STANDARD,
@@ -1720,7 +1890,7 @@ private fun StudioScreen(
                         )
                     }
                     scope.launch(Dispatchers.IO) {
-                        runCatching { appUpdateManager.checkAndDownload(force = true) }
+                        runCatching { appUpdateManager.checkForUpdate(force = true) }
                             .onFailure {
                                 AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
                             }
@@ -1874,7 +2044,36 @@ private fun StudioScreen(
         }
     }
 
-    if (appUpdateState.phase == AppUpdatePhase.READY && appUpdateState.eventId != dismissedUpdateEventId) {
+    androidx.compose.runtime.LaunchedEffect(appUpdateState.phase, appUpdateState.eventId, installUpdateWhenReady) {
+        if (appUpdateState.phase == AppUpdatePhase.READY && installUpdateWhenReady) {
+            installUpdateWhenReady = false
+            dismissedUpdateEventId = appUpdateState.eventId
+            showUpdateCheckResult = false
+            context.startActivity(Intent(context, UpdateInstallActivity::class.java))
+        }
+    }
+
+    if (appUpdateState.phase == AppUpdatePhase.AVAILABLE &&
+        !showUpdateCheckResult && appUpdateState.eventId != dismissedUpdateEventId
+    ) {
+        AlertDialog(
+            onDismissRequest = { dismissedUpdateEventId = appUpdateState.eventId },
+            title = { Text(resources.getString(R.string.app_update_ready_title, appUpdateState.version.orEmpty())) },
+            text = { Text(resources.getString(R.string.app_update_found_prompt, appUpdateState.version.orEmpty())) },
+            confirmButton = {
+                TextButton(onClick = { showUpdateCheckResult = true }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { dismissedUpdateEventId = appUpdateState.eventId }) {
+                    Text(stringResource(R.string.app_update_later))
+                }
+            },
+        )
+    } else if (appUpdateState.phase == AppUpdatePhase.READY &&
+        !installUpdateWhenReady && appUpdateState.eventId != dismissedUpdateEventId
+    ) {
         AlertDialog(
             onDismissRequest = {
                 dismissedUpdateEventId = appUpdateState.eventId
@@ -1899,6 +2098,10 @@ private fun StudioScreen(
             appUpdateState.phase == AppUpdatePhase.DOWNLOADING
         val updateDialogTitle = when (appUpdateState.phase) {
             AppUpdatePhase.CHECKING -> stringResource(R.string.app_update_checking)
+            AppUpdatePhase.AVAILABLE -> resources.getString(
+                R.string.app_update_ready_title,
+                appUpdateState.version.orEmpty(),
+            )
             AppUpdatePhase.DOWNLOADING -> resources.getString(
                 R.string.app_update_ready_title,
                 appUpdateState.version.orEmpty(),
@@ -1911,6 +2114,9 @@ private fun StudioScreen(
             onDismissRequest = { if (!updateDialogBusy) showUpdateCheckResult = false },
             title = { Text(updateDialogTitle) },
             text = when (appUpdateState.phase) {
+                AppUpdatePhase.AVAILABLE -> ({
+                    Text(resources.getString(R.string.app_update_available_text, appUpdateState.version.orEmpty()))
+                })
                 AppUpdatePhase.DOWNLOADING -> ({
                     val percent = appUpdateState.progressPercent
                     Column {
@@ -1931,8 +2137,32 @@ private fun StudioScreen(
                 else -> null
             },
             confirmButton = {
-                if (!updateDialogBusy) {
+                if (appUpdateState.phase == AppUpdatePhase.AVAILABLE) {
+                    TextButton(onClick = {
+                        installUpdateWhenReady = true
+                        scope.launch(Dispatchers.IO) {
+                            runCatching { appUpdateManager.downloadAvailable() }
+                                .onFailure {
+                                    AppUpdateStore.update(
+                                        AppUpdateState(
+                                            AppUpdatePhase.ERROR,
+                                            error = it.message ?: it::class.simpleName,
+                                            eventId = System.currentTimeMillis(),
+                                        ),
+                                    )
+                                }
+                        }
+                    }) { Text(stringResource(R.string.app_update_download_install)) }
+                } else if (!updateDialogBusy) {
                     TextButton(onClick = { showUpdateCheckResult = false }) { Text(stringResource(R.string.action_close)) }
+                }
+            },
+            dismissButton = {
+                if (appUpdateState.phase == AppUpdatePhase.AVAILABLE) {
+                    TextButton(onClick = {
+                        dismissedUpdateEventId = appUpdateState.eventId
+                        showUpdateCheckResult = false
+                    }) { Text(stringResource(R.string.app_update_later)) }
                 }
             },
         )

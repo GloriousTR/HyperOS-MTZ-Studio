@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.4"><strong>Download v4.2.4 APK</strong></a>
-  · <a href="docs/release-notes-v4.2.4.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.3.0"><strong>Download v4.3.0 APK</strong></a>
+  · <a href="docs/release-notes-v4.3.0.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -37,12 +37,12 @@
 
 ## What it does
 
-- **MTZ Import:** validates MTZ packages, adds them to the private library and produces preview data. Choose one file or batch-import up to five files.
+- **MTZ Import:** validates MTZ packages, adds them to the private library and produces preview data. Choose one file or batch-import up to five files. On supported modern Xiaomi Themes builds, Shizuku/Shevery also mirrors the theme into Xiaomi's local library.
 - **BAK Converter:** converts supported Xiaomi Themes `.bak` backups into MTZ packages and adds the result directly to the library.
 - **Theme Language Tool:** translates visible theme text into the app language. It supports XML, JSON and safe MAML content with translation memory and optional API providers.
 - **Create Your Theme:** creates a new MTZ by combining selected lock screen, icon, font, wallpaper and other components from different themes.
-- **Library:** presents the currently applied theme plus imported and created themes, separately from font-only packages.
-- **Backup and updates:** provides cloud/WebDAV backup and restore for the Studio library. Every launch checks GitHub in the background; after a newer signed APK is verified and downloaded, Studio sends an “Update found” notification.
+- **Library:** presents the currently applied theme plus imported and created themes separately from font-only packages. Manage Library supports multi-select removal and, on supported devices, importing local themes from Xiaomi Themes.
+- **Backup and updates:** provides cloud/WebDAV backup and restore for the Studio library. Every foreground entry checks GitHub in the background, announces a new version and shows verified APK download progress as a percentage.
 - **Live Diagnostics:** records import, conversion, translation and application stages to make Theme Manager issues easier to diagnose.
 
 ## Access modes
@@ -68,7 +68,7 @@ Xiaomi can change the final application screen and theme-acceptance behaviour de
 
 ## Install
 
-1. Download `MTZ_Studio_v4.2.4.apk` from the [v4.2.4 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.4).
+1. Download `MTZ_Studio_v4.3.0.apk` from the [v4.3.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.3.0).
 2. Back up an important Studio library before upgrading from an older build.
 3. Install the APK, open Studio and let it detect the available access mode.
 4. On non-rooted devices, grant the requested Shizuku/Shevery authorization before applying themes.

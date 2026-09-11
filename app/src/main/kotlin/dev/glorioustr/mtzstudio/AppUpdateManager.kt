@@ -60,7 +60,7 @@ internal object AppUpdateScheduler {
     }
 }
 
-internal enum class AppUpdatePhase { IDLE, CHECKING, DOWNLOADING, UP_TO_DATE, READY, ERROR }
+internal enum class AppUpdatePhase { IDLE, CHECKING, AVAILABLE, DOWNLOADING, UP_TO_DATE, READY, ERROR }
 
 internal data class AppUpdateState(
     val phase: AppUpdatePhase = AppUpdatePhase.IDLE,
@@ -83,7 +83,7 @@ class AppUpdateJobService : JobService() {
     override fun onStartJob(params: JobParameters): Boolean {
         runningJob = scope.launch {
             runCatching {
-                AppUpdateManager(applicationContext).checkAndDownload(
+                AppUpdateManager(applicationContext).checkForUpdate(
                     force = params.jobId == AppUpdateScheduler.IMMEDIATE_JOB_ID,
                 )
             }
@@ -108,13 +108,13 @@ internal class AppUpdateManager(private val context: Context) {
     private val updateDirectory = context.filesDir.toPath().resolve("updates")
     private val apkPath = updateDirectory.resolve("MTZ_Studio_update.apk")
 
-    fun checkAndDownload(force: Boolean = false) {
+    fun checkForUpdate(force: Boolean = false) {
         synchronized(UPDATE_LOCK) {
             if (updateInProgress) return
             updateInProgress = true
         }
         try {
-            checkAndDownloadSingleFlight(force)
+            checkForUpdateSingleFlight(force)
         } catch (error: Exception) {
             clearUpdateNotification()
             throw error
@@ -123,11 +123,11 @@ internal class AppUpdateManager(private val context: Context) {
         }
     }
 
-    private fun checkAndDownloadSingleFlight(force: Boolean) {
+    private fun checkForUpdateSingleFlight(force: Boolean) {
         AppUpdateStore.update(AppUpdateState(AppUpdatePhase.CHECKING, eventId = System.currentTimeMillis()))
         val now = System.currentTimeMillis()
         if (!force && now - prefs.getLong("last_check", 0L) < CHECK_INTERVAL_MS) {
-            if (!restoreReadyState()) AppUpdateStore.update(AppUpdateState())
+            if (!restoreState()) AppUpdateStore.update(AppUpdateState())
             return
         }
         prefs.edit().putLong("last_check", now).apply()
@@ -166,6 +166,36 @@ internal class AppUpdateManager(private val context: Context) {
         val expectedHash = requireNotNull(checksumUrl) { "Release checksum is missing" }
             .let(::readUrl).trim().substringBefore(' ').lowercase()
         require(expectedHash.matches(Regex("[0-9a-f]{64}"))) { "Release checksum is invalid" }
+        prefs.edit()
+            .putString(KEY_AVAILABLE_VERSION, tag)
+            .putString(KEY_AVAILABLE_URL, downloadUrl)
+            .putLong(KEY_AVAILABLE_SIZE, apkSize ?: -1L)
+            .putString(KEY_AVAILABLE_HASH, expectedHash)
+            .apply()
+        AppUpdateStore.update(AppUpdateState(AppUpdatePhase.AVAILABLE, version = tag, eventId = now))
+        showAvailableNotification(tag)
+    }
+
+    fun downloadAvailable() {
+        synchronized(UPDATE_LOCK) {
+            if (updateInProgress) return
+            updateInProgress = true
+        }
+        try {
+            downloadAvailableSingleFlight()
+        } finally {
+            synchronized(UPDATE_LOCK) { updateInProgress = false }
+        }
+    }
+
+    private fun downloadAvailableSingleFlight() {
+        val tag = requireNotNull(prefs.getString(KEY_AVAILABLE_VERSION, null)) { "No update is available" }
+        check(isNewer(tag, BuildConfig.VERSION_NAME)) { "Update is not newer than the installed app" }
+        val downloadUrl = requireNotNull(prefs.getString(KEY_AVAILABLE_URL, null)) { "Release APK is missing" }
+        val expectedHash = requireNotNull(prefs.getString(KEY_AVAILABLE_HASH, null)) { "Release checksum is missing" }
+        require(expectedHash.matches(Regex("[0-9a-f]{64}"))) { "Release checksum is invalid" }
+        val apkSize = prefs.getLong(KEY_AVAILABLE_SIZE, -1L).takeIf { it > 0L }
+        val eventId = System.currentTimeMillis()
         Files.createDirectories(updateDirectory)
         val staging = updateDirectory.resolve("download.tmp")
         try {
@@ -174,7 +204,7 @@ internal class AppUpdateManager(private val context: Context) {
                     phase = AppUpdatePhase.DOWNLOADING,
                     version = tag,
                     progressPercent = 0,
-                    eventId = now,
+                    eventId = eventId,
                 ),
             )
             showDownloadNotification(tag, 0)
@@ -189,7 +219,7 @@ internal class AppUpdateManager(private val context: Context) {
                             phase = AppUpdatePhase.DOWNLOADING,
                             version = tag,
                             progressPercent = percent,
-                            eventId = now,
+                            eventId = eventId,
                         ),
                     )
                     showDownloadNotification(tag, percent)
@@ -199,7 +229,13 @@ internal class AppUpdateManager(private val context: Context) {
             require(actualHash == expectedHash) { "Downloaded APK checksum does not match" }
             Files.move(staging, apkPath, StandardCopyOption.REPLACE_EXISTING)
             verifyDownloadedApk()
-            prefs.edit().putString("ready_version", tag).apply()
+            prefs.edit()
+                .putString("ready_version", tag)
+                .remove(KEY_AVAILABLE_VERSION)
+                .remove(KEY_AVAILABLE_URL)
+                .remove(KEY_AVAILABLE_SIZE)
+                .remove(KEY_AVAILABLE_HASH)
+                .apply()
             AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = tag, eventId = System.currentTimeMillis()))
             showReadyNotification(tag)
             LiveDiagnosticsRecorder.get(context).record("app_update_ready", "İmzalı uygulama güncellemesi indirildi", mapOf("version" to tag, "sha256" to actualHash))
@@ -208,12 +244,19 @@ internal class AppUpdateManager(private val context: Context) {
         }
     }
 
-    fun restoreReadyState(): Boolean {
+    fun restoreState(): Boolean {
         val version = prefs.getString("ready_version", null)?.takeIf { isNewer(it, BuildConfig.VERSION_NAME) }
+        if (version != null && runCatching { verifyDownloadedApk() }.getOrDefault(false)) {
+            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = version, eventId = System.currentTimeMillis()))
+            return true
+        }
+        val availableVersion = prefs.getString(KEY_AVAILABLE_VERSION, null)
+            ?.takeIf { isNewer(it, BuildConfig.VERSION_NAME) }
             ?: return false
-        val valid = runCatching { verifyDownloadedApk() }.getOrDefault(false)
-        if (!valid) return false
-        AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = version, eventId = System.currentTimeMillis()))
+        if (prefs.getString(KEY_AVAILABLE_URL, null).isNullOrBlank() ||
+            prefs.getString(KEY_AVAILABLE_HASH, null).isNullOrBlank()
+        ) return false
+        AppUpdateStore.update(AppUpdateState(AppUpdatePhase.AVAILABLE, version = availableVersion, eventId = System.currentTimeMillis()))
         return true
     }
 
@@ -284,6 +327,29 @@ internal class AppUpdateManager(private val context: Context) {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(context.getString(R.string.app_update_ready_title, version))
                 .setContentText(context.getString(R.string.app_update_ready_text))
+                .setContentIntent(pending)
+                .setAutoCancel(true)
+                .build(),
+        )
+    }
+
+    private fun showAvailableNotification(version: String) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.app_update_channel), NotificationManager.IMPORTANCE_HIGH),
+        )
+        val pending = PendingIntent.getActivity(
+            context,
+            1,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        manager.notify(
+            NOTIFICATION_ID,
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.app_update_ready_title, version))
+                .setContentText(context.getString(R.string.app_update_available_text, version))
                 .setContentIntent(pending)
                 .setAutoCancel(true)
                 .build(),
@@ -392,6 +458,10 @@ internal class AppUpdateManager(private val context: Context) {
         private const val MAX_APK_BYTES = 200L * 1024 * 1024
         private const val CHANNEL_ID = "app_updates"
         private const val NOTIFICATION_ID = 4403
+        private const val KEY_AVAILABLE_VERSION = "available_version"
+        private const val KEY_AVAILABLE_URL = "available_url"
+        private const val KEY_AVAILABLE_SIZE = "available_size"
+        private const val KEY_AVAILABLE_HASH = "available_hash"
     }
 }
 

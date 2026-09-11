@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.content.FileProvider
 import dev.glorioustr.mtzstudio.core.Hashing
 import dev.glorioustr.mtzstudio.library.LibraryTheme
@@ -20,6 +21,7 @@ data class PreparedThemeApply(
     val manualImportPath: String? = null,
     val operation: ThemeManagerOperation = ThemeManagerOperation.APPLY,
     val themeManagerLocalId: String? = null,
+    val themeManagerLocalIdsBefore: Set<String>? = null,
 )
 
 enum class ThemeManagerOperation { APPLY, IMPORT_ONLY, DELETE }
@@ -27,6 +29,7 @@ enum class ThemeManagerOperation { APPLY, IMPORT_ONLY, DELETE }
 enum class ThemeApplyProtocol {
     LEGACY_TESTER,
     MODERN_THEME_MANAGER_BRIDGE,
+    MODERN_THEME_MANAGER_DIRECT_APPLY,
     MODERN_THEME_MANAGER_MANUAL_IMPORT,
     ROOTLESS_MANUAL_IMPORT,
     ROOTLESS_FILE_MANAGER_HANDOFF,
@@ -46,18 +49,70 @@ class ThemeApplyCoordinator(
         ))
         check(Hashing.sha256(theme.archive.source) == theme.archive.sha256) { "Tema kaynağı doğrulama sonrası değişmiş" }
         diagnostics.record("apply_hash_verified", "Tema kaynak SHA-256 doğrulaması başarılı")
-        return if (ThemeManagerContract.behavior(installedThemeManagerVersion()) ==
+        val modern = ThemeManagerContract.behavior(installedThemeManagerVersion()) ==
             dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.MODERN_NATIVE_LIBRARY
-        ) {
-            if (themeManagerLocalId != null) prepareModernExistingTheme(theme, themeManagerLocalId)
-            else prepareModernImport(theme, ThemeManagerOperation.APPLY)
-        } else {
-            prepareLegacyTester(theme)
+        // Some vendor/modded Themes 11 packages restore Xiaomi's exported legacy tester alias.
+        // Prefer the actually declared capability over a version-number assumption when present.
+        return when {
+            modern && legacyTesterAvailable() -> {
+                diagnostics.record("modern_legacy_tester_available", "Temalar 11 paketinde doğrudan tester geçidi bulundu")
+                prepareLegacyTester(theme)
+            }
+            modern && themeManagerLocalId != null -> prepareModernExistingTheme(theme, themeManagerLocalId)
+            modern -> prepareModernImport(theme, ThemeManagerOperation.APPLY)
+            else -> prepareLegacyTester(theme)
         }
     }
 
     fun prepareModernImportOnly(theme: LibraryTheme): PreparedThemeApply =
         prepareModernImport(theme, ThemeManagerOperation.IMPORT_ONLY)
+
+    /**
+     * Adds an MTZ to Xiaomi Themes through HyperOS' own backup service while running with
+     * Shizuku/Shevery. This is the only stock-system path that does not require us to invoke
+     * Xiaomi's private Java importer or automate screen coordinates.
+     *
+     * The caller must resolve and persist the newly-created Theme Manager localId after this
+     * returns. Keeping that lookup outside this class also makes duplicate detection use the
+     * same catalog implementation as normal device-theme imports.
+     */
+    fun importModernThroughShizukuBackup(theme: LibraryTheme): String {
+        check(
+            ThemeManagerContract.behavior(installedThemeManagerVersion()) ==
+                dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.MODERN_NATIVE_LIBRARY,
+        ) { "Bu işlem yalnızca yerleşik MTZ kitaplığı bulunan Xiaomi Temalar sürümlerinde kullanılabilir" }
+        check(Hashing.sha256(theme.archive.source) == theme.archive.sha256) {
+            "Tema kaynağı doğrulama sonrası değişmiş"
+        }
+        check(SheveryBackupRestorer.state() == SheveryBackupRestorer.State.READY) {
+            "Shizuku/Shevery hazır değil veya izin verilmemiş"
+        }
+
+        val source = theme.archive.source.toFile()
+        val localId = MtzToBakConverter.restoredThemeLocalId(source)
+        val backup = java.io.File(context.cacheDir, "native-import-${UUID.randomUUID()}.bak")
+        return try {
+            diagnostics.record(
+                "dual_import_backup_build",
+                "MTZ, Xiaomi Temalar kitaplığı için hazırlanıyor",
+                mapOf("theme" to theme.displayName),
+            )
+            MtzToBakConverter.convert(
+                source,
+                backup,
+                MtzToBakConverter.deviceInfo(context),
+            )
+            val bytes = SheveryBackupRestorer.restore(backup)
+            diagnostics.record(
+                "dual_import_backup_restored",
+                "MTZ, Studio kitaplığına ek olarak Xiaomi Temalar kitaplığına aktarıldı",
+                mapOf("theme" to theme.displayName, "bytes" to bytes, "localId" to localId),
+            )
+            localId
+        } finally {
+            backup.delete()
+        }
+    }
 
     /**
      * Rootless hand-off: retain a public MTZ copy and open the best public Theme Manager surface.
@@ -223,17 +278,37 @@ class ThemeApplyCoordinator(
 
     private fun prepareModernExistingTheme(theme: LibraryTheme, localId: String): PreparedThemeApply {
         require(localId.matches(SAFE_LOCAL_ID)) { "Geçersiz Tema Mağazası yerel kimliği" }
-        check(ensureModernThemeManagerBridgeScope()) { "Tema Mağazası köprüsü etkin değil" }
+        val bridgeReady = ensureModernThemeManagerBridgeScope()
         val themeName = theme.archive.metadata?.name ?: theme.displayName
-        val intent = modernThemeManagerIntent(ThemeManagerBridgeContract.ACTION_APPLY_EXISTING).apply {
-            putExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID, localId)
+        val intent = if (bridgeReady) {
+            modernThemeManagerIntent(ThemeManagerBridgeContract.ACTION_APPLY_EXISTING).apply {
+                putExtra(ThemeManagerBridgeContract.EXTRA_THEME_LOCAL_ID, localId)
+            }
+        } else {
+            // Xiaomi Themes 10.8/11 internally uses REQUEST_APPLY_EVENT to restore/apply a
+            // local resource as soon as its exported detail activity resolves the localId.
+            // This is coordinate-free and leaves all validation inside Xiaomi Themes.
+            Intent(Intent.ACTION_VIEW, modernLocalThemeUri(localId)).apply {
+                setPackage(THEME_MANAGER_PACKAGE)
+                addCategory(Intent.CATEGORY_DEFAULT)
+                putExtra("REQUEST_RESOURCE_CODE", "theme")
+                putExtra("REQUEST_APPLY_EVENT", true)
+            }.also {
+                check(it.resolveActivity(context.packageManager) != null) {
+                    "Xiaomi Temalar yerel tema uygulama ekranı bulunamadı"
+                }
+            }
         }
         return PreparedThemeApply(
             themeId = theme.id.value,
             themeName = themeName,
             stagedPath = "",
             intent = intent,
-            protocol = ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE,
+            protocol = if (bridgeReady) {
+                ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE
+            } else {
+                ThemeApplyProtocol.MODERN_THEME_MANAGER_DIRECT_APPLY
+            },
             operation = ThemeManagerOperation.APPLY,
             themeManagerLocalId = localId,
         )
@@ -337,20 +412,38 @@ class ThemeApplyCoordinator(
         throw IllegalStateException(context.getString(R.string.tm_rootless_import_unavailable))
     }
 
+    fun openModernLocalThemeDetail(localId: String) {
+        require(localId.matches(SAFE_LOCAL_ID)) { "Geçersiz Tema Mağazası yerel kimliği" }
+        val uri = modernLocalThemeUri(localId).toString()
+        val command = "/system/bin/am start -W -a android.intent.action.VIEW " +
+            "-c android.intent.category.DEFAULT -d ${shellQuote(uri)} -p $THEME_MANAGER_PACKAGE " +
+            "--es REQUEST_RESOURCE_CODE theme --ez REQUEST_APPLY_EVENT true"
+        val result = runRecordedRootOrShell("modern_theme_detail", command, 30)
+        check(result.exitCode == 0 && !result.output.contains("Error:", ignoreCase = true) &&
+            !result.output.contains("Exception", ignoreCase = true)
+        ) { "Xiaomi Temalar tema ayrıntı ekranı açılamadı: ${result.output.takeLast(500)}" }
+    }
+
     private fun safeThemeManagerLauncherIntent(): Intent =
         checkNotNull(context.packageManager.getLaunchIntentForPackage(THEME_MANAGER_PACKAGE)) {
             "Xiaomi Temalar uygulamasının açılabilir bir ekranı bulunamadı"
         }
 
+    private fun modernLocalThemeUri(localId: String): Uri =
+        Uri.parse("ViewLocalResource://view.local.resource#$localId")
+
     private fun prepareLegacyTester(theme: LibraryTheme): PreparedThemeApply {
+        val themeName = theme.archive.metadata?.name ?: theme.displayName
+        val readableSource = MtzPublicExporter.exportToPublicDownloads(context, theme.archive.source, themeName)
+            ?.absolutePath ?: theme.archive.source.toString()
         val stagedPath = "$THEME_MANAGER_STAGING_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
             append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_STAGING_ROOT))
-            append(" && /system/bin/cp ").append(shellQuote(theme.archive.source.toString()))
+            append(" && /system/bin/cp ").append(shellQuote(readableSource))
             append(' ').append(shellQuote(stagedPath))
             append(" && /system/bin/chmod 777 ").append(shellQuote(stagedPath))
             append(" && /system/bin/mkdir -p /sdcard/MIUI/theme")
-            append(" && /system/bin/cp ").append(shellQuote(theme.archive.source.toString()))
+            append(" && /system/bin/cp ").append(shellQuote(readableSource))
             append(" /sdcard/MIUI/theme/${UUID.randomUUID()}.mtz 2>/dev/null || true")
         }
         val result = runRecorded("legacy_staging", command, 120)
@@ -368,7 +461,7 @@ class ThemeApplyCoordinator(
         check(intent.resolveActivity(context.packageManager) != null) { "Uyumlu Tema Yöneticisi tester aktivitesi bulunamadı" }
         return PreparedThemeApply(
             themeId = theme.id.value,
-            themeName = theme.archive.metadata?.name ?: theme.displayName,
+            themeName = themeName,
             stagedPath = stagedPath,
             intent = intent,
             protocol = ThemeApplyProtocol.LEGACY_TESTER,
@@ -445,6 +538,13 @@ class ThemeApplyCoordinator(
     } catch (error: Exception) {
         diagnostics.record("privileged_step_failed", "Yetkili işlem tamamlanamadı", mapOf("stage" to stage), error)
         throw error
+    }
+
+    private fun legacyTesterAvailable(): Boolean {
+        val request = ThemeManagerContract.legacyTesterRequest("/dev/null", context.packageName)
+        return Intent(request.action).apply {
+            component = ComponentName(THEME_MANAGER_PACKAGE, request.componentClassName)
+        }.resolveActivity(context.packageManager) != null
     }
 
     private fun runRecordedRootOrShell(stage: String, command: String, timeoutSeconds: Long) = try {

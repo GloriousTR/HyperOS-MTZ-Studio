@@ -14,8 +14,8 @@ android {
         applicationId = "dev.glorioustr.mtzstudio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 61
-        versionName = "4.2.4"
+        versionCode = 62
+        versionName = "4.3.0"
     }
 
     signingConfigs {

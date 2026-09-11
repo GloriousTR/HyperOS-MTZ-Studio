@@ -54,7 +54,12 @@
     <string name="library_customize">Customize</string>
     <string name="library_rollback">Go Back</string>
     <string name="library_saved_themes">SAVED THEMES</string>
-    <string name="library_all_visible">Manage all</string>
+    <string name="library_all_visible">Manage library</string>
+    <string name="library_manage_title">Manage library</string>
+    <string name="library_manage_desc">Import local Xiaomi themes or select multiple MTZ Studio themes to remove.</string>
+    <string name="library_delete_selected">Remove themes</string>
+    <string name="library_delete_count">Remove selected (%1$d)</string>
+    <string name="status_themes_removed">%1$d themes were removed from the MTZ Studio library.</string>
     <string name="library_method_backup">BAK Restore Protocol</string>
     <string name="library_method_bridge">Theme Manager Bridge</string>
     <string name="library_method_shizuku">Shizuku Bridge Protocol</string>
@@ -185,7 +190,7 @@
     <string name="mtz_import_btn_select">Select MTZ file</string>
     <string name="mtz_import_btn_importing">Importing…</string>
     <string name="mtz_import_page_desc">Choose one MTZ or import a batch of up to 5 MTZ files into your library.</string>
-    <string name="mtz_import_single_button">Select 1 MTZ</string>
+    <string name="mtz_import_single_button">Select an MTZ</string>
     <string name="mtz_import_multiple_button">Select multiple MTZ files (max. 5)</string>
     <string name="mtz_import_progress_title">Import in progress</string>
     <string name="mtz_import_complete_title">Import completed</string>
@@ -494,6 +499,10 @@
     <string name="app_update_later">Later</string>
     <string name="app_update_checking">Checking GitHub and securely verifying the update…</string>
     <string name="app_update_downloading">Downloading update…</string>
+    <string name="app_update_found_prompt">HyperOS MTZ Studio %1$s is available. Would you like to view the update?</string>
+    <string name="app_update_available_text">Version %1$s is ready to download. The APK will be verified before installation.</string>
+    <string name="app_update_download_install">Download and install</string>
+    <string name="status_modern_theme_detail_opened">%1$s was imported. The Xiaomi Themes apply screen was opened.</string>
     <string name="app_update_up_to_date">You already have the latest version.</string>
     <string name="app_update_check_failed">The update check could not be completed.</string>
 </resources>
