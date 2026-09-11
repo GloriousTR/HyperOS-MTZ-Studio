@@ -1828,7 +1828,9 @@ private fun StudioScreen(
                 onRetryCatalog = ::refreshModernThemeManagerCatalog,
                 onOpenDeviceThemePicker = ::openDeviceThemePicker,
                 onDeleteThemes = ::deleteThemesFromLibrary,
-                showDeviceImport = capabilities.usesNativeCatalog,
+                // Root can read Xiaomi Themes' private library on both legacy Global and
+                // modern builds. Keep automatic native catalog sync restricted separately.
+                showDeviceImport = capabilities.canReadPrivateThemeManagerData,
                 nativeCatalogMode = capabilities.usesNativeCatalog,
                 rootlessMode = accessMode == StudioAccessMode.STANDARD,
                 translationProgress = translationProgress,

@@ -1255,7 +1255,9 @@ internal fun ThemesScreen(
     if (showLibraryManager) {
         LibraryManagerDialog(
             themes = galleryThemes,
-            canImportDeviceThemes = showDeviceImport && nativeCatalogMode,
+            // The visual device-theme picker only needs privileged read access.  It predates
+            // the modern native-catalog mode and remains useful on rooted Global builds.
+            canImportDeviceThemes = showDeviceImport,
             busy = deviceImportRunning,
             onImportDeviceThemes = {
                 showLibraryManager = false
