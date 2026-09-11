@@ -392,6 +392,7 @@
     <string name="app_update_install">Instalar atualização</string>
     <string name="app_update_later">Mais tarde</string>
     <string name="app_update_checking">Verificando o GitHub e validando a atualização com segurança…</string>
+    <string name="app_update_downloading">Baixando a atualização…</string>
     <string name="app_update_up_to_date">Você já está usando a versão mais recente.</string>
     <string name="app_update_check_failed">Não foi possível concluir a verificação de atualizações.</string>
     <string name="dest_tools">Tools</string>

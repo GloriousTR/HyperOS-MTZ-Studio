@@ -392,6 +392,7 @@
     <string name="app_update_install">تثبيت التحديث</string>
     <string name="app_update_later">لاحقًا</string>
     <string name="app_update_checking">جارٍ التحقق من GitHub ومن سلامة التحديث…</string>
+    <string name="app_update_downloading">جارٍ تنزيل التحديث…</string>
     <string name="app_update_up_to_date">لديك أحدث إصدار بالفعل.</string>
     <string name="app_update_check_failed">تعذر إكمال التحقق من التحديثات.</string>
     <string name="dest_tools">Tools</string>

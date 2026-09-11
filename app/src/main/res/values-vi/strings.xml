@@ -392,6 +392,7 @@
     <string name="app_update_install">Cài đặt cập nhật</string>
     <string name="app_update_later">Để sau</string>
     <string name="app_update_checking">Đang kiểm tra GitHub và xác minh cập nhật an toàn…</string>
+    <string name="app_update_downloading">Đang tải bản cập nhật…</string>
     <string name="app_update_up_to_date">Bạn đã dùng phiên bản mới nhất.</string>
     <string name="app_update_check_failed">Không thể hoàn tất kiểm tra cập nhật.</string>
     <string name="dest_tools">Tools</string>

@@ -493,6 +493,7 @@
     <string name="app_update_install">Install update</string>
     <string name="app_update_later">Later</string>
     <string name="app_update_checking">Checking GitHub and securely verifying the update…</string>
+    <string name="app_update_downloading">Downloading update…</string>
     <string name="app_update_up_to_date">You already have the latest version.</string>
     <string name="app_update_check_failed">The update check could not be completed.</string>
 </resources>

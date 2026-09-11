@@ -392,6 +392,7 @@
     <string name="app_update_install">আপডেট ইনস্টল করুন</string>
     <string name="app_update_later">পরে</string>
     <string name="app_update_checking">GitHub পরীক্ষা ও আপডেট নিরাপদভাবে যাচাই করা হচ্ছে…</string>
+    <string name="app_update_downloading">আপডেট ডাউনলোড হচ্ছে…</string>
     <string name="app_update_up_to_date">আপনি ইতিমধ্যে সর্বশেষ সংস্করণ ব্যবহার করছেন।</string>
     <string name="app_update_check_failed">আপডেট পরীক্ষা সম্পন্ন করা যায়নি।</string>
     <string name="dest_tools">Tools</string>

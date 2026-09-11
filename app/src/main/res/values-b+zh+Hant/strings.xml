@@ -392,6 +392,7 @@
     <string name="app_update_install">安裝更新</string>
     <string name="app_update_later">稍後</string>
     <string name="app_update_checking">正在檢查 GitHub 並安全驗證更新…</string>
+    <string name="app_update_downloading">正在下載更新…</string>
     <string name="app_update_up_to_date">您已使用最新版本。</string>
     <string name="app_update_check_failed">無法完成更新檢查。</string>
     <string name="dest_tools">Tools</string>

@@ -3022,28 +3022,14 @@ private fun ThemeActionDock(
                 ) {
                     if (translationProgress?.running == true) {
                         val progress = translationProgress.fraction.coerceIn(0f, 1f)
-                        Box(
+                        ReadableProgressBar(
+                            progress = progress,
+                            label = "${(progress * 100).toInt()}%",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp)
-                                .height(20.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(50)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            )
-                            Text(
-                                text = "${(progress * 100).toInt()}%",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
+                                .height(24.dp),
+                        )
                     } else {
                         Text(
                             text = stringResource(R.string.action_translate),

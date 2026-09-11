@@ -20,6 +20,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -1708,6 +1709,16 @@ private fun StudioScreen(
                 onNavigate = { target -> navigateTo(target, StudioDestination.TOOLS) },
                 onCheckForUpdates = {
                     showUpdateCheckResult = true
+                    if (appUpdateState.phase != AppUpdatePhase.CHECKING &&
+                        appUpdateState.phase != AppUpdatePhase.DOWNLOADING
+                    ) {
+                        AppUpdateStore.update(
+                            AppUpdateState(
+                                phase = AppUpdatePhase.CHECKING,
+                                eventId = System.currentTimeMillis(),
+                            ),
+                        )
+                    }
                     scope.launch(Dispatchers.IO) {
                         runCatching { appUpdateManager.checkAndDownload(force = true) }
                             .onFailure {
@@ -1884,21 +1895,43 @@ private fun StudioScreen(
             },
         )
     } else if (showUpdateCheckResult && appUpdateState.phase != AppUpdatePhase.IDLE) {
+        val updateDialogBusy = appUpdateState.phase == AppUpdatePhase.CHECKING ||
+            appUpdateState.phase == AppUpdatePhase.DOWNLOADING
+        val updateDialogTitle = when (appUpdateState.phase) {
+            AppUpdatePhase.CHECKING -> stringResource(R.string.app_update_checking)
+            AppUpdatePhase.DOWNLOADING -> resources.getString(
+                R.string.app_update_ready_title,
+                appUpdateState.version.orEmpty(),
+            )
+            AppUpdatePhase.UP_TO_DATE -> stringResource(R.string.app_update_up_to_date)
+            AppUpdatePhase.ERROR -> stringResource(R.string.app_update_check_failed)
+            else -> ""
+        }
         AlertDialog(
-            onDismissRequest = { if (appUpdateState.phase != AppUpdatePhase.CHECKING) showUpdateCheckResult = false },
-            title = { Text(stringResource(R.string.app_update_check)) },
-            text = {
-                Text(
-                    when (appUpdateState.phase) {
-                        AppUpdatePhase.CHECKING -> stringResource(R.string.app_update_checking)
-                        AppUpdatePhase.UP_TO_DATE -> stringResource(R.string.app_update_up_to_date)
-                        AppUpdatePhase.ERROR -> appUpdateState.error ?: stringResource(R.string.app_update_check_failed)
-                        else -> ""
-                    },
-                )
+            onDismissRequest = { if (!updateDialogBusy) showUpdateCheckResult = false },
+            title = { Text(updateDialogTitle) },
+            text = when (appUpdateState.phase) {
+                AppUpdatePhase.DOWNLOADING -> ({
+                    val percent = appUpdateState.progressPercent
+                    Column {
+                        Text(stringResource(R.string.app_update_downloading))
+                        ReadableProgressBar(
+                            progress = percent?.div(100f),
+                            label = percent?.let { "$it%" }.orEmpty(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                                .height(34.dp),
+                        )
+                    }
+                })
+                AppUpdatePhase.ERROR -> ({
+                    Text(appUpdateState.error ?: stringResource(R.string.app_update_check_failed))
+                })
+                else -> null
             },
             confirmButton = {
-                if (appUpdateState.phase != AppUpdatePhase.CHECKING) {
+                if (!updateDialogBusy) {
                     TextButton(onClick = { showUpdateCheckResult = false }) { Text(stringResource(R.string.action_close)) }
                 }
             },

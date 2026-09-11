@@ -392,6 +392,7 @@
     <string name="app_update_install">アップデートをインストール</string>
     <string name="app_update_later">後で</string>
     <string name="app_update_checking">GitHub を確認し、アップデートを安全に検証しています…</string>
+    <string name="app_update_downloading">アップデートをダウンロードしています…</string>
     <string name="app_update_up_to_date">すでに最新バージョンです。</string>
     <string name="app_update_check_failed">アップデートの確認を完了できませんでした。</string>
     <string name="dest_tools">Tools</string>

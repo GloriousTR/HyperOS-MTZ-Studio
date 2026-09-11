@@ -392,6 +392,7 @@
     <string name="app_update_install">నవీకరణను ఇన్‌స్టాల్ చేయండి</string>
     <string name="app_update_later">తర్వాత</string>
     <string name="app_update_checking">GitHub తనిఖీ చేసి నవీకరణను సురక్షితంగా ధృవీకరిస్తోంది…</string>
+    <string name="app_update_downloading">నవీకరణ డౌన్‌లోడ్ అవుతోంది…</string>
     <string name="app_update_up_to_date">మీరు ఇప్పటికే తాజా సంస్కరణను ఉపయోగిస్తున్నారు.</string>
     <string name="app_update_check_failed">నవీకరణ తనిఖీ పూర్తి కాలేదు.</string>
     <string name="dest_tools">Tools</string>

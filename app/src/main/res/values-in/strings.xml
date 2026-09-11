@@ -392,6 +392,7 @@
     <string name="app_update_install">Pasang pembaruan</string>
     <string name="app_update_later">Nanti</string>
     <string name="app_update_checking">Memeriksa GitHub dan memverifikasi pembaruan dengan aman…</string>
+    <string name="app_update_downloading">Mengunduh pembaruan…</string>
     <string name="app_update_up_to_date">Anda sudah menggunakan versi terbaru.</string>
     <string name="app_update_check_failed">Pemeriksaan pembaruan tidak dapat diselesaikan.</string>
     <string name="dest_tools">Tools</string>

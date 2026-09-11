@@ -60,12 +60,13 @@ internal object AppUpdateScheduler {
     }
 }
 
-internal enum class AppUpdatePhase { IDLE, CHECKING, UP_TO_DATE, READY, ERROR }
+internal enum class AppUpdatePhase { IDLE, CHECKING, DOWNLOADING, UP_TO_DATE, READY, ERROR }
 
 internal data class AppUpdateState(
     val phase: AppUpdatePhase = AppUpdatePhase.IDLE,
     val version: String? = null,
     val error: String? = null,
+    val progressPercent: Int? = null,
     val eventId: Long = 0L,
 )
 
@@ -114,6 +115,9 @@ internal class AppUpdateManager(private val context: Context) {
         }
         try {
             checkAndDownloadSingleFlight(force)
+        } catch (error: Exception) {
+            clearUpdateNotification()
+            throw error
         } finally {
             synchronized(UPDATE_LOCK) { updateInProgress = false }
         }
@@ -130,11 +134,13 @@ internal class AppUpdateManager(private val context: Context) {
         val release = JSONObject(readUrl(RELEASE_API))
         if (release.optBoolean("draft") || release.optBoolean("prerelease")) {
             AppUpdateStore.update(AppUpdateState(AppUpdatePhase.UP_TO_DATE, eventId = now))
+            clearUpdateNotification()
             return
         }
         val tag = release.getString("tag_name").removePrefix("v")
         if (!isNewer(tag, BuildConfig.VERSION_NAME)) {
             AppUpdateStore.update(AppUpdateState(AppUpdatePhase.UP_TO_DATE, eventId = now))
+            clearUpdateNotification()
             return
         }
         if (prefs.getString("ready_version", null) == tag && runCatching { verifyDownloadedApk() }.getOrDefault(false)) {
@@ -144,12 +150,16 @@ internal class AppUpdateManager(private val context: Context) {
         }
         val assets = release.getJSONArray("assets")
         var apkUrl: String? = null
+        var apkSize: Long? = null
         var checksumUrl: String? = null
         for (index in 0 until assets.length()) {
             val asset = assets.getJSONObject(index)
             val name = asset.getString("name")
             val url = asset.getString("browser_download_url")
-            if (name.startsWith("MTZ_Studio_") && name.endsWith(".apk")) apkUrl = url
+            if (name.startsWith("MTZ_Studio_") && name.endsWith(".apk")) {
+                apkUrl = url
+                apkSize = asset.optLong("size").takeIf { it > 0L }
+            }
             if (name.startsWith("MTZ_Studio_") && name.endsWith(".apk.sha256")) checksumUrl = url
         }
         val downloadUrl = requireNotNull(apkUrl) { "Release APK is missing" }
@@ -159,7 +169,32 @@ internal class AppUpdateManager(private val context: Context) {
         Files.createDirectories(updateDirectory)
         val staging = updateDirectory.resolve("download.tmp")
         try {
-            downloadBounded(downloadUrl, staging)
+            AppUpdateStore.update(
+                AppUpdateState(
+                    phase = AppUpdatePhase.DOWNLOADING,
+                    version = tag,
+                    progressPercent = 0,
+                    eventId = now,
+                ),
+            )
+            showDownloadNotification(tag, 0)
+            downloadBounded(downloadUrl, staging, apkSize) { downloadedBytes, totalBytes ->
+                val percent = totalBytes
+                    ?.takeIf { it > 0L }
+                    ?.let { ((downloadedBytes * 100L) / it).toInt().coerceIn(0, 100) }
+                val current = AppUpdateStore.state.value
+                if (current.phase != AppUpdatePhase.DOWNLOADING || current.progressPercent != percent) {
+                    AppUpdateStore.update(
+                        AppUpdateState(
+                            phase = AppUpdatePhase.DOWNLOADING,
+                            version = tag,
+                            progressPercent = percent,
+                            eventId = now,
+                        ),
+                    )
+                    showDownloadNotification(tag, percent)
+                }
+            }
             val actualHash = sha256(staging)
             require(actualHash == expectedHash) { "Downloaded APK checksum does not match" }
             Files.move(staging, apkPath, StandardCopyOption.REPLACE_EXISTING)
@@ -255,6 +290,33 @@ internal class AppUpdateManager(private val context: Context) {
         )
     }
 
+    private fun showDownloadNotification(version: String, percent: Int?) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.app_update_channel), NotificationManager.IMPORTANCE_HIGH),
+        )
+        val progress = percent?.coerceIn(0, 100)
+        val progressText = buildString {
+            append(context.getString(R.string.app_update_downloading))
+            if (progress != null) append(" · ").append(progress).append('%')
+        }
+        manager.notify(
+            NOTIFICATION_ID,
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.app_update_ready_title, version))
+                .setContentText(progressText)
+                .setProgress(100, progress ?: 0, progress == null)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .build(),
+        )
+    }
+
+    private fun clearUpdateNotification() {
+        context.getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID)
+    }
+
     private fun readUrl(url: String): String = open(url).let { connection ->
         try {
             check(connection.responseCode in 200..299) { "Update server returned HTTP ${connection.responseCode}" }
@@ -262,10 +324,17 @@ internal class AppUpdateManager(private val context: Context) {
         } finally { connection.disconnect() }
     }
 
-    private fun downloadBounded(url: String, target: Path) {
+    private fun downloadBounded(
+        url: String,
+        target: Path,
+        expectedTotalBytes: Long?,
+        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+    ) {
         val connection = open(url)
         try {
             check(connection.responseCode in 200..299) { "APK download returned HTTP ${connection.responseCode}" }
+            val totalBytes = connection.contentLengthLong.takeIf { it > 0L } ?: expectedTotalBytes
+            onProgress(0L, totalBytes)
             connection.inputStream.use { input ->
                 Files.newOutputStream(target).use { output ->
                     val buffer = ByteArray(64 * 1024)
@@ -276,6 +345,7 @@ internal class AppUpdateManager(private val context: Context) {
                         total += count
                         check(total <= MAX_APK_BYTES) { "Update APK is larger than allowed" }
                         output.write(buffer, 0, count)
+                        onProgress(total, totalBytes)
                     }
                 }
             }

@@ -392,6 +392,7 @@
     <string name="app_update_install">Установить обновление</string>
     <string name="app_update_later">Позже</string>
     <string name="app_update_checking">Проверяем GitHub и безопасно подтверждаем обновление…</string>
+    <string name="app_update_downloading">Загрузка обновления…</string>
     <string name="app_update_up_to_date">У вас уже установлена последняя версия.</string>
     <string name="app_update_check_failed">Не удалось завершить проверку обновлений.</string>
     <string name="dest_tools">Tools</string>

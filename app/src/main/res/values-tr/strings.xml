@@ -493,6 +493,7 @@
     <string name="app_update_install">Güncellemeyi kur</string>
     <string name="app_update_later">Daha sonra</string>
     <string name="app_update_checking">GitHub denetleniyor ve güncelleme güvenli biçimde doğrulanıyor…</string>
+    <string name="app_update_downloading">Güncelleme indiriliyor…</string>
     <string name="app_update_up_to_date">Zaten en güncel sürümü kullanıyorsunuz.</string>
     <string name="app_update_check_failed">Güncelleme denetimi tamamlanamadı.</string>
 </resources>

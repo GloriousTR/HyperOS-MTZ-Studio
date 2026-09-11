@@ -392,6 +392,7 @@
     <string name="app_update_install">نصب به‌روزرسانی</string>
     <string name="app_update_later">بعداً</string>
     <string name="app_update_checking">در حال بررسی GitHub و تأیید امن به‌روزرسانی…</string>
+    <string name="app_update_downloading">در حال دانلود به‌روزرسانی…</string>
     <string name="app_update_up_to_date">در حال حاضر آخرین نسخه را دارید.</string>
     <string name="app_update_check_failed">بررسی به‌روزرسانی کامل نشد.</string>
     <string name="dest_tools">Tools</string>
