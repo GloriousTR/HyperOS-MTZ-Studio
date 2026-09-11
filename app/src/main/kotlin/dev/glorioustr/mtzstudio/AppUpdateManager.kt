@@ -36,7 +36,7 @@ import java.security.MessageDigest
 
 internal object AppUpdateScheduler {
     private const val PERIODIC_JOB_ID = 33010
-    private const val IMMEDIATE_JOB_ID = 33011
+    internal const val IMMEDIATE_JOB_ID = 33011
     private const val PERIOD_MS = 12L * 60 * 60 * 1000
 
     fun schedule(context: Context, checkNow: Boolean = true) {
@@ -81,7 +81,11 @@ class AppUpdateJobService : JobService() {
 
     override fun onStartJob(params: JobParameters): Boolean {
         runningJob = scope.launch {
-            runCatching { AppUpdateManager(applicationContext).checkAndDownload() }
+            runCatching {
+                AppUpdateManager(applicationContext).checkAndDownload(
+                    force = params.jobId == AppUpdateScheduler.IMMEDIATE_JOB_ID,
+                )
+            }
                 .onFailure {
                     AppUpdateStore.update(AppUpdateState(AppUpdatePhase.ERROR, error = it.message ?: it::class.simpleName, eventId = System.currentTimeMillis()))
                     LiveDiagnosticsRecorder.get(applicationContext).record("app_update_failed", "Güncelleme kontrolü tamamlanamadı", error = it)
@@ -119,6 +123,11 @@ internal class AppUpdateManager(private val context: Context) {
         val tag = release.getString("tag_name").removePrefix("v")
         if (!isNewer(tag, BuildConfig.VERSION_NAME)) {
             AppUpdateStore.update(AppUpdateState(AppUpdatePhase.UP_TO_DATE, eventId = now))
+            return
+        }
+        if (prefs.getString("ready_version", null) == tag && runCatching { verifyDownloadedApk() }.getOrDefault(false)) {
+            AppUpdateStore.update(AppUpdateState(AppUpdatePhase.READY, version = tag, eventId = now))
+            showReadyNotification(tag)
             return
         }
         val assets = release.getJSONArray("assets")

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">لا يوفّر إصدار Xiaomi Themes هذا مسار استيراد MTZ عاماً للتطبيقات الخارجية. لا يمكن التطبيق التلقائي بدون صلاحيات root؛ استخدم Shizuku + BAK Converter أو مسار الاستيراد المدمج في Xiaomi، أو شارك APK من Live Diagnostics للتحليل.</string>
+    <string name="theme_guard_active">حماية السمة نشطة عبر Shizuku/Shevery</string>
+    <string name="theme_guard_waiting">انقطع اتصال Shizuku/Shevery. ستُستأنف حماية السمة تلقائياً عند عودة الخدمة.</string>
+    <string name="tm_rootless_import_unavailable">لاستعادة دعم MTZ، استخدم زر الرجوع المصرّح به أدناه لتثبيت إصدار Xiaomi Themes 3.0.5.6 المتحقق منه. لن يبدأ التثبيت قبل التحقق من اسم الحزمة والإصدار وبصمة SHA-256 وتوقيع Xiaomi.</string>
+    <string name="tm_incompatibility_reason_missing_activity">نشاط استيراد MTZ المحلي المطلوب غير متاح في إصدار Xiaomi Themes هذا.</string>
     <string name="tm_btn_download_apk">تنزيل APK %1$s</string>
+    <string name="tm_btn_shizuku_downgrade">الرجوع إلى %1$s باستخدام Shizuku</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">السمات</string>
@@ -288,7 +292,7 @@
     <string name="tm_status_waiting_root">أنتظر root إذن و نتيجة مديري الحزمة...</string>
     <string name="tm_status_root_failed">Root فشلت العملية: %1$s</string>
     <string name="shevery_dialog_title">Shizuku / Shevery</string>
-    <string name="shevery_dialog_text">يمكنك تفويض خدمة Shizuku المتوافقة التي تم اكتشافها هنا. مطلوب وضع Root للكاتل الخاص للموضوع Xiaomi؛ وضع ADB وحده ليس كافيا. إذا كنت تستخدم الوصول المباشر للمستخدم، يمكنك تخطي هذه الإذن الخدمة.</string>
+    <string name="shevery_dialog_text">خدمة Shizuku/Shevery تعمل. امنح MTZ Studio الإذن للمتابعة. وضع ADB كافٍ لعمليات السمات بدون root؛ ويُستخدم وضع root فقط على الأجهزة التي تملك صلاحيات root.</string>
     <string name="shevery_btn_grant">منح الإذن</string>
     <string name="shevery_btn_skip">تخطي الآن</string>
     <string name="privileged_access_permission_required">إعطاء MTZ Studio الإذن على Shizuku/Shevery، أو إعطائه الوصول للمستخدم الخارق في مدير root.</string>
@@ -381,7 +385,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">تحديثات التطبيق</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">تم العثور على تحديث: HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">تم تنزيل التحديث والتحقق منه. اضغط للتثبيت.</string>
     <string name="app_update_check">التحقق من التحديثات</string>
     <string name="app_update_check_desc">تحقق من GitHub بحثًا عن إصدار MTZ Studio أحدث وموقّع</string>

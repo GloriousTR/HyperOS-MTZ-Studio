@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">این نسخه از Xiaomi Themes مسیر عمومی وارد کردن MTZ برای برنامه‌های خارجی ندارد. اعمال خودکار بدون روت ممکن نیست؛ از Shizuku + BAK Converter، واردسازی داخلی Xiaomi یا اشتراک APK از Live Diagnostics استفاده کنید.</string>
+    <string name="theme_guard_active">محافظت از پوسته با Shizuku/Shevery فعال است</string>
+    <string name="theme_guard_waiting">اتصال Shizuku/Shevery قطع شد. با بازگشت سرویس، محافظت از پوسته به‌طور خودکار ادامه می‌یابد.</string>
+    <string name="tm_rootless_import_unavailable">برای بازگرداندن پشتیبانی MTZ، با دکمه مجاز کاهش نسخه در پایین، Xiaomi Themes 3.0.5.6 تأییدشده را نصب کنید. نصب تا پیش از تأیید نام بسته، نسخه، مقدار SHA-256 و امضای Xiaomi آغاز نمی‌شود.</string>
+    <string name="tm_incompatibility_reason_missing_activity">فعالیت لازم برای وارد کردن محلی MTZ در این نسخه Xiaomi Themes وجود ندارد.</string>
     <string name="tm_btn_download_apk">دانلود APK %1$s</string>
+    <string name="tm_btn_shizuku_downgrade">کاهش نسخه به %1$s با Shizuku</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">پوسته‌ها</string>
@@ -288,7 +292,7 @@
     <string name="tm_status_waiting_root">منتظر اجازه root و نتیجه مدیر بسته...</string>
     <string name="tm_status_root_failed">Root عملیات شکست خورده: %1$s</string>
     <string name="shevery_dialog_title">Shizuku / Shevery</string>
-    <string name="shevery_dialog_text">شما می توانید سرویس Shizuku سازگار شناسایی شده را در اینجا تأیید کنید. حالت Root برای کاتالوگ موضوع خصوصی Xiaomi مورد نیاز است؛ حالت ADB به تنهایی کافی نیست. اگر از دسترسی مستقیم سوپر کاربری استفاده کنید، می توانید این مجوز سرویس را رد کنید.</string>
+    <string name="shevery_dialog_text">Shizuku/Shevery در حال اجرا است. برای ادامه به MTZ Studio مجوز دهید. حالت ADB برای عملیات پوسته بدون روت کافی است؛ حالت روت فقط در دستگاه‌های روت‌شده استفاده می‌شود.</string>
     <string name="shevery_btn_grant">اجازه دادن</string>
     <string name="shevery_btn_skip">فعلاً رد کردن</string>
     <string name="privileged_access_permission_required">به MTZ Studio اجازه بده در Shizuku/Shevery، یا به او دسترسی ابرکاربری در root مدیر خود را بده.</string>
@@ -381,7 +385,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">به‌روزرسانی‌های برنامه</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">به‌روزرسانی پیدا شد: HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">به‌روزرسانی دانلود و تأیید شد. برای نصب ضربه بزنید.</string>
     <string name="app_update_check">بررسی به‌روزرسانی</string>
     <string name="app_update_check_desc">نسخه امضاشده جدیدتر MTZ Studio را در GitHub بررسی کنید</string>

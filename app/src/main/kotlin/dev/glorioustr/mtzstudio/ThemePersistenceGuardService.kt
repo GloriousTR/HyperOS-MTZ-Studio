@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class ThemePersistenceGuardService : Service() {
     private val checking = AtomicBoolean(false)
     private var scheduler: ScheduledExecutorService? = null
+    private var privilegeConnected: Boolean? = null
+    private var directRootAvailable: Boolean? = null
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -55,7 +57,7 @@ class ThemePersistenceGuardService : Service() {
     override fun onCreate() {
         super.onCreate()
         createChannels()
-        startForeground(NOTIFICATION_ID, monitoringNotification())
+        startForeground(NOTIFICATION_ID, monitoringNotification(ConnectionState.CHECKING))
         val filter = IntentFilter().apply {
             priority = 1_000
             GUARDED_ACTIONS.forEach(::addAction)
@@ -75,7 +77,10 @@ class ThemePersistenceGuardService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_DISABLE) {
             prefs.edit().putBoolean(KEY_ENABLED, false).apply()
-            getSystemService(NotificationManager::class.java).cancel(REAPPLY_NOTIFICATION_ID)
+            getSystemService(NotificationManager::class.java).apply {
+                cancel(REAPPLY_NOTIFICATION_ID)
+                cancel(CONNECTION_NOTIFICATION_ID)
+            }
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -126,6 +131,10 @@ class ThemePersistenceGuardService : Service() {
     private fun checkTheme() {
         if (!prefs.getBoolean(KEY_ENABLED, false) || !checking.compareAndSet(false, true)) return
         try {
+            if (!hasPrivilegedAccess()) {
+                updateConnectionState(connected = false)
+                return
+            }
             val baseline = prefs.getString(KEY_BASELINE, null)
             if (baseline.isNullOrBlank()) {
                 captureBaseline()
@@ -249,12 +258,27 @@ class ThemePersistenceGuardService : Service() {
         }
     }
 
+    private fun hasPrivilegedAccess(): Boolean {
+        return when (SheveryAccess(applicationContext).status()) {
+            SheveryAuthorizationStatus.ADB_READY,
+            SheveryAuthorizationStatus.ROOT_READY,
+            -> true
+            SheveryAuthorizationStatus.PERMISSION_REQUIRED,
+            SheveryAuthorizationStatus.SERVICE_NOT_RUNNING,
+            -> directRootAvailable ?: runCatching {
+                val result = SuPrivilegedCommandRunner().run("id -u", 5)
+                result.exitCode == 0 && result.output.lineSequence().firstOrNull()?.trim() == "0"
+            }.getOrDefault(false).also { directRootAvailable = it }
+        }
+    }
+
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
 
     private fun readFingerprint(): String? {
         return runCatching {
             val result = executePrivileged(FINGERPRINT_COMMAND, 20)
             check(result.exitCode == 0 && result.output.isNotBlank()) { "Tema bileşenleri okunamadı" }
+            updateConnectionState(connected = true)
             result.output.lineSequence()
                 .map(String::trim)
                 .filter(String::isNotBlank)
@@ -262,8 +286,50 @@ class ThemePersistenceGuardService : Service() {
                 .joinToString("|")
                 .sha256()
         }.onFailure {
+            updateConnectionState(connected = false)
             diagnostics.record("theme_watch_check_failed", "Tema bileşeni kontrolü tamamlanamadı", error = it)
         }.getOrNull()
+    }
+
+    private fun updateConnectionState(connected: Boolean) {
+        val previous = privilegeConnected
+        privilegeConnected = connected
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(
+            NOTIFICATION_ID,
+            monitoringNotification(if (connected) ConnectionState.ACTIVE else ConnectionState.WAITING),
+        )
+        if (!connected && previous != false) {
+            diagnostics.record(
+                "theme_guard_connection_lost",
+                "Shizuku/Shevery bağlantısı kesildi; tema koruması bağlantıyı bekliyor",
+            )
+            showConnectionLostNotification()
+        } else if (connected && previous == false) {
+            manager.cancel(CONNECTION_NOTIFICATION_ID)
+            diagnostics.record(
+                "theme_guard_connection_restored",
+                "Shizuku/Shevery bağlantısı geri geldi; tema koruması otomatik sürdürüldü",
+            )
+        } else if (connected) {
+            manager.cancel(CONNECTION_NOTIFICATION_ID)
+        }
+    }
+
+    private fun showConnectionLostNotification() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        val notification = NotificationCompat.Builder(this, ALERT_CHANNEL)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.theme_guard_waiting))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.theme_guard_waiting)))
+            .setContentIntent(openAppPendingIntent())
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(CONNECTION_NOTIFICATION_ID, notification)
     }
 
     private fun showReapplyNotification() {
@@ -301,26 +367,39 @@ class ThemePersistenceGuardService : Service() {
 
     private fun createChannels() {
         val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Theme monitor", NotificationManager.IMPORTANCE_LOW))
-        manager.createNotificationChannel(NotificationChannel(ALERT_CHANNEL, "Theme restore alerts", NotificationManager.IMPORTANCE_HIGH))
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, getString(R.string.app_name), NotificationManager.IMPORTANCE_DEFAULT),
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(ALERT_CHANNEL, getString(R.string.app_name), NotificationManager.IMPORTANCE_HIGH),
+        )
     }
 
-    private fun monitoringNotification() = NotificationCompat.Builder(this, CHANNEL)
+    private fun monitoringNotification(state: ConnectionState) = NotificationCompat.Builder(this, CHANNEL)
         .setSmallIcon(R.mipmap.ic_launcher)
         .setContentTitle(getString(R.string.app_name))
-        .setContentText("Shizuku tema izleyici etkin")
-        .setContentIntent(
-            PendingIntent.getActivity(
-                this,
-                0,
-                packageManager.getLaunchIntentForPackage(packageName) ?: Intent(this, MainActivity::class.java),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        .setContentText(
+            getString(
+                when (state) {
+                    ConnectionState.CHECKING -> R.string.theme_protection_checking
+                    ConnectionState.ACTIVE -> R.string.theme_guard_active
+                    ConnectionState.WAITING -> R.string.theme_guard_waiting
+                },
             ),
         )
+        .setContentIntent(openAppPendingIntent())
         .setOngoing(true)
-        .addAction(0, "Korumayı durdur", disablePendingIntent())
-        .setSilent(true)
+        .setOnlyAlertOnce(true)
+        .addAction(0, getString(R.string.theme_protection_disable), disablePendingIntent())
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .build()
+
+    private fun openAppPendingIntent(): PendingIntent = PendingIntent.getActivity(
+        this,
+        0,
+        packageManager.getLaunchIntentForPackage(packageName) ?: Intent(this, MainActivity::class.java),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 
     private fun disablePendingIntent(): PendingIntent = PendingIntent.getService(
         this,
@@ -342,18 +421,21 @@ class ThemePersistenceGuardService : Service() {
         private const val KEY_BASELINE = "component-baseline"
         private const val KEY_LAST_ALERTED_FINGERPRINT = "last-alerted-fingerprint"
         private const val KEY_LAST_AUTO_REPAIR_AT = "last-auto-repair-at"
-        private const val CHANNEL = "theme-persistence"
+        // A new channel is required because Android does not allow increasing an existing
+        // notification channel's importance after it has been created.
+        private const val CHANNEL = "theme-persistence-v2"
         private const val ALERT_CHANNEL = "theme-persistence-alert"
         private const val NOTIFICATION_ID = 23102
         private const val REAPPLY_NOTIFICATION_ID = 23103
+        private const val CONNECTION_NOTIFICATION_ID = 23104
         private const val ACTION_ARM = "dev.glorioustr.mtzstudio.action.ARM_THEME_WATCH"
         private const val ACTION_DISABLE = "dev.glorioustr.mtzstudio.action.DISABLE_THEME_WATCH"
         private const val EXTRA_THEME_NAME = "theme-name"
         private const val EXTRA_APPLY_INTENT = "apply-intent"
-        private const val INITIAL_CHECK_SECONDS = 35L
+        private const val INITIAL_CHECK_SECONDS = 3L
         private const val BASELINE_DELAY_SECONDS = 25L
-        private const val CHECK_INTERVAL_SECONDS = 180L
-        private const val AUTO_REPAIR_VERIFY_SECONDS = 20L
+        private const val CHECK_INTERVAL_SECONDS = 30L
+        private const val AUTO_REPAIR_VERIFY_SECONDS = 10L
         private const val AUTO_REPAIR_TIMEOUT_SECONDS = 30L
         private const val AUTO_REPAIR_COOLDOWN_MS = 10 * 60 * 1_000L
         private val GUARDED_ACTIONS = setOf("miui.intent.action.CHECK_TIME_UP", "miui.intent.action.CHECK_THEME_UPDATE")
@@ -361,6 +443,8 @@ class ThemePersistenceGuardService : Service() {
             "for f in description.xml icons lockscreen framework-res framework-miui-res com.android.systemui com.miui.home; do " +
                 "p=/data/system/theme/\u0024f; if [ -f \u0022\u0024p\u0022 ]; then /system/bin/toybox sha256sum \u0022\u0024p\u0022; " +
                 "else echo MISSING:\u0024f; fi; done"
+
+        private enum class ConnectionState { CHECKING, ACTIVE, WAITING }
 
         fun start(context: Context) {
             val intent = Intent(context, ThemePersistenceGuardService::class.java)

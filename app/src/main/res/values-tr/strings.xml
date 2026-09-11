@@ -1,5 +1,8 @@
 <resources>
-    <string name="tm_rootless_import_unavailable">Bu Xiaomi Temalar sürümü dış uygulamalar için doğrulanabilir bir MTZ içe aktarma yolu sunmuyor. Rootsuz otomatik uygulama kullanılamaz; Shizuku + BAK Converter’ı veya Xiaomi’nin kendi içe aktarma akışını kullanın. İncelenmesi için Live Diagnostics ekranından Temalar APK’sını paylaşabilirsiniz.</string>
+    <string name="theme_guard_active">Tema koruması Shizuku/Shevery ile etkin</string>
+    <string name="theme_guard_waiting">Shizuku/Shevery bağlantısı kesildi. Hizmet geri geldiğinde tema koruması otomatik olarak devam edecek.</string>
+    <string name="tm_rootless_import_unavailable">MTZ desteğini geri getirmek için aşağıdaki yetkili sürüm düşürme düğmesiyle doğrulanmış Xiaomi Temalar 3.0.5.6 sürümünü kurun. Paket adı, sürüm, SHA-256 özeti ve Xiaomi imzası doğrulanmadan kurulum başlamaz.</string>
+    <string name="tm_incompatibility_reason_missing_activity">Bu Xiaomi Temalar sürümünde gerekli yerel MTZ içe aktarma etkinliği bulunmuyor.</string>
     <string name="app_name">HyperOS MTZ Studio</string>
 
     <!-- Navigation & Destinations -->
@@ -370,6 +373,7 @@
     <string name="tm_recommended_active">Önerilen sürüm etkin. Bağımsız yerel MTZ import davranışı bekleniyor.</string>
     <string name="tm_recommendation_notice">Bağımsız yerel MTZ importu için %1$s önerilir.</string>
     <string name="tm_btn_download_apk">%1$s APK indir</string>
+    <string name="tm_btn_shizuku_downgrade">Shizuku ile %1$s sürümüne düşür</string>
     <string name="tm_verifying_apk">APK paket, sürüm, SHA-256 ve Xiaomi imzası doğrulanıyor…</string>
     <string name="tm_apk_verified">APK doğrulandı: %1$s · SHA-256 %2$s</string>
     <string name="tm_apk_rejected">APK reddedildi: %1$s</string>
@@ -390,7 +394,7 @@
 
     <!-- Shizuku uyumlu yetkilendirme kapısı -->
     <string name="shevery_dialog_title">Shizuku / Shevery erişimi</string>
-    <string name="shevery_dialog_text">Algılanan Shizuku uyumlu servise buradan izin verebilirsiniz. Xiaomi\'nin özel tema kataloğu için root modu gereklidir; yalnızca ADB modu yeterli değildir. Doğrudan süper kullanıcı erişimini kullanıyorsanız bu servis iznini atlayabilirsiniz.</string>
+    <string name="shevery_dialog_text">Shizuku/Shevery çalışıyor. Devam etmek için MTZ Studio iznini onaylayın. Rootsuz tema işlemleri için ADB modu yeterlidir; root modu yalnızca rootlu cihazlarda kullanılır.</string>
     <string name="shevery_btn_grant">Yetki ver</string>
     <string name="shevery_btn_skip">Şimdilik geç</string>
     <string name="privileged_access_permission_required">Shizuku/Shevery içinden MTZ Studio iznini veya root yöneticinizden uygulamanın süper kullanıcı iznini verin.</string>
@@ -482,7 +486,7 @@
     <string name="shizuku_tutorial_close">Tamam</string>
     <string name="shizuku_setup_return_notification">MTZ Studio kurulumuna dön</string>
     <string name="app_update_channel">Uygulama güncellemeleri</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">Güncelleme bulundu: HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Güncelleme indirildi ve doğrulandı. Kurmak için dokunun.</string>
     <string name="app_update_check">Güncellemeleri denetle</string>
     <string name="app_update_check_desc">GitHub’da daha yeni, imzalı MTZ Studio sürümü olup olmadığını denetle</string>

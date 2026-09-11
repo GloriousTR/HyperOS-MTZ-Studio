@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">Diese Xiaomi-Themes-Version stellt keinen öffentlichen MTZ-Importweg für externe Apps bereit. Automatisches Anwenden ohne Root ist nicht möglich; verwenden Sie Shizuku + BAK Converter, den integrierten Xiaomi-Import oder teilen Sie die Themes-APK über Live Diagnostics.</string>
+    <string name="theme_guard_active">Der Theme-Schutz ist über Shizuku/Shevery aktiv</string>
+    <string name="theme_guard_waiting">Die Shizuku/Shevery-Verbindung wurde getrennt. Der Theme-Schutz wird automatisch fortgesetzt, sobald der Dienst zurückkehrt.</string>
+    <string name="tm_rootless_import_unavailable">Um die MTZ-Unterstützung wiederherzustellen, installieren Sie über die autorisierte Downgrade-Schaltfläche unten die geprüfte Xiaomi-Themes-Version 3.0.5.6. Die Installation beginnt erst nach Prüfung von Paketname, Version, SHA-256-Prüfsumme und Xiaomi-Signatur.</string>
+    <string name="tm_incompatibility_reason_missing_activity">Die erforderliche lokale MTZ-Importaktivität ist in dieser Xiaomi-Themes-Version nicht verfügbar.</string>
     <string name="tm_btn_download_apk">%1$s APK herunterladen</string>
+    <string name="tm_btn_shizuku_downgrade">Mit Shizuku auf %1$s downgraden</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">Themes</string>
@@ -288,7 +292,7 @@
     <string name="tm_status_waiting_root">Warte auf root Genehmigung und Paketmanager Ergebnis...</string>
     <string name="tm_status_root_failed">Root Ausfall: %1$s</string>
     <string name="shevery_dialog_title">Shizuku / Shevery</string>
-    <string name="shevery_dialog_text">Sie können hier den entdeckten Shizuku-kompatiblen Service autorisieren. Root-Modus ist für den privaten Themenkatalog von Xiaomi erforderlich; ADB-Modus allein reicht nicht aus. Wenn Sie den direkten Zugriff des Superbenutzers nutzen, können Sie diese Service-Erlaubnis überspringen.</string>
+    <string name="shevery_dialog_text">Shizuku/Shevery wird ausgeführt. Erteilen Sie MTZ Studio die Berechtigung, um fortzufahren. Der ADB-Modus reicht für Theme-Vorgänge ohne Root aus; der Root-Modus wird nur auf gerooteten Geräten verwendet.</string>
     <string name="shevery_btn_grant">Erlaubnis erteilen</string>
     <string name="shevery_btn_skip">Vorerst überspringen</string>
     <string name="privileged_access_permission_required">Geben Sie MTZ Studio die Erlaubnis unter Shizuku/Shevery oder geben Sie ihm den Superuser-Zugriff in Ihrem root-Manager.</string>
@@ -381,7 +385,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">App-Updates</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">Update gefunden: HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">Das Update wurde heruntergeladen und geprüft. Zum Installieren tippen.</string>
     <string name="app_update_check">Nach Updates suchen</string>
     <string name="app_update_check_desc">GitHub auf eine neuere signierte MTZ-Studio-Version prüfen</string>

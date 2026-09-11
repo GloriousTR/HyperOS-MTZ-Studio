@@ -137,9 +137,9 @@ class RootlessRestoreBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
-        if (SheveryBackupRestorer.state() == SheveryBackupRestorer.State.READY) {
-            runCatching { ThemePersistenceGuardService.resumeIfArmed(context.applicationContext) }
-        }
+        // Keep an armed monitor alive even while Shizuku/Shevery is still starting. The
+        // foreground service waits for authorization and resumes checks automatically.
+        runCatching { ThemePersistenceGuardService.resumeIfArmed(context.applicationContext) }
         RootlessRestoreAssistant.notifyAfterRestart(context.applicationContext, action)
         AppUpdateScheduler.schedule(context.applicationContext, checkNow = action == Intent.ACTION_MY_PACKAGE_REPLACED)
     }

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">이 Xiaomi Themes 버전은 외부 앱을 위한 공개 MTZ 가져오기 경로를 제공하지 않습니다. root 없는 자동 적용은 사용할 수 없습니다. Shizuku + BAK Converter, Xiaomi 내장 가져오기 또는 Live Diagnostics에서 Themes APK를 공유하세요.</string>
+    <string name="theme_guard_active">Shizuku/Shevery를 통한 테마 보호가 활성화되었습니다</string>
+    <string name="theme_guard_waiting">Shizuku/Shevery 연결이 끊어졌습니다. 서비스가 돌아오면 테마 보호가 자동으로 재개됩니다.</string>
+    <string name="tm_rootless_import_unavailable">MTZ 지원을 복원하려면 아래의 승인된 다운그레이드 버튼으로 검증된 Xiaomi Themes 3.0.5.6을 설치하세요. 패키지 이름, 버전, SHA-256 체크섬 및 Xiaomi 서명이 검증되기 전에는 설치가 시작되지 않습니다.</string>
+    <string name="tm_incompatibility_reason_missing_activity">이 Xiaomi Themes 버전에는 필요한 로컬 MTZ 가져오기 활동이 없습니다.</string>
     <string name="tm_btn_download_apk">%1$s APK 다운로드</string>
+    <string name="tm_btn_shizuku_downgrade">Shizuku로 %1$s 버전으로 다운그레이드</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">테마</string>
@@ -288,7 +292,7 @@
     <string name="tm_status_waiting_root">root 허가 및 패키지 관리자 결과를 기다리고 있습니다.</string>
     <string name="tm_status_root_failed">Root 작업 실패: %1$s</string>
     <string name="shevery_dialog_title">Shizuku / Shevery</string>
-    <string name="shevery_dialog_text">여기서 확인된 Shizuku 호환 서비스를 승인할 수 있습니다. Xiaomi의 개인 테마 카탈로그에서 Root 모드가 필요합니다. ADB 모드는 충분하지 않습니다. 직접적인 슈퍼 사용자 접근을 이용하면 이 서비스 권한을 건너뛰면 됩니다.</string>
+    <string name="shevery_dialog_text">Shizuku/Shevery가 실행 중입니다. 계속하려면 MTZ Studio 권한을 허용하세요. 루트 없는 테마 작업에는 ADB 모드로 충분하며, 루트 모드는 루팅된 기기에서만 사용됩니다.</string>
     <string name="shevery_btn_grant">허가</string>
     <string name="shevery_btn_skip">나중에</string>
     <string name="privileged_access_permission_required">Shizuku/Shevery에서 MTZ Studio에 권한을 부여하거나 root 관리자에서 슈퍼유저 권한을 부여하세요.</string>
@@ -381,7 +385,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">앱 업데이트</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">업데이트 발견: HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">업데이트를 다운로드하고 확인했습니다. 설치하려면 탭하세요.</string>
     <string name="app_update_check">업데이트 확인</string>
     <string name="app_update_check_desc">GitHub에서 더 새로운 서명된 MTZ Studio 버전을 확인합니다</string>

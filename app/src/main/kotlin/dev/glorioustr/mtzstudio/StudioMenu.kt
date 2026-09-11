@@ -180,10 +180,17 @@ internal fun StudioPanelScreen(
     authorizationManagerName: String?,
     onOpenAuthorizationManager: () -> Unit,
     allowRootDowngrade: Boolean,
+    shizukuSetupRequest: Int,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var showShizukuTutorial by remember { mutableStateOf(ShizukuSetupSession.isActive(context)) }
+    LaunchedEffect(shizukuSetupRequest) {
+        if (shizukuSetupRequest > 0) {
+            ShizukuSetupSession.start(context)
+            showShizukuTutorial = true
+        }
+    }
     val uriHandler = LocalUriHandler.current
     val wirelessDebuggingEnabled = remember(accessMode) {
         runCatching { Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1 }.getOrDefault(false)

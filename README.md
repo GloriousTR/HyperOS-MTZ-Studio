@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.1"><strong>v4.1.1 APK indir</strong></a>
-  · <a href="docs/release-notes-v4.1.1.md">Sürüm notları</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.0"><strong>v4.2.0 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.2.0.md">Sürüm notları</a>
   · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
@@ -42,7 +42,7 @@
 - **Tema Dil Aracı:** Görünür tema metinlerini uygulama diline göre çevirir. XML, JSON ve güvenli MAML içerikleri için çeviri belleği ve isteğe bağlı API sağlayıcıları kullanır.
 - **Temanı Oluştur:** Bir temel temaya başka paketlerden kilit ekranı, simgeler, yazı tipi, duvar kâğıdı ve diğer seçili bileşenleri ekleyerek yeni MTZ oluşturur.
 - **Kitaplık:** Uygulanan temayı, içe aktarılan ve oluşturulan temaları; font paketlerinden ayrı olarak gösterir.
-- **Yedekleme ve güncelleme:** Studio kitaplığı için bulut/WebDAV yedekleme, geri yükleme ve imza/özet kontrolü yapan GitHub güncelleme akışı sunar.
+- **Yedekleme ve güncelleme:** Studio kitaplığı için bulut/WebDAV yedekleme ve geri yükleme sunar. Her açılışta GitHub güncellemesini arka planda denetler; yeni imzalı APK’yı doğrulayıp indirdikten sonra “Güncelleme bulundu” bildirimi gönderir.
 - **Live Diagnostics:** İçe aktarma, dönüştürme, çeviri ve uygulama adımlarını kaydeder; Temalar paketiyle ilgili sorunların incelenmesini kolaylaştırır.
 
 ## Erişim modları
@@ -68,7 +68,7 @@ Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre deği
 
 ## Kurulum
 
-1. [v4.1.1 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.1.1) sayfasından `MTZ_Studio_v4.1.1.apk` dosyasını indirin.
+1. [v4.2.0 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.0) sayfasından `MTZ_Studio_v4.2.0.apk` dosyasını indirin.
 2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
 3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
 4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-assisted draft; reviewed UI terminology. See docs/localization.md. -->
 <resources>
-    <string name="tm_rootless_import_unavailable">此 Xiaomi Themes 版本未向外部应用提供公开的 MTZ 导入路径。无 root 无法自动应用；请使用 Shizuku + BAK Converter、Xiaomi 内置导入流程，或通过 Live Diagnostics 分享 Themes APK。</string>
+    <string name="theme_guard_active">已通过 Shizuku/Shevery 启用主题保护</string>
+    <string name="theme_guard_waiting">Shizuku/Shevery 连接已断开。服务恢复后，主题保护将自动继续。</string>
+    <string name="tm_rootless_import_unavailable">要恢复 MTZ 支持，请使用下方的授权降级按钮安装已验证的 Xiaomi Themes 3.0.5.6。只有在软件包名称、版本、SHA-256 校验值和 Xiaomi 签名验证通过后才会开始安装。</string>
+    <string name="tm_incompatibility_reason_missing_activity">此 Xiaomi Themes 版本缺少所需的本地 MTZ 导入活动。</string>
     <string name="tm_btn_download_apk">下载 %1$s APK</string>
+    <string name="tm_btn_shizuku_downgrade">使用 Shizuku 降级到 %1$s</string>
     <string name="app_name">HyperOS MTZ Studio</string>
     <string name="dest_home">HyperOS MTZ Studio</string>
     <string name="dest_themes">主题</string>
@@ -288,7 +292,7 @@
     <string name="tm_status_waiting_root">正在等待 root 授权和软件包管理器返回结果…</string>
     <string name="tm_status_root_failed">root 操作失败：%1$s</string>
     <string name="shevery_dialog_title">Shizuku / Shevery</string>
-    <string name="shevery_dialog_text">您可以在这里授权检测到的Shizuku兼容服务. Root模式是Xiaomi私人主题目录所需的;单独的ADB模式不够. 如果您使用直接超级用户访问,您可以跳过此服务许可.</string>
+    <string name="shevery_dialog_text">Shizuku/Shevery 正在运行。请授予 MTZ Studio 权限以继续。ADB 模式足以进行无 root 的主题操作；root 模式仅用于已 root 的设备。</string>
     <string name="shevery_btn_grant">授予许可</string>
     <string name="shevery_btn_skip">暂时跳过</string>
     <string name="privileged_access_permission_required">在Shizuku/Shevery号为MTZ Studio授权,或者在root管理器中给它超级用户访问.</string>
@@ -381,7 +385,7 @@
     <string name="shizuku_tutorial_open_official">Open the official illustrated guide</string>
     <string name="shizuku_tutorial_open_video">Watch the video tutorial</string>
     <string name="app_update_channel">应用更新</string>
-    <string name="app_update_ready_title">HyperOS MTZ Studio %1$s</string>
+    <string name="app_update_ready_title">发现更新：HyperOS MTZ Studio %1$s</string>
     <string name="app_update_ready_text">更新已下载并验证。点按即可安装。</string>
     <string name="app_update_check">检查更新</string>
     <string name="app_update_check_desc">在 GitHub 检查更新且已签名的 MTZ Studio 版本</string>

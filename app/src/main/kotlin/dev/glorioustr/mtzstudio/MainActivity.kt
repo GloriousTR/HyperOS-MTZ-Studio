@@ -131,9 +131,14 @@ private fun Context.installedRootManager(): AuthorizationManagerApp? =
     }
 
 class MainActivity : ComponentActivity() {
+    private var shizukuSetupRequest by mutableIntStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AppUpdateScheduler.schedule(applicationContext)
+        consumeShizukuSetupIntent(intent)
+        // Run the launch check through JobScheduler so network waiting and downloading can
+        // continue even when Studio leaves the foreground.
+        AppUpdateScheduler.schedule(applicationContext, checkNow = true)
         val library = ThemeLibrary(applicationContext)
         val backupManager = StudioBackupManager(applicationContext)
         val composer = MtzComposer()
@@ -206,9 +211,23 @@ class MainActivity : ComponentActivity() {
                     globalThemeProtectionRequired = globalThemeProtectionRequired,
                     modernThemeManagerMode = modernThemeManagerMode,
                     themeManagerBehavior = installedThemeManager.behavior,
+                    shizukuSetupRequest = shizukuSetupRequest,
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumeShizukuSetupIntent(intent)
+    }
+
+    private fun consumeShizukuSetupIntent(intent: Intent?) {
+        if (intent?.action != ShizukuSetupSession.ACTION_RETURN_TO_SETUP) return
+        intent.action = null
+        ShizukuSetupSession.start(applicationContext)
+        shizukuSetupRequest++
     }
 
     private fun documentDiagnostics(uri: Uri): SelectedDocumentDiagnostics {
@@ -288,6 +307,7 @@ private fun StudioScreen(
     globalThemeProtectionRequired: Boolean,
     modernThemeManagerMode: Boolean,
     themeManagerBehavior: ThemeManagerBehavior,
+    shizukuSetupRequest: Int,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -361,6 +381,10 @@ private fun StudioScreen(
     }
     var lastAppliedProtocol by rememberSaveable {
         mutableStateOf(studioState.getString("last-applied-protocol", null))
+    }
+
+    androidx.compose.runtime.LaunchedEffect(shizukuSetupRequest) {
+        if (shizukuSetupRequest > 0) destination = StudioDestination.HOME
     }
 
     fun rememberAppliedTheme(themeId: String, protocol: ThemeApplyProtocol) {
@@ -1357,7 +1381,7 @@ private fun StudioScreen(
                 when (mode) {
                     StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
                     StudioAccessMode.ROOT -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
-                    StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
+                    StudioAccessMode.STANDARD -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
                 }
             }
         }
@@ -1384,7 +1408,7 @@ private fun StudioScreen(
         when (mode) {
             StudioAccessMode.SHIZUKU -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
             StudioAccessMode.ROOT -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
-            StudioAccessMode.STANDARD -> ThemePersistenceGuardService.pause(context.applicationContext)
+            StudioAccessMode.STANDARD -> ThemePersistenceGuardService.resumeIfArmed(context.applicationContext)
         }
         val rootReady = mode == StudioAccessMode.ROOT
         diagnostics.record(
@@ -1596,6 +1620,7 @@ private fun StudioScreen(
                     }
                 },
                 allowRootDowngrade = rootAccessAvailable == true,
+                shizukuSetupRequest = shizukuSetupRequest,
                 modifier = contentModifier,
             )
             destination == StudioDestination.THEMES -> ThemesScreen(

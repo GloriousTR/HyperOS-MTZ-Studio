@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -47,11 +48,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.glorioustr.mtzstudio.tester.InstalledThemeManager
+import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
 import dev.glorioustr.mtzstudio.tester.RootThemeManagerUpdater
 import dev.glorioustr.mtzstudio.tester.ThemeManagerContract
 import dev.glorioustr.mtzstudio.tester.ThemeManagerInspector
 import dev.glorioustr.mtzstudio.tester.ThemeManagerCapabilityProbe
 import dev.glorioustr.mtzstudio.tester.VerifiedThemeManagerApk
+import dev.glorioustr.mtzstudio.shevery.SheveryAccess
+import dev.glorioustr.mtzstudio.shevery.SheveryAuthorizationStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,9 +71,11 @@ internal fun ThemeManagerCompatibilityCard(
     val recommendedApkName = "Xiaomi_Themes_3.0.5.6-global.apk"
     val recommendedDownloadUrl =
         "https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/download/v4.0.0/$recommendedApkName"
+    val recommendedApkSha256 = "24b99f995bf5f8509e591bdb1d36ce6f95260ec95648d13f9ddedc4e7d8edceb"
     val resources = LocalResources.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val sheveryAccess = remember { SheveryAccess(context.applicationContext) }
     var installed by remember { mutableStateOf<InstalledThemeManager?>(null) }
     var runtimeProfile by remember { mutableStateOf<dev.glorioustr.mtzstudio.tester.ThemeManagerRuntimeProfile?>(null) }
     var verifiedApk by remember { mutableStateOf<VerifiedThemeManagerApk?>(null) }
@@ -78,20 +84,66 @@ internal fun ThemeManagerCompatibilityCard(
     var showConfirmation by remember { mutableStateOf(false) }
     val cyanAccent = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFF006A78) else Color(0xFF00DAF3)
 
-    fun openRecommendedDownload() {
-        runCatching {
-            val request = DownloadManager.Request(Uri.parse(recommendedDownloadUrl))
-                .setTitle(recommendedApkName)
-                .setDescription("Xiaomi Themes ${ThemeManagerContract.RECOMMENDED_VERSION}")
-                .setMimeType("application/vnd.android.package-archive")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, recommendedApkName)
-            val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            manager.enqueue(request)
-        }.onSuccess {
-            status = "Xiaomi Themes ${ThemeManagerContract.RECOMMENDED_VERSION} indiriliyor…"
-        }.onFailure { error ->
-            status = resources.getString(R.string.status_apply_failed, error.message ?: error::class.simpleName)
+    fun startShizukuDowngrade() {
+        when (sheveryAccess.status()) {
+            SheveryAuthorizationStatus.PERMISSION_REQUIRED -> {
+                sheveryAccess.requestPermission(52048)
+                status = resources.getString(R.string.privileged_access_permission_required)
+                return
+            }
+            SheveryAuthorizationStatus.ADB_READY -> Unit
+            else -> {
+                status = resources.getString(R.string.privileged_access_unavailable)
+                return
+            }
+        }
+        val current = installed ?: return
+        scope.launch {
+            status = resources.getString(R.string.tm_verifying_apk)
+            var stagedApk: VerifiedThemeManagerApk? = null
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    val downloadName = "mtzstudio-${System.currentTimeMillis()}-$recommendedApkName"
+                    val request = DownloadManager.Request(Uri.parse(recommendedDownloadUrl))
+                        .setTitle(recommendedApkName)
+                        .setDescription("Xiaomi Themes ${ThemeManagerContract.RECOMMENDED_VERSION}")
+                        .setMimeType("application/vnd.android.package-archive")
+                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, downloadName)
+                    val downloadId = manager.enqueue(request)
+                    awaitDownload(manager, downloadId)
+                    val descriptor = manager.openDownloadedFile(downloadId)
+                    val verified = ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { input ->
+                        updater.stageAndVerify(input, current)
+                    }
+                    stagedApk = verified
+                    check(verified.sha256.equals(recommendedApkSha256, ignoreCase = true)) {
+                        "Downloaded Xiaomi Themes APK checksum does not match"
+                    }
+                    val shellRunner = PrivilegedCommandRunner { command, timeout ->
+                        sheveryAccess.executeShell(command, timeout)
+                    }
+                    updater.installVerifiedDowngradeFromDownload(
+                        apk = verified,
+                        shellReadablePath = "/sdcard/Download/$downloadName",
+                        installRunner = shellRunner,
+                    ).also { result ->
+                        check(result.success) {
+                            listOf(result.message, result.commandOutput).filter { it.isNotBlank() }.joinToString(" · ")
+                        }
+                    }
+                }
+            }.onSuccess { result ->
+                installed = result.installedAfter
+                runtimeProfile = withContext(Dispatchers.IO) {
+                    ThemeManagerCapabilityProbe(context).probe(result.installedAfter)
+                }
+                status = result.message
+            }.onFailure { error ->
+                status = resources.getString(R.string.tm_apk_rejected, error.message ?: error::class.simpleName)
+            }
+            stagedApk?.let { runCatching { withContext(Dispatchers.IO) { updater.discard(it) } } }
         }
     }
 
@@ -212,7 +264,11 @@ internal fun ThemeManagerCompatibilityCard(
                     }
                 }
                 if (applyActivityUnavailable) {
-                    Text(current.behavior.explanation, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(R.string.tm_incompatibility_reason_missing_activity),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(
                         stringResource(R.string.tm_rootless_import_unavailable),
                         color = MaterialTheme.colorScheme.error,
@@ -223,9 +279,9 @@ internal fun ThemeManagerCompatibilityCard(
                 // Compatibility requires a runtime-resolvable Xiaomi route. Legacy Global builds
                 // use ApplyThemeForScreenshot; 10.8.7.6+ builds use the native local library.
                 // The modern version family alone is not enough if its component is missing.
-                if (applyActivityUnavailable) {
-                    OutlinedButton(onClick = ::openRecommendedDownload) {
-                        Text(stringResource(R.string.tm_btn_download_apk, "Themes ${ThemeManagerContract.RECOMMENDED_VERSION}"))
+                if (applyActivityUnavailable && !allowRootDowngrade) {
+                    Button(onClick = ::startShizukuDowngrade) {
+                        Text(stringResource(R.string.tm_btn_shizuku_downgrade, ThemeManagerContract.RECOMMENDED_VERSION))
                     }
                 }
             }
@@ -310,4 +366,23 @@ internal fun ThemeManagerCompatibilityCard(
             },
         )
     }
+}
+
+private fun awaitDownload(manager: DownloadManager, downloadId: Long) {
+    val deadline = System.currentTimeMillis() + 5 * 60_000L
+    while (System.currentTimeMillis() < deadline) {
+        manager.query(DownloadManager.Query().setFilterById(downloadId))?.use { cursor ->
+            check(cursor.moveToFirst()) { "Xiaomi Themes download could not be found" }
+            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            when (status) {
+                DownloadManager.STATUS_SUCCESSFUL -> return
+                DownloadManager.STATUS_FAILED -> {
+                    val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                    error("Xiaomi Themes download failed: $reason")
+                }
+            }
+        }
+        Thread.sleep(500)
+    }
+    error("Xiaomi Themes download timed out")
 }

@@ -115,6 +115,29 @@ class RootThemeManagerUpdater(
     }
 
     fun installVerifiedDowngrade(apk: VerifiedThemeManagerApk): RootUpdateResult {
+        val temporaryPath = "/data/local/tmp/mtzstudio-theme-manager-${UUID.randomUUID()}.apk"
+        return installVerifiedDowngrade(
+            apk = apk,
+            installRunner = commandRunner,
+            command = RootInstallCommand.forStagedApk(apk.stagedPath.toString(), temporaryPath),
+        )
+    }
+
+    fun installVerifiedDowngradeFromDownload(
+        apk: VerifiedThemeManagerApk,
+        shellReadablePath: String,
+        installRunner: PrivilegedCommandRunner,
+    ): RootUpdateResult = installVerifiedDowngrade(
+        apk = apk,
+        installRunner = installRunner,
+        command = ShellInstallCommand.forDownloadedApk(shellReadablePath),
+    )
+
+    private fun installVerifiedDowngrade(
+        apk: VerifiedThemeManagerApk,
+        installRunner: PrivilegedCommandRunner,
+        command: String,
+    ): RootUpdateResult {
         val before = inspector.inspect()
         if (!before.installed || before.packageName != apk.packageName) {
             throw ThemeManagerUpdateException("Installed Theme Manager changed after APK verification")
@@ -130,10 +153,8 @@ class RootThemeManagerUpdater(
             throw ThemeManagerUpdateException("APK no longer passes package, version, and signature checks")
         }
 
-        val temporaryPath = "/data/local/tmp/mtzstudio-theme-manager-${UUID.randomUUID()}.apk"
-        val command = RootInstallCommand.forStagedApk(apk.stagedPath.toString(), temporaryPath)
         val execution = try {
-            commandRunner.run(command, 180)
+            installRunner.run(command, 180)
         } catch (error: Exception) {
             throw ThemeManagerUpdateException("Could not start a privileged installation", error)
         }
@@ -143,7 +164,7 @@ class RootThemeManagerUpdater(
             RootUpdateResult(
                 success = execution.exitCode == 0 && installedTarget,
                 message = when {
-                    execution.exitCode != 0 -> "Root package manager rejected the downgrade"
+                    execution.exitCode != 0 -> "Package manager rejected the downgrade"
                     !installedTarget -> "Package manager returned success but the target version is not active"
                     else -> "Theme Manager ${ThemeManagerContract.RECOMMENDED_VERSION} is now active"
                 },
@@ -154,7 +175,7 @@ class RootThemeManagerUpdater(
         } catch (error: ThemeManagerUpdateException) {
             throw error
         } catch (error: Exception) {
-            throw ThemeManagerUpdateException("Root installation failed", error)
+            throw ThemeManagerUpdateException("Theme Manager installation failed", error)
         }
     }
 
@@ -207,6 +228,18 @@ internal object RootInstallCommand {
             append("; result=${'$'}?; /system/bin/rm -f ").append(temporary)
             append("; exit ${'$'}result")
         }
+    }
+
+    private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
+}
+
+internal object ShellInstallCommand {
+    fun forDownloadedApk(downloadPath: String): String {
+        require(downloadPath.startsWith("/sdcard/Download/")) {
+            "Downloaded APK must stay inside the shared Download directory"
+        }
+        require('\n' !in downloadPath && '\r' !in downloadPath) { "Invalid downloaded APK path" }
+        return "/system/bin/pm install -r -d ${shellQuote(downloadPath)}"
     }
 
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
