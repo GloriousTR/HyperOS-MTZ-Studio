@@ -951,16 +951,29 @@ private fun StudioScreen(
                         // Modern 10.8.7.6+ builds expose their own local import library. Shizuku
                         // can stage an MTZ for that screen even though it cannot read the private
                         // catalog. Never send this branch to the removed legacy tester activity.
-                        themeApplyCoordinator.prepare(
-                            theme,
-                            // A known Xiaomi localId can be applied through the exported 10.8/11
-                            // detail route in both root and Shizuku modes. It does not require the
-                            // injected root bridge merely to identify an already imported theme.
-                            deviceThemeImporter.localIdFor(theme)
-                                ?: deviceThemeImporter.resolveExistingLocalId(theme)?.also { localId ->
-                                    deviceThemeImporter.rememberThemeManagerOrigin(localId, theme)
-                                },
-                        )
+                        val savedLocalId = deviceThemeImporter.localIdFor(theme)
+                        val localId = when {
+                            savedLocalId != null -> savedLocalId
+                            modernShizukuImport -> {
+                                // Older Studio releases did not persist a Xiaomi localId for
+                                // themes that were already in the private Studio library. Do not
+                                // call the root-only catalog reader here: mirror the verified MTZ
+                                // through HyperOS' Shizuku backup channel, then persist its stable
+                                // localId before dispatching the direct 10.8/11 apply request.
+                                themeApplyCoordinator.importModernThroughShizukuBackup(theme).also { restoredLocalId ->
+                                    deviceThemeImporter.rememberThemeManagerOrigin(restoredLocalId, theme)
+                                    diagnostics.record(
+                                        "modern_shizuku_apply_link_created",
+                                        "Eski Studio teması Xiaomi Temalar kitaplığına aktarıldı ve eşleştirildi",
+                                        mapOf("theme" to theme.displayName, "localId" to restoredLocalId),
+                                    )
+                                }
+                            }
+                            else -> deviceThemeImporter.resolveExistingLocalId(theme)?.also { existingLocalId ->
+                                deviceThemeImporter.rememberThemeManagerOrigin(existingLocalId, theme)
+                            }
+                        }
+                        themeApplyCoordinator.prepare(theme, localId)
                     } else {
                         themeApplyCoordinator.prepareRootlessManualImport(theme)
                     }
