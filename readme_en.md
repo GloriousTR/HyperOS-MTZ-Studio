@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.0"><strong>Download v4.2.0 APK</strong></a>
-  · <a href="docs/release-notes-v4.2.0.md">Release notes</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.1"><strong>Download v4.2.1 APK</strong></a>
+  · <a href="docs/release-notes-v4.2.1.md">Release notes</a>
   · <a href="docs/theme-manager-compatibility.md">Compatibility</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Report an issue</a>
 </p>
@@ -68,7 +68,7 @@ Xiaomi can change the final application screen and theme-acceptance behaviour de
 
 ## Install
 
-1. Download `MTZ_Studio_v4.2.0.apk` from the [v4.2.0 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.0).
+1. Download `MTZ_Studio_v4.2.1.apk` from the [v4.2.1 release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.1).
 2. Back up an important Studio library before upgrading from an older build.
 3. Install the APK, open Studio and let it detect the available access mode.
 4. On non-rooted devices, grant the requested Shizuku/Shevery authorization before applying themes.

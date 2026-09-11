@@ -108,6 +108,18 @@ internal class AppUpdateManager(private val context: Context) {
     private val apkPath = updateDirectory.resolve("MTZ_Studio_update.apk")
 
     fun checkAndDownload(force: Boolean = false) {
+        synchronized(UPDATE_LOCK) {
+            if (updateInProgress) return
+            updateInProgress = true
+        }
+        try {
+            checkAndDownloadSingleFlight(force)
+        } finally {
+            synchronized(UPDATE_LOCK) { updateInProgress = false }
+        }
+    }
+
+    private fun checkAndDownloadSingleFlight(force: Boolean) {
         AppUpdateStore.update(AppUpdateState(AppUpdatePhase.CHECKING, eventId = System.currentTimeMillis()))
         val now = System.currentTimeMillis()
         if (!force && now - prefs.getLong("last_check", 0L) < CHECK_INTERVAL_MS) {
@@ -303,6 +315,8 @@ internal class AppUpdateManager(private val context: Context) {
         .digest(bytes).joinToString("") { "%02x".format(it) }
 
     companion object {
+        private val UPDATE_LOCK = Any()
+        @Volatile private var updateInProgress = false
         private const val RELEASE_API = "https://api.github.com/repos/GloriousTR/HyperOS-MTZ-Studio/releases/latest"
         private const val CHECK_INTERVAL_MS = 6L * 60 * 60 * 1000
         private const val MAX_APK_BYTES = 200L * 1024 * 1024
