@@ -852,10 +852,19 @@ private fun StudioScreen(
             )
             runCatching {
                 withContext(Dispatchers.IO) {
-                    if (rootAccessAvailable != true) {
-                        themeApplyCoordinator.prepareRootlessManualImport(theme)
+                    val modernShizukuImport =
+                        accessMode == StudioAccessMode.SHIZUKU &&
+                            themeManagerBehavior == ThemeManagerBehavior.MODERN_NATIVE_LIBRARY
+                    if (rootAccessAvailable == true || modernShizukuImport) {
+                        // Modern 10.8.7.6+ builds expose their own local import library. Shizuku
+                        // can stage an MTZ for that screen even though it cannot read the private
+                        // catalog. Never send this branch to the removed legacy tester activity.
+                        themeApplyCoordinator.prepare(
+                            theme,
+                            deviceThemeImporter.localIdFor(theme).takeIf { rootAccessAvailable == true },
+                        )
                     } else {
-                        themeApplyCoordinator.prepare(theme, deviceThemeImporter.localIdFor(theme))
+                        themeApplyCoordinator.prepareRootlessManualImport(theme)
                     }
                 }
             }.onSuccess { prepared ->

@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.1"><strong>v4.2.1 APK indir</strong></a>
-  · <a href="docs/release-notes-v4.2.1.md">Sürüm notları</a>
+  <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.2"><strong>v4.2.2 APK indir</strong></a>
+  · <a href="docs/release-notes-v4.2.2.md">Sürüm notları</a>
   · <a href="docs/theme-manager-compatibility.md">Uyumluluk</a>
   · <a href="https://github.com/GloriousTR/HyperOS-MTZ-Studio/issues">Sorun bildir</a>
 </p>
@@ -68,7 +68,7 @@ Xiaomi son uygulama ekranını ve tema kabul davranışını ROM’a göre deği
 
 ## Kurulum
 
-1. [v4.2.1 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.1) sayfasından `MTZ_Studio_v4.2.1.apk` dosyasını indirin.
+1. [v4.2.2 Release](https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v4.2.2) sayfasından `MTZ_Studio_v4.2.2.apk` dosyasını indirin.
 2. Eski bir sürümden geçiyorsanız önemli Studio kitaplığınızı yedekleyin.
 3. APK’yı kurun, uygulamayı açın ve erişim modunun algılanmasını bekleyin.
 4. Rootsuz tema uygulama için Shizuku/Shevery iznini verin.
