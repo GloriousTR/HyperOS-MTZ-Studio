@@ -185,6 +185,21 @@ class PreferredPrivilegedCommandRunner(context: Context) : PrivilegedCommandRunn
         }
     }
 
+    /**
+     * Runs a command with root when available, otherwise with the authorized Shizuku ADB shell.
+     * This is only for operations whose target is accessible to Android's shell user; callers
+     * that need private app data or package installation privileges must continue to use [run].
+     */
+    fun runRootOrAdbShell(command: String, timeoutSeconds: Long): PrivilegedCommandResult {
+        return if (shevery.status() == SheveryAuthorizationStatus.ADB_READY) {
+            commandGate.run {
+                shevery.executeShell(command, timeoutSeconds).also { accessFailure.value = null }
+            }
+        } else {
+            run(command, timeoutSeconds)
+        }
+    }
+
     fun dismissAuthorizationFailure() { accessFailure.value = null }
 
     /** Capability probe that never opens the authorization-error dialog on a rootless device. */

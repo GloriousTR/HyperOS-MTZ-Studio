@@ -7,7 +7,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import dev.glorioustr.mtzstudio.core.Hashing
 import dev.glorioustr.mtzstudio.library.LibraryTheme
-import dev.glorioustr.mtzstudio.tester.PrivilegedCommandRunner
+import dev.glorioustr.mtzstudio.shevery.PreferredPrivilegedCommandRunner
 import dev.glorioustr.mtzstudio.tester.ThemeManagerContract
 import java.util.UUID
 
@@ -36,7 +36,7 @@ enum class ThemeApplyProtocol {
 
 class ThemeApplyCoordinator(
     private val context: Context,
-    private val commandRunner: PrivilegedCommandRunner,
+    private val commandRunner: PreferredPrivilegedCommandRunner,
 ) {
     private val diagnostics get() = LiveDiagnosticsRecorder.get(context)
 
@@ -160,8 +160,9 @@ class ThemeApplyCoordinator(
 
     fun requireModernPrivilegedAccess() {
         diagnostics.record("privileged_preflight_started", "Root veya Shizuku uyumlu yetki denetleniyor")
-        val result = runRecorded("privileged_preflight", "id -u", 10)
-        check(result.exitCode == 0 && result.output.lineSequence().firstOrNull()?.trim() == "0") {
+        val result = runRecordedRootOrShell("privileged_preflight", "id -u", 10)
+        val uid = result.output.lineSequence().firstOrNull()?.trim()
+        check(result.exitCode == 0 && uid in setOf("0", "2000")) {
             context.getString(R.string.privileged_access_unavailable)
         }
         diagnostics.record(
@@ -181,11 +182,13 @@ class ThemeApplyCoordinator(
         val stagedPath = "$THEME_MANAGER_MODERN_DOWNLOAD_ROOT/${UUID.randomUUID()}.mtz"
         val command = buildString {
             append("/system/bin/mkdir -p ").append(shellQuote(THEME_MANAGER_MODERN_DOWNLOAD_ROOT))
-            append(" && /system/bin/cp ").append(shellQuote(theme.archive.source.toString()))
+            // The app-private library path cannot be read by the ADB shell UID. The verified
+            // public export is readable by both root and Shizuku and contains the same MTZ.
+            append(" && /system/bin/cp ").append(shellQuote(manualImportFile.absolutePath))
             append(' ').append(shellQuote(stagedPath))
             append(" && /system/bin/chmod 0644 ").append(shellQuote(stagedPath))
         }
-        val result = runRecorded("modern_staging", command, 120)
+        val result = runRecordedRootOrShell("modern_staging", command, 120)
         check(result.exitCode == 0) { "Tema, Temalar 10.8 içe aktarma alanına hazırlanamadı: ${result.output.takeLast(500)}" }
 
         val intent = Intent().apply {
@@ -375,7 +378,14 @@ class ThemeApplyCoordinator(
     fun cleanup(prepared: PreparedThemeApply) {
         // Retain file temporarily or clean asynchronously so background services aren't starved during application
         if (prepared.stagedPath.isNotBlank()) {
-            runRecorded("staging_cleanup", "/system/bin/rm -f ${shellQuote(prepared.stagedPath)}", 30)
+            val command = "/system/bin/rm -f ${shellQuote(prepared.stagedPath)}"
+            if (prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_BRIDGE ||
+                prepared.protocol == ThemeApplyProtocol.MODERN_THEME_MANAGER_MANUAL_IMPORT
+            ) {
+                runRecordedRootOrShell("staging_cleanup", command, 30)
+            } else {
+                runRecorded("staging_cleanup", command, 30)
+            }
         }
     }
 
@@ -390,7 +400,9 @@ class ThemeApplyCoordinator(
             "( /system/bin/grep -q '^ready=true' ${shellQuote(path)} 2>/dev/null && " +
                 "/system/bin/grep -q '^version=${BuildConfig.VERSION_CODE}$' ${shellQuote(path)} 2>/dev/null )"
         }
-        return runRecorded("bridge_marker_check", command, 5).exitCode == 0
+        // An ADB-mode Shizuku process cannot read the root-only bridge markers. That is an
+        // expected "bridge unavailable" result and must not be converted into a root prompt.
+        return runRecordedRootOrShell("bridge_marker_check", command, 5).exitCode == 0
     }
 
     private fun ensureModernThemeManagerBridgeScope(): Boolean {
@@ -435,13 +447,44 @@ class ThemeApplyCoordinator(
         throw error
     }
 
+    private fun runRecordedRootOrShell(stage: String, command: String, timeoutSeconds: Long) = try {
+        diagnostics.record(
+            "privileged_step_started",
+            "Root veya Shizuku kabuk işlemi başladı",
+            mapOf("stage" to stage),
+        )
+        commandRunner.runRootOrAdbShell(command, timeoutSeconds).also { result ->
+            diagnostics.record(
+                "privileged_step_result",
+                "Root veya Shizuku kabuk işlemi sonucu",
+                mapOf(
+                    "stage" to stage,
+                    "exitCode" to result.exitCode,
+                    "source" to result.authorizationSource,
+                    "output" to result.output.takeLast(1500),
+                ),
+            )
+        }
+    } catch (error: Exception) {
+        diagnostics.record(
+            "privileged_step_failed",
+            "Root veya Shizuku kabuk işlemi tamamlanamadı",
+            mapOf("stage" to stage),
+            error,
+        )
+        throw error
+    }
+
     /** Only inspect recent crash records for the two packages involved in this request. */
     fun captureFailureDiagnostics(startedAt: Long) {
         runCatching {
             val since = java.time.Instant.ofEpochMilli(maxOf(startedAt, System.currentTimeMillis() - 300_000))
                 .atZone(java.time.ZoneId.systemDefault())
                 .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS", java.util.Locale.US))
-            val result = commandRunner.run("logcat -b crash -d -v threadtime -T ${shellQuote(since)} | tail -n 200", 10)
+            val result = commandRunner.runRootOrAdbShell(
+                "logcat -b crash -d -v threadtime -T ${shellQuote(since)} | tail -n 200",
+                10,
+            )
             check(result.exitCode == 0) { "Crash log unavailable (${result.exitCode}): ${result.output}" }
             val lines = result.output.lines()
             val ownPids = lines.filter { it.contains("Process: $THEME_MANAGER_PACKAGE,") || it.contains("Process: ${context.packageName},") }
@@ -452,7 +495,7 @@ class ThemeApplyCoordinator(
         }.onFailure { diagnostics.record("host_crash_check_unavailable", "Ek çökme kaydı okunamadı", error = it) }
         runCatching {
             val filter = "thememanager|ThemeImport|ResourceImport|action_resource_import|MTZStudioProtection"
-            val result = commandRunner.run(
+            val result = commandRunner.runRootOrAdbShell(
                 "logcat -b main -b system -d -v threadtime -t 1000 " +
                     "| /system/bin/grep -E ${shellQuote(filter)} | /system/bin/tail -n 250",
                 30,
