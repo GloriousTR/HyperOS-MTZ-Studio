@@ -51,14 +51,18 @@ class ThemeApplyCoordinator(
         diagnostics.record("apply_hash_verified", "Tema kaynak SHA-256 doğrulaması başarılı")
         val modern = ThemeManagerContract.behavior(installedThemeManagerVersion()) ==
             dev.glorioustr.mtzstudio.tester.ThemeManagerBehavior.MODERN_NATIVE_LIBRARY
-        // Some vendor/modded Themes 11 packages restore Xiaomi's exported legacy tester alias.
-        // Prefer the actually declared capability over a version-number assumption when present.
+        // A modern local-library identity is authoritative. Some vendor/modded Themes 10.8/11
+        // packages also expose the old screenshot tester alias, but that route needs root-only
+        // staging and must not steal an already imported Shizuku theme from the native flow.
         return when {
+            modern && themeManagerLocalId != null -> prepareModernExistingTheme(theme, themeManagerLocalId)
             modern && legacyTesterAvailable() -> {
-                diagnostics.record("modern_legacy_tester_available", "Temalar 11 paketinde doğrudan tester geçidi bulundu")
+                diagnostics.record(
+                    "modern_legacy_tester_fallback",
+                    "Yerel tema kimliği bulunamadığı için Temalar tester geçidi yedek yol olarak kullanılacak",
+                )
                 prepareLegacyTester(theme)
             }
-            modern && themeManagerLocalId != null -> prepareModernExistingTheme(theme, themeManagerLocalId)
             modern -> prepareModernImport(theme, ThemeManagerOperation.APPLY)
             else -> prepareLegacyTester(theme)
         }
