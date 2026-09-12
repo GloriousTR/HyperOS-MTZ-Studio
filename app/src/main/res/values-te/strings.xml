@@ -78,7 +78,7 @@
     <string name="about_repository_title">ఓపెన్ సోర్స్ ప్రాజెక్టు</string>
     <string name="about_repository_desc">GitHub రిపోజిటరీలో సోర్స్ కోడ్, రిలీజ్ నోట్స్, మరియు ప్రస్తుత APK ప్యాకేజీలను చూడండి.</string>
     <string name="about_repository_badge">కమ్యూనిటీ ఆధారిత అభివృద్ధి</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub నిల్వను తెరవండి</string>
     <string name="theme_active_badge">సక్రియం</string>
     <string name="theme_active_explanation">ఇటీవల MTZ Studio ద్వారా వర్తింపజేయబడిన అంశం.</string>

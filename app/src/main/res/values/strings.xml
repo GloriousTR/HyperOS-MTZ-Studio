@@ -138,7 +138,7 @@
     <string name="about_repository_title">Open-source project</string>
     <string name="about_repository_desc">View the source code, release notes, and current APK packages in the GitHub repository.</string>
     <string name="about_repository_badge">COMMUNITY-DRIVEN DEVELOPMENT</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Open GitHub repository</string>
     <string name="about_contact_telegram">Contact @Glorioustr on Telegram</string>
     <string name="theme_active_badge">Active</string>

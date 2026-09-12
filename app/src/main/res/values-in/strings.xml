@@ -78,7 +78,7 @@
     <string name="about_repository_title">Proyek sumber terbuka</string>
     <string name="about_repository_desc">Lihat kode sumber, catatan rilis, dan paket APK saat ini di repositori GitHub.</string>
     <string name="about_repository_badge">Pembangunan Komunitas</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Buka repositori GitHub</string>
     <string name="theme_active_badge">Aktif</string>
     <string name="theme_active_explanation">Tema yang paling baru diterapkan oleh MTZ Studio.</string>

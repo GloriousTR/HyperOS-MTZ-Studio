@@ -61,7 +61,7 @@ internal class DeviceThemeImporter(
 ) {
     private val appContext = context.applicationContext
     private val stagingRoot = appContext.filesDir.toPath().resolve("device-import")
-    private val importOrigins = appContext.getSharedPreferences("theme-manager-imports", Context.MODE_PRIVATE)
+    private val importOrigins = appContext.getSharedPreferences(ORIGIN_PREFERENCES, Context.MODE_PRIVATE)
     private val diagnostics = LiveDiagnosticsRecorder.get(appContext)
     private val mutableCatalogProgress = kotlinx.coroutines.flow.MutableStateFlow(DeviceCatalogProgress())
     val catalogProgress: kotlinx.coroutines.flow.StateFlow<DeviceCatalogProgress> = mutableCatalogProgress
@@ -278,15 +278,38 @@ internal class DeviceThemeImporter(
         return result
     }
 
-    fun localIdFor(theme: LibraryTheme): String? = importOrigins.all.entries.firstNotNullOfOrNull { (key, value) ->
-        if (!key.startsWith(ORIGIN_PREFIX)) return@firstNotNullOfOrNull null
-        val mappedThemeId = value?.toString()?.substringAfter('|', "").orEmpty()
-        key.removePrefix(ORIGIN_PREFIX).takeIf { mappedThemeId == theme.id.value }
+    fun localIdFor(theme: LibraryTheme): String? {
+        if (themeManagerOriginNeedsRefresh(theme)) return null
+        return importOrigins.all.entries.firstNotNullOfOrNull { (key, value) ->
+            if (!key.startsWith(ORIGIN_PREFIX)) return@firstNotNullOfOrNull null
+            val mappedThemeId = value?.toString()?.substringAfter('|', "").orEmpty()
+            key.removePrefix(ORIGIN_PREFIX).takeIf { mappedThemeId == theme.id.value }
+        }
+    }
+
+    fun themeManagerOriginNeedsRefresh(theme: LibraryTheme): Boolean {
+        if (importOrigins.getBoolean(refreshKey(theme.id.value), false)) return true
+        // Migrate themes translated by an older Studio build: their translation receipt points
+        // at the current private archive, while the saved Xiaomi link still contains the hash
+        // from before translation. Non-translated device imports keep their legacy mapping.
+        val translationReceipt = appContext.filesDir.toPath()
+            .resolve("mtz-library")
+            .resolve(theme.id.value)
+            .resolve("translation")
+            .resolve("last-output.sha256")
+        if (!Files.isRegularFile(translationReceipt)) return false
+        val translatedHash = runCatching {
+            String(Files.readAllBytes(translationReceipt), Charsets.UTF_8).trim()
+        }.getOrDefault("")
+        if (translatedHash != theme.archive.sha256) return false
+        val links = importOrigins.all.filter { (key, value) ->
+            key.startsWith(ORIGIN_PREFIX) && value?.toString()?.substringAfter('|', "") == theme.id.value
+        }.values.map { it.toString().substringBefore('|') }
+        return links.isNotEmpty() && theme.archive.sha256 !in links
     }
 
     fun rememberThemeManagerOrigin(localId: String, theme: LibraryTheme) {
-        val safeLocalId = localId.requireSafeIdentifier("theme local ID")
-        importOrigins.edit().putString(originKey(safeLocalId), "${theme.archive.sha256}|${theme.id.value}").apply()
+        linkThemeManagerOrigin(appContext, localId, theme.id.value, theme.archive.sha256)
     }
 
     /** Keeps a deliberately removed Studio mirror from being recreated by automatic catalog sync. */
@@ -648,6 +671,7 @@ internal class DeviceThemeImporter(
     private fun deterministicEntry(path: String) = ZipEntry(path).apply { time = 0L }
     private fun originKey(localId: String) = "$ORIGIN_PREFIX$localId"
     private fun hiddenKey(localId: String) = "$HIDDEN_PREFIX$localId"
+    private fun refreshKey(themeId: String) = "$REFRESH_PREFIX$themeId"
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
     private data class ThemeManagerRecord(
@@ -665,7 +689,39 @@ internal class DeviceThemeImporter(
 
     private data class ThemeManagerResource(val localId: String, val resourceCode: String)
 
-    private companion object {
+    companion object {
+        internal fun invalidateThemeManagerOriginAfterMutation(context: Context, themeId: String) {
+            val preferences = context.applicationContext.getSharedPreferences(ORIGIN_PREFERENCES, Context.MODE_PRIVATE)
+            val editor = preferences.edit()
+            preferences.all.forEach { (key, value) ->
+                if (key.startsWith(ORIGIN_PREFIX) && value?.toString()?.substringAfter('|', "") == themeId) {
+                    editor.remove(key)
+                }
+            }
+            editor.putBoolean("$REFRESH_PREFIX$themeId", true).apply()
+        }
+
+        internal fun linkThemeManagerOrigin(
+            context: Context,
+            localId: String,
+            themeId: String,
+            archiveSha256: String,
+        ) {
+            require(localId.matches(SAFE_IDENTIFIER)) { "Invalid theme local ID" }
+            val preferences = context.applicationContext.getSharedPreferences(ORIGIN_PREFERENCES, Context.MODE_PRIVATE)
+            val editor = preferences.edit()
+            preferences.all.forEach { (key, value) ->
+                if (key.startsWith(ORIGIN_PREFIX) && value?.toString()?.substringAfter('|', "") == themeId) {
+                    editor.remove(key)
+                }
+            }
+            editor
+                .remove("$REFRESH_PREFIX$themeId")
+                .putString("$ORIGIN_PREFIX$localId", "$archiveSha256|$themeId")
+                .apply()
+        }
+
+        private const val ORIGIN_PREFERENCES = "theme-manager-imports"
         const val THEME_DATA_ROOT =
             "/data/media/0/Android/data/com.android.thememanager/files/MIUI/theme/.data"
         const val MAX_PREVIEWS_PER_THEME = 16
@@ -675,6 +731,7 @@ internal class DeviceThemeImporter(
         const val CATALOG_PROGRESS_LOG_INTERVAL = 5
         const val ORIGIN_PREFIX = "theme:"
         const val HIDDEN_PREFIX = "hidden:"
+        const val REFRESH_PREFIX = "refresh:"
         val SAFE_IDENTIFIER = Regex("[A-Za-z0-9._-]{1,128}")
         val SAFE_RESOURCE_CODE = Regex("[A-Za-z0-9._-]{1,160}")
         val SAFE_PREVIEW_NAME = Regex("[A-Za-z0-9._-]{1,180}")

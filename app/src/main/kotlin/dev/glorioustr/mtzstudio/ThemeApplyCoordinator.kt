@@ -71,6 +71,9 @@ class ThemeApplyCoordinator(
     fun prepareModernImportOnly(theme: LibraryTheme): PreparedThemeApply =
         prepareModernImport(theme, ThemeManagerOperation.IMPORT_ONLY)
 
+    fun prepareModernImportAndApply(theme: LibraryTheme): PreparedThemeApply =
+        prepareModernImport(theme, ThemeManagerOperation.APPLY)
+
     /**
      * Adds an MTZ to Xiaomi Themes through HyperOS' own backup service while running with
      * Shizuku/Shevery. This is the only stock-system path that does not require us to invoke

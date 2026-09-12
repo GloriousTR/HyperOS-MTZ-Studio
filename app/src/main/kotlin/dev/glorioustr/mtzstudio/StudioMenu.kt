@@ -4015,7 +4015,7 @@ private val THEME_GALLERY_CATEGORIES = setOf(
     ComponentCategory.AOD,
 )
 
-private const val PROJECT_REPOSITORY_URL = "https://github.com/GloriousTR/HyperOS-MTZ-Studio"
+private const val PROJECT_REPOSITORY_URL = "https://github.com/GloriousApps/HyperOS-MTZ-Studio"
 private const val SHIZUKU_SETUP_GUIDE_URL = "https://shizuku.rikka.app/guide/setup/"
 private const val SHIZUKU_VIDEO_TUTORIAL_URL = "https://www.youtube.com/shorts/pnHNdU6LppA"
 

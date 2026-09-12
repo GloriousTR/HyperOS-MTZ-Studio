@@ -78,7 +78,7 @@
     <string name="about_repository_title">திறந்த மூல திட்டம்</string>
     <string name="about_repository_desc">GitHub களஞ்சியத்தில் உள்ள மூல குறியீடு, வெளியீட்டு குறிப்புகள் மற்றும் தற்போதைய APK தொகுப்புகளைப் பார்க்கவும்.</string>
     <string name="about_repository_badge">சமுதாய சார்ந்த வளர்ச்சி</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub களஞ்சியத்தை திறக்கவும்</string>
     <string name="theme_active_badge">செயலில்</string>
     <string name="theme_active_explanation">சமீபத்தில் MTZ Studio என்ற தலைப்பில் பயன்படுத்தப்பட்டது.</string>

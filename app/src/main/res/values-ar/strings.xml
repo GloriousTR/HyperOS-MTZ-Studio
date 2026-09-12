@@ -78,7 +78,7 @@
     <string name="about_repository_title">مشروع مفتوح المصدر</string>
     <string name="about_repository_desc">عرض الرمز المصدر وملاحظات الإفراج والحزم الحالية APK في مخزن GitHub.</string>
     <string name="about_repository_badge">التنمية المتحركة للجماعة</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">افتح مستودع GitHub</string>
     <string name="theme_active_badge">نشط</string>
     <string name="theme_active_explanation">الموضوع الذي تم تطبيقه مؤخراً بواسطة MTZ Studio.</string>

@@ -78,7 +78,7 @@
     <string name="about_repository_title">Проект с открытым исходным кодом</string>
     <string name="about_repository_desc">Посмотрите исходный код, ноты выпуска и текущие пакеты APK в хранилище GitHub.</string>
     <string name="about_repository_badge">ДРУГОВАНИЕ В СОБЩЕСТВЕНИЕ</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Откройте хранилище GitHub</string>
     <string name="theme_active_badge">Активна</string>
     <string name="theme_active_explanation">Тема, применяемая в последнее время MTZ Studio.</string>

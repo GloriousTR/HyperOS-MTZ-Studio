@@ -453,7 +453,7 @@ internal class AppUpdateManager(private val context: Context) {
     companion object {
         private val UPDATE_LOCK = Any()
         @Volatile private var updateInProgress = false
-        private const val RELEASE_API = "https://api.github.com/repos/GloriousTR/HyperOS-MTZ-Studio/releases/latest"
+        private const val RELEASE_API = "https://api.github.com/repos/GloriousApps/HyperOS-MTZ-Studio/releases/latest"
         private const val CHECK_INTERVAL_MS = 6L * 60 * 60 * 1000
         private const val MAX_APK_BYTES = 200L * 1024 * 1024
         private const val CHANNEL_ID = "app_updates"

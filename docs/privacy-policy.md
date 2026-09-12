@@ -28,4 +28,4 @@ The app requests the minimum Google Drive scope needed for portable backups. Its
 
 Questions or privacy requests can be sent to the developer through Telegram: [@Glorioustr](https://t.me/Glorioustr).
 
-Project source: [GloriousTR/HyperOS-MTZ-Studio](https://github.com/GloriousTR/HyperOS-MTZ-Studio)
+Project source: [GloriousApps/HyperOS-MTZ-Studio](https://github.com/GloriousApps/HyperOS-MTZ-Studio)

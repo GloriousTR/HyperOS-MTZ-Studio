@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import dev.glorioustr.mtzstudio.library.ThemeLibrary
+import dev.glorioustr.mtzstudio.shevery.PreferredPrivilegedCommandRunner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -77,6 +78,42 @@ internal class ThemeTranslationService : Service() {
                         getSystemService(NotificationManager::class.java)
                             .notify(NOTIFICATION_ID, notification(progress))
                     }
+                // Translation replaces Studio's MTZ while Xiaomi Themes keeps its own copy.
+                // Detach the old local ID so the translated archive is imported again before
+                // the next apply instead of silently applying the pre-translation package.
+                DeviceThemeImporter.invalidateThemeManagerOriginAfterMutation(
+                    applicationContext,
+                    translated.id.value,
+                )
+                if (SheveryBackupRestorer.state() == SheveryBackupRestorer.State.READY) {
+                    runCatching {
+                        val coordinator = ThemeApplyCoordinator(
+                            applicationContext,
+                            PreferredPrivilegedCommandRunner(applicationContext),
+                        )
+                        val localId = coordinator.importModernThroughShizukuBackup(translated)
+                        DeviceThemeImporter.linkThemeManagerOrigin(
+                            applicationContext,
+                            localId,
+                            translated.id.value,
+                            translated.archive.sha256,
+                        )
+                        LiveDiagnosticsRecorder.get(applicationContext).record(
+                            "translation_native_library_refreshed",
+                            "Çevrilen MTZ Xiaomi Temalar kitaplığına yeniden aktarıldı",
+                            mapOf("theme" to translated.displayName, "localId" to localId),
+                        )
+                    }.onFailure { error ->
+                        // Keep the translated Studio archive valid. The next Apply action will
+                        // retry this refresh before dispatching the theme to Xiaomi Themes.
+                        LiveDiagnosticsRecorder.get(applicationContext).record(
+                            "translation_native_library_refresh_deferred",
+                            "Çevrilen MTZ için Xiaomi Temalar eşitlemesi uygulama adımına ertelendi",
+                            mapOf("theme" to translated.displayName),
+                            error,
+                        )
+                    }
+                }
                 MtzPublicExporter.exportToPublicDownloads(
                     applicationContext,
                     translated.archive.source,

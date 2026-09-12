@@ -78,7 +78,7 @@
     <string name="about_repository_title">公開源計畫</string>
     <string name="about_repository_desc">在 GitHub 存儲庫中查看源代碼,發布註冊和目前的 APK 包.</string>
     <string name="about_repository_badge">社會的發展</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">打開GitHub資料庫</string>
     <string name="theme_active_badge">已套用</string>
     <string name="theme_active_explanation">這項主題最近被 MTZ Studio 應用.</string>

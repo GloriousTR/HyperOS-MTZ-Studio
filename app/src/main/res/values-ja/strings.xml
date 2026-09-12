@@ -78,7 +78,7 @@
     <string name="about_repository_title">オープンソースプロジェクト</string>
     <string name="about_repository_desc">GitHubのリポジトリでソースコード,リリースノート,および現在の APK パッケージを表示します.</string>
     <string name="about_repository_badge">地域社会による開発</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHubのリポジトリを開く</string>
     <string name="theme_active_badge">適用中</string>
     <string name="theme_active_explanation">最近 MTZ Studioで適用されたテーマです</string>

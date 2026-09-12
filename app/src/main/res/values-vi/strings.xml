@@ -78,7 +78,7 @@
     <string name="about_repository_title">Dự án nguồn mở</string>
     <string name="about_repository_desc">Xem mã nguồn, ghi chú phát hành và các gói APK hiện tại trong kho GitHub.</string>
     <string name="about_repository_badge">Phát triển của cộng đồng</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Mở kho GitHub</string>
     <string name="theme_active_badge">Đang dùng</string>
     <string name="theme_active_explanation">Chủ đề gần đây nhất được áp dụng bởi MTZ Studio.</string>

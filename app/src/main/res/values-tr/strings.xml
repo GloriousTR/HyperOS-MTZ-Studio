@@ -136,7 +136,7 @@
     <string name="about_repository_title">Açık kaynak proje</string>
     <string name="about_repository_desc">Kaynak kodunu, sürüm notlarını ve güncel APK paketlerini GitHub deposunda görebilirsin.</string>
     <string name="about_repository_badge">TOPLULUK TARAFINDAN GELİŞTİRİLİR</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub deposunu aç</string>
     <string name="about_contact_telegram">Telegram’da @Glorioustr’a ulaş</string>
     <string name="theme_active_badge">Etkin</string>

@@ -78,7 +78,7 @@
     <string name="about_repository_title">오픈소스 프로젝트</string>
     <string name="about_repository_desc">GitHub 저장소에서 소스 코드, 출시 메모 및 현재 APK 패키지를 참조하십시오.</string>
     <string name="about_repository_badge">지역사회 중심의 발전</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub 저장소를 열</string>
     <string name="theme_active_badge">사용 중</string>
     <string name="theme_active_explanation">최근 MTZ Studio에 적용된 주제입니다.</string>

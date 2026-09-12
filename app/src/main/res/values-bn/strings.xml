@@ -78,7 +78,7 @@
     <string name="about_repository_title">ওপেন সোর্স প্রকল্প</string>
     <string name="about_repository_desc">GitHub রিপোজিটরিতে সোর্স কোড, রিলিজ নোট এবং বর্তমান APK প্যাকেজ দেখুন।</string>
     <string name="about_repository_badge">কমিউনিটি চালিত উন্নয়ন</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">GitHub সংগ্রহস্থল খুলুন</string>
     <string name="theme_active_badge">সক্রিয়</string>
     <string name="theme_active_explanation">সম্প্রতি MTZ Studio দ্বারা প্রয়োগ করা থিম।</string>

@@ -951,6 +951,7 @@ private fun StudioScreen(
                         // Modern 10.8.7.6+ builds expose their own local import library. Shizuku
                         // can stage an MTZ for that screen even though it cannot read the private
                         // catalog. Never send this branch to the removed legacy tester activity.
+                        val originNeedsRefresh = deviceThemeImporter.themeManagerOriginNeedsRefresh(theme)
                         val savedLocalId = deviceThemeImporter.localIdFor(theme)
                         val localId = when {
                             savedLocalId != null -> savedLocalId
@@ -969,11 +970,19 @@ private fun StudioScreen(
                                     )
                                 }
                             }
-                            else -> deviceThemeImporter.resolveExistingLocalId(theme)?.also { existingLocalId ->
+                            !originNeedsRefresh -> deviceThemeImporter.resolveExistingLocalId(theme)?.also { existingLocalId ->
                                 deviceThemeImporter.rememberThemeManagerOrigin(existingLocalId, theme)
                             }
+                            else -> null
                         }
-                        themeApplyCoordinator.prepare(theme, localId)
+                        if (originNeedsRefresh && localId == null) {
+                            // The Studio source changed after it was mirrored (for example by
+                            // translation). Import and apply the new archive; never reuse the old
+                            // Xiaomi Themes record merely because its title still matches.
+                            themeApplyCoordinator.prepareModernImportAndApply(theme)
+                        } else {
+                            themeApplyCoordinator.prepare(theme, localId)
+                        }
                     } else {
                         themeApplyCoordinator.prepareRootlessManualImport(theme)
                     }
@@ -1064,6 +1073,48 @@ private fun StudioScreen(
         returnDestination = StudioDestination.HOME
     }
 
+    suspend fun mirrorImportedThemeToXiaomi(theme: LibraryTheme): Boolean {
+        if (themeManagerBehavior != ThemeManagerBehavior.MODERN_NATIVE_LIBRARY) return false
+
+        val originNeedsRefresh = deviceThemeImporter.themeManagerOriginNeedsRefresh(theme)
+        val savedLocalId = withContext(Dispatchers.IO) { deviceThemeImporter.localIdFor(theme) }
+        val alreadyImported = savedLocalId ?: if (
+            accessMode == StudioAccessMode.ROOT && !originNeedsRefresh
+        ) {
+            withContext(Dispatchers.IO) {
+                deviceThemeImporter.resolveExistingLocalId(theme)?.also { localId ->
+                    deviceThemeImporter.rememberThemeManagerOrigin(localId, theme)
+                }
+            }
+        } else null
+        if (alreadyImported != null) {
+            diagnostics.record(
+                "dual_import_already_present",
+                "MTZ Xiaomi Temalar kitaplığında zaten bulundu",
+                mapOf("theme" to theme.displayName, "localId" to alreadyImported),
+            )
+            return true
+        }
+
+        // Stock Xiaomi Themes exposes no public Java import API. Shizuku uses HyperOS' own
+        // backup service to create or refresh the native record without a second picker.
+        if (accessMode != StudioAccessMode.SHIZUKU ||
+            SheveryBackupRestorer.state() != SheveryBackupRestorer.State.READY
+        ) return false
+
+        val localId = withContext(Dispatchers.IO) {
+            themeApplyCoordinator.importModernThroughShizukuBackup(theme).also { restoredLocalId ->
+                deviceThemeImporter.rememberThemeManagerOrigin(restoredLocalId, theme)
+            }
+        }
+        diagnostics.record(
+            "dual_import_linked",
+            "Studio ve Xiaomi Temalar kayıtları eşleştirildi",
+            mapOf("theme" to theme.displayName, "localId" to localId),
+        )
+        return true
+    }
+
     fun composeTheme() {
         if (themeOperationRunning) return
         themeOperationRunning = true
@@ -1146,9 +1197,13 @@ private fun StudioScreen(
                 status = resources.getString(R.string.status_compose_success, compositionName.trim())
                 if (capabilities.usesNativeCatalog) {
                     runCatching {
-                        withContext(Dispatchers.IO) { themeApplyCoordinator.prepareModernImportOnly(importedTheme) }
+                        val mirrored = mirrorImportedThemeToXiaomi(importedTheme)
+                        if (mirrored) null else withContext(Dispatchers.IO) {
+                            themeApplyCoordinator.prepareModernImportOnly(importedTheme)
+                        }
                     }.onSuccess { prepared ->
-                        launchPreparedTheme(prepared)
+                        if (prepared != null) launchPreparedTheme(prepared)
+                        else themeOperationRunning = false
                     }.onFailure { error ->
                         themeOperationRunning = false
                         diagnostics.record("theme_request_prepare_failed", "Temalar işlemi hazırlanamadı", error = error)
@@ -1338,46 +1393,6 @@ private fun StudioScreen(
                 )
             }
         }
-    }
-
-    suspend fun mirrorImportedThemeToXiaomi(theme: LibraryTheme): Boolean {
-        if (themeManagerBehavior != ThemeManagerBehavior.MODERN_NATIVE_LIBRARY) return false
-
-        val savedLocalId = withContext(Dispatchers.IO) { deviceThemeImporter.localIdFor(theme) }
-        val alreadyImported = savedLocalId ?: if (accessMode == StudioAccessMode.ROOT) {
-            withContext(Dispatchers.IO) {
-                deviceThemeImporter.resolveExistingLocalId(theme)?.also { localId ->
-                    deviceThemeImporter.rememberThemeManagerOrigin(localId, theme)
-                }
-            }
-        } else null
-        if (alreadyImported != null) {
-            diagnostics.record(
-                "dual_import_already_present",
-                "MTZ Xiaomi Temalar kitaplığında zaten bulundu",
-                mapOf("theme" to theme.displayName, "localId" to alreadyImported),
-            )
-            return true
-        }
-
-        // Root builds keep using the injected native bridge. Stock Xiaomi Themes exposes no
-        // public Java import API; Shizuku uses HyperOS' own backup service to create the native
-        // library record without coordinate automation or a second picker.
-        if (accessMode != StudioAccessMode.SHIZUKU ||
-            SheveryBackupRestorer.state() != SheveryBackupRestorer.State.READY
-        ) return false
-
-        val localId = withContext(Dispatchers.IO) {
-            themeApplyCoordinator.importModernThroughShizukuBackup(theme).also { restoredLocalId ->
-                deviceThemeImporter.rememberThemeManagerOrigin(restoredLocalId, theme)
-            }
-        }
-        diagnostics.record(
-            "dual_import_linked",
-            "Studio ve Xiaomi Temalar kayıtları eşleştirildi",
-            mapOf("theme" to theme.displayName, "localId" to localId),
-        )
-        return true
     }
 
     fun importMtzDocuments(selectedUris: List<Uri>) {

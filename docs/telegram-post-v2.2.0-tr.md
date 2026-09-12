@@ -18,6 +18,6 @@ Uygulama Xiaomi'ye bağlı değildir ve Xiaomi APK'sı ya da tema modülü dağ�
 
 İndirme, SHA-256 doğrulama dosyası, kaynak kod ve ayrıntılı kurulum bilgileri:
 
-https://github.com/GloriousTR/HyperOS-MTZ-Studio/releases/tag/v2.2.0
+https://github.com/GloriousApps/HyperOS-MTZ-Studio/releases/tag/v2.2.0
 
 Geri bildirim verirken cihaz modeli, HyperOS/MIUI sürümü, Xiaomi Temalar sürümü ve mümkünse Live Diagnostics çıktısını paylaşmanız sorunu daha hızlı incelememize yardımcı olur.

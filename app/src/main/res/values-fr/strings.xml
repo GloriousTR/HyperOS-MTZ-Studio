@@ -78,7 +78,7 @@
     <string name="about_repository_title">Projet open source</string>
     <string name="about_repository_desc">Voir le code source, les notes de sortie et les paquets actuels APK dans le référentiel GitHub.</string>
     <string name="about_repository_badge">Développement dérivé de la Communauté</string>
-    <string name="about_repository_url">github.com/GloriousTR/HyperOS-MTZ-Studio</string>
+    <string name="about_repository_url">github.com/GloriousApps/HyperOS-MTZ-Studio</string>
     <string name="about_open_github">Ouvrez le référentiel GitHub</string>
     <string name="theme_active_badge">Actif</string>
     <string name="theme_active_explanation">Le thème le plus récemment appliqué par MTZ Studio.</string>
